@@ -1,9 +1,10 @@
 # PHASE 1 COMPLETE ROADMAP: Foundation & Local Environment Setup
+
 **Seeker — Mental Wellness Platform MVP**
 
 **Duration:** 6–8 weeks  
 **Solo Developer Timeline**  
-**Updated:** 2025  
+**Updated:** 2025
 
 ---
 
@@ -12,6 +13,7 @@
 Phase 1 is the foundation layer. Every line of code after this depends on getting this right.
 
 **By the end of Phase 1, you will have:**
+
 - ✅ Full local Docker environment (10 services) running with one command
 - ✅ Complete database schema with 25+ models created and migrated
 - ✅ **OTP-based user registration** (NO Google OAuth)
@@ -39,9 +41,11 @@ Phase 1 is the foundation layer. Every line of code after this depends on gettin
 ### WEEK 1-2: ENVIRONMENT & INFRASTRUCTURE
 
 #### TASK 1: Install & Configure Local Toolchain
+
 **Time: 1-2 hours**
 
 **Install these tools:**
+
 ```
 ✓ Docker Desktop (latest)
 ✓ Python 3.11+
@@ -57,6 +61,7 @@ Phase 1 is the foundation layer. Every line of code after this depends on gettin
 ```
 
 **Verify all work:**
+
 ```bash
 docker --version
 python --version
@@ -69,16 +74,19 @@ expo --version
 
 ---
 
-#### TASK 2: Create GitHub Repo & Branch Protection
+#### TASK 2: Create GitHub Repo
+
 **Time: 30 minutes**
 
 **Steps:**
+
 1. Create private repo: `seeker`
 2. Clone locally: `git clone ...`
 3. Create branches:
-   - `main` (protected, always deployable)
+   - `main` (always deployable)
    - `develop` (integration branch)
 4. Create `.gitignore`:
+
    ```
    .env.local
    .env
@@ -91,31 +99,34 @@ expo --version
    ```
 
 5. Create `.env.local` (NEVER commit):
+
    ```env
    DEBUG=True
    SECRET_KEY=your-local-secret-key-change-on-prod
    DATABASE_URL=postgres://seeker:seekerpass@postgres:5432/seekerdb
    REDIS_URL=redis://redis:6379/0
-   ANTHROPIC_API_KEY=your-claude-api-key
-   
+
+   # AI integration deferred until later; current setup works without an AI API key.
+   # Future AI provider may be Gemini API, but not required in Phase 1.
+
    # File Storage (MinIO - local S3)
    MINIO_ENDPOINT=minio:9000
    MINIO_ACCESS_KEY=minioadmin
    MINIO_SECRET_KEY=minioadmin
    MINIO_BUCKET=seeker-local
-   
+
    # Payment (Razorpay test mode)
    RAZORPAY_KEY_ID=rzp_test_xxxxx
    RAZORPAY_KEY_SECRET=test_secret
-   
+
    # Firebase
    FIREBASE_CREDENTIALS_PATH=./firebase-credentials.json
-   
+
    # Search (Typesense)
    TYPESENSE_HOST=typesense
    TYPESENSE_PORT=8108
    TYPESENSE_API_KEY=local-typesense-key
-   
+
    # EMAIL SERVICE - USER PROVIDES CREDENTIALS
    EMAIL_SERVICE=brevo  # or 'sendgrid'
    BREVO_API_KEY=placeholder_add_actual_key
@@ -123,11 +134,11 @@ expo --version
    # OR for SendGrid:
    # SENDGRID_API_KEY=placeholder_add_actual_key
    # SENDGRID_FROM_EMAIL=noreply@seeker-test.local
-   
+
    # OTP Configuration
    OTP_LENGTH=6
    OTP_VALIDITY_MINUTES=10
-   
+
    # JWT
    JWT_ACCESS_TOKEN_LIFETIME_MINUTES=60
    JWT_REFRESH_TOKEN_LIFETIME_DAYS=7
@@ -138,9 +149,11 @@ expo --version
 ---
 
 #### TASK 3: Write docker-compose.yml
+
 **Time: 2-3 hours**
 
 **All 10 Services:**
+
 1. **django** — Backend API (port 8000)
 2. **postgres** — Database (port 5432)
 3. **redis** — Cache & WebSocket (port 6379)
@@ -153,6 +166,7 @@ expo --version
 10. **nextjs** — Public profiles (port 3000)
 
 **Each service must have:**
+
 - Health checks
 - Environment variables from `.env.local`
 - Persistent volumes (postgres, redis, minio)
@@ -160,6 +174,7 @@ expo --version
 - Network connectivity to other services
 
 **Verify it works:**
+
 ```bash
 docker-compose up --build  # Should start all 10 services
 docker-compose exec django python manage.py --help  # Django accessible
@@ -173,14 +188,17 @@ curl localhost:8000/  # Django running
 ### WEEK 2-3: DJANGO BACKEND SETUP
 
 #### TASK 4: Django Project Scaffold with Modular Apps
+
 **Time: 1.5-2 hours**
 
 **Create Django project:**
+
 ```bash
 django-admin startproject config .
 ```
 
 **Create 6 modular apps:**
+
 ```bash
 python manage.py startapp accounts      # Users, auth, OTP
 python manage.py startapp core          # Chat, sessions (NOT 'sessions' app!)
@@ -191,6 +209,7 @@ python manage.py startapp helpline      # Crisis helpline directory
 ```
 
 **Install dependencies in `requirements.txt`:**
+
 ```
 Django==5.0+
 djangorestframework==3.14+
@@ -209,7 +228,7 @@ pytest==7.4+
 pytest-django==4.7+
 minio==7.2+
 python-jose==3.3+
-anthropic==0.7+
+# AI dependencies deferred until later; implement Gemini API if/when needed.
 typesense==1.6+
 razorpay==1.3+
 firebase-admin==6.4+
@@ -218,6 +237,7 @@ brevo-python==2.3+
 ```
 
 **Update `settings.py`:**
+
 ```python
 INSTALLED_APPS = [
     'daphne',  # Channels
@@ -256,6 +276,7 @@ ASGI_APPLICATION = 'config.asgi.application'
 ```
 
 **Verify:**
+
 ```bash
 python manage.py check  # Should pass with zero errors
 ```
@@ -263,9 +284,11 @@ python manage.py check  # Should pass with zero errors
 ---
 
 #### TASK 5: PostgreSQL Schema Migrations - Create ALL 25+ Models
+
 **Time: 3-4 hours**
 
 **Models in `accounts/models.py`:**
+
 ```python
 User (abstract base)
   - username, email, password
@@ -302,6 +325,7 @@ OTPToken
 ```
 
 **Models in `core/models.py`:**
+
 ```python
 Session
   - user FK, counselor/therapist FK (polymorphic)
@@ -340,6 +364,7 @@ PayoutRecord
 ```
 
 **Models in `profiles/models.py`:**
+
 ```python
 AvailabilitySlot
   - counselor/therapist FK
@@ -374,6 +399,7 @@ TherapyModality
 ```
 
 **Models in `feedback/models.py`:**
+
 ```python
 SessionFeedback
   - session FK, user FK
@@ -384,6 +410,7 @@ SessionFeedback
 ```
 
 **Models in `notifications/models.py`:**
+
 ```python
 UserDevice
   - user FK
@@ -393,6 +420,7 @@ UserDevice
 ```
 
 **Models in `helpline/models.py`:**
+
 ```python
 HelplineEntry
   - name, phone, region, category FK
@@ -405,12 +433,14 @@ HelplineCategory
 ```
 
 **Create & run migrations:**
+
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
 **Verify in TablePlus:**
+
 - Connect to `postgres://seeker:seekerpass@postgres:5432/seekerdb`
 - See ~25 tables created
 - All foreign keys, constraints in place
@@ -419,9 +449,11 @@ python manage.py migrate
 ---
 
 #### TASK 6: JWT Authentication with Refresh Token Rotation
+
 **Time: 2-3 hours**
 
 **Configure in `settings.py`:**
+
 ```python
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -443,12 +475,14 @@ SIMPLE_JWT = {
 ```
 
 **Create `accounts/views.py` endpoints:**
+
 - `POST /api/auth/login/` → email + password → JWT tokens
 - `POST /api/auth/refresh/` → refresh token → new access token
 - `POST /api/auth/logout/` → invalidate token
 - `GET /api/auth/me/` → current user profile
 
 **Create `accounts/permissions.py`:**
+
 ```python
 class IsGeneralUser(IsAuthenticated):
     def has_permission(self, request, view):
@@ -476,16 +510,19 @@ class IsVerified(IsAuthenticated):
 ---
 
 #### TASK 7: OTP-Based Registration via Email Service
+
 **Time: 2.5-3 hours**
 
 **⚠️ CRITICAL: This replaces Google OAuth**
 
 **Install email client:**
+
 ```bash
 pip install brevo-python  # or sendgrid
 ```
 
 **Create `accounts/services/otp_service.py`:**
+
 ```python
 import secrets
 from datetime import timedelta
@@ -497,13 +534,13 @@ class OTPService:
     def generate_otp():
         """Generate 6-digit OTP"""
         return ''.join(secrets.choice('0123456789') for _ in range(6))
-    
+
     @staticmethod
     def create_otp_for_email(email):
         """Create OTP, save to DB, return code"""
         otp_code = OTPService.generate_otp()
         validity = timezone.now() + timedelta(minutes=10)
-        
+
         token = OTPToken.objects.create(
             email=email,
             otp_code=otp_code,
@@ -511,7 +548,7 @@ class OTPService:
             is_verified=False
         )
         return otp_code, token
-    
+
     @staticmethod
     def verify_otp(email, otp_code):
         """Verify OTP code"""
@@ -530,6 +567,7 @@ class OTPService:
 ```
 
 **Create `accounts/services/email_service.py`:**
+
 ```python
 import brevo_python  # or sendgrid
 
@@ -543,6 +581,7 @@ class EmailService:
 ```
 
 **Create API endpoints:**
+
 - `POST /api/auth/register/request-otp/`
   - Input: `{ email, role }`
   - Output: `{ message: "OTP sent to email" }`
@@ -559,6 +598,7 @@ class EmailService:
   - Side effect: User created with is_active=True
 
 **Test flow in Postman:**
+
 1. Request OTP → get "OTP sent"
 2. Check Mailhog (localhost:8025) for email
 3. Verify OTP → get "OTP verified"
@@ -568,32 +608,34 @@ class EmailService:
 ---
 
 #### TASK 8: Role-Based Registration & Permission Boundaries
+
 **Time: 1.5 hours**
 
 **Create role-specific registration:**
+
 - `POST /api/auth/register/general-user/`
   - Password, name, 2 emergency contacts
-  
 - `POST /api/auth/register/counselor/`
-  - + Degree file, graduation year, university, specialization
+  - - Degree file, graduation year, university, specialization
   - ⚠️ is_verified=False until admin approves
-  
 - `POST /api/auth/register/therapist/`
-  - + License number, license file, modalities, 2FA phone
+  - - License number, license file, modalities, 2FA phone
   - ⚠️ is_verified=False until admin approves
 
 **Enforce boundaries:**
+
 ```python
 # Counselor-only endpoint example
 class CounselorQueueView(APIView):
     permission_classes = [IsAuthenticated, IsGraduateCounselor, IsVerified]
-    
+
     def get(self, request):
         # Only verified counselors can access
         ...
 ```
 
 **Test:**
+
 - User token on counselor endpoint → 403
 - Unverified counselor on counselor endpoint → 403
 - Verified counselor on counselor endpoint → 200
@@ -601,11 +643,13 @@ class CounselorQueueView(APIView):
 ---
 
 #### TASK 9: Emergency Contact Model & Validation
+
 **Time: 1-1.5 hours**
 
 **Model already created in Task 5: EmergencyContact**
 
 **Enforce minimum 2 in serializer:**
+
 ```python
 class EmergencyContactSerializer(Serializer):
     name = CharField()
@@ -616,7 +660,7 @@ class RegisterSerializer(Serializer):
     email = EmailField()
     password = CharField()
     emergency_contacts = EmergencyContactSerializer(many=True, min_length=2)
-    
+
     def validate_emergency_contacts(self, value):
         if len(value) < 2:
             raise ValidationError("Minimum 2 emergency contacts required")
@@ -624,6 +668,7 @@ class RegisterSerializer(Serializer):
 ```
 
 **Test:**
+
 - Register without contacts → 400
 - Register with 1 contact → 400
 - Register with 2+ contacts → 200, user created
@@ -633,6 +678,7 @@ class RegisterSerializer(Serializer):
 ### WEEK 3-4: FILE STORAGE & ADMIN
 
 #### TASK 10: Graduate Counselor Credential Upload to MinIO
+
 **Time: 2 hours**
 
 **MinIO already in docker-compose.yml**
@@ -640,6 +686,7 @@ class RegisterSerializer(Serializer):
 **Create bucket via MinIO console (localhost:9001):** `seeker-local`
 
 **Create `accounts/services/file_upload.py`:**
+
 ```python
 from minio import Minio
 from uuid import uuid4
@@ -654,7 +701,7 @@ class FileUploadService:
             secure=False  # Local, no HTTPS
         )
         self.bucket = os.getenv('MINIO_BUCKET')
-    
+
     def upload_file(self, file_obj, folder, filename):
         """Upload file to MinIO"""
         object_name = f"{folder}/{uuid4()}/{filename}"
@@ -668,6 +715,7 @@ class FileUploadService:
 ```
 
 **Add file fields to GraduateCounselor registration:**
+
 ```python
 class CounselorRegistrationSerializer(Serializer):
     email = EmailField()
@@ -675,18 +723,18 @@ class CounselorRegistrationSerializer(Serializer):
     degree_file = FileField()          # Degree proof
     graduation_certificate = FileField()  # Certificate proof
     # ... other fields
-    
+
     def create(self, validated_data):
         files = {
             'degree_file': validated_data.pop('degree_file'),
             'graduation_certificate': validated_data.pop('graduation_certificate'),
         }
-        
+
         service = FileUploadService()
         paths = {}
         for key, file in files.items():
             paths[key] = service.upload_file(file, 'counselor_credentials', file.name)
-        
+
         counselor = GraduateCounselor.objects.create(
             **validated_data,
             **paths,
@@ -696,15 +744,18 @@ class CounselorRegistrationSerializer(Serializer):
 ```
 
 **Test:**
+
 - Upload 2 files → files in MinIO console
 - Path stored in DB as `minio://seeker-local/counselor_credentials/[uuid]/[filename]`
 
 ---
 
 #### TASK 11: Django Admin Credential Review & Approval Workflow
+
 **Time: 2-2.5 hours**
 
 **Create `accounts/admin.py`:**
+
 ```python
 from django.contrib import admin
 from accounts.models import GraduateCounselor, LicensedTherapist
@@ -714,21 +765,21 @@ class GraduateCounselorAdmin(admin.ModelAdmin):
     list_filter = ('is_verified', 'created_at')
     search_fields = ('user__email', 'user__first_name')
     readonly_fields = ('created_at', 'degree_file_link')
-    
+
     fieldsets = (
         ('User', {'fields': ('user', 'created_at')}),
         ('Credentials', {'fields': ('degree_file_link', 'graduation_certificate')}),
         ('Profile', {'fields': ('university', 'specialization', 'years_experience')}),
         ('Approval', {'fields': ('is_verified', 'verification_date')}),
     )
-    
+
     def degree_file_link(self, obj):
         if obj.degree_file:
             return format_html(f'<a href="{obj.degree_file}" target="_blank">Download</a>')
         return "-"
-    
+
     actions = ['approve_counselors', 'reject_counselors']
-    
+
     def approve_counselors(self, request, queryset):
         for counselor in queryset:
             counselor.is_verified = True
@@ -741,6 +792,7 @@ admin.site.register(GraduateCounselor, GraduateCounselorAdmin)
 ```
 
 **Admin workflow:**
+
 1. Access `/admin/`
 2. See pending counselors
 3. Click → view credentials
@@ -748,6 +800,7 @@ admin.site.register(GraduateCounselor, GraduateCounselorAdmin)
 5. Email sent to counselor
 
 **Test:**
+
 - Create test counselor with credentials
 - Approve via admin
 - Check Mailhog for approval email
@@ -759,9 +812,11 @@ admin.site.register(GraduateCounselor, GraduateCounselorAdmin)
 ### WEEK 4-5: REACT NATIVE & TESTING
 
 #### TASK 12: React Native Scaffold with Expo & Auth Screens
+
 **Time: 3-4 hours**
 
 **Initialize:**
+
 ```bash
 cd /path/to/seeker
 npx create-expo-app mobile
@@ -770,6 +825,7 @@ npm install
 ```
 
 **Install dependencies:**
+
 ```bash
 npm install expo-router @react-navigation/bottom-tabs
 npm install @react-navigation/native react-navigation
@@ -780,6 +836,7 @@ npm install expo-secure-store  # Store JWT tokens securely
 ```
 
 **Directory structure:**
+
 ```
 mobile/
 ├── app/
@@ -803,11 +860,13 @@ mobile/
 ```
 
 **Auth flow:**
+
 1. Splash: Check SecureStore for JWT
 2. If JWT exists → validate with `/api/auth/me/` → Dashboard
 3. If no JWT → Request OTP screen
 
 **Request OTP screen:**
+
 ```jsx
 // Email input + role dropdown
 // POST /api/auth/register/request-otp/
@@ -815,6 +874,7 @@ mobile/
 ```
 
 **Verify OTP screen:**
+
 ```jsx
 // Email + OTP code inputs
 // POST /api/auth/register/verify-otp/
@@ -822,6 +882,7 @@ mobile/
 ```
 
 **Register screen (role-specific):**
+
 ```jsx
 // Password + name + emergency contacts (2 required)
 // POST /api/auth/register/[role]/
@@ -830,6 +891,7 @@ mobile/
 ```
 
 **Login screen:**
+
 ```jsx
 // Email + password
 // POST /api/auth/login/
@@ -838,6 +900,7 @@ mobile/
 ```
 
 **Test on physical device:**
+
 ```bash
 npm start  # or expo start
 # Scan QR with Expo Go
@@ -847,11 +910,13 @@ npm start  # or expo start
 ---
 
 #### TASK 13: DRF Spectacular — Swagger Docs Auto-Generation
+
 **Time: 1 hour**
 
 **Already installed in Task 4:** `drf-spectacular==0.27+`
 
 **Configure `settings.py`:**
+
 ```python
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -868,6 +933,7 @@ SPECTACULAR_SETTINGS = {
 ```
 
 **Add to `urls.py`:**
+
 ```python
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularAPIView
 
@@ -878,11 +944,12 @@ urlpatterns = [
 ```
 
 **Document endpoints:**
+
 ```python
 class LoginView(APIView):
     """
     POST /api/auth/login/
-    
+
     Login with email and password.
     Returns access and refresh tokens.
     """
@@ -891,6 +958,7 @@ class LoginView(APIView):
 ```
 
 **Verify:**
+
 - Visit `localhost:8000/api/docs/`
 - See all endpoints
 - "Try it out" button works
@@ -898,11 +966,13 @@ class LoginView(APIView):
 ---
 
 #### TASK 14: Base pytest Fixtures — Factories for All User Types
+
 **Time: 2-2.5 hours**
 
 **Already installed:** `factory-boy==3.3+`, `pytest-django==4.7+`
 
 **Create `accounts/tests/factories.py`:**
+
 ```python
 import factory
 from accounts.models import (
@@ -913,7 +983,7 @@ from accounts.models import (
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
-    
+
     email = factory.Sequence(lambda n: f'user{n}@test.com')
     first_name = factory.Faker('first_name')
     last_name = factory.Faker('last_name')
@@ -924,7 +994,7 @@ class UserFactory(factory.django.DjangoModelFactory):
 class EmergencyContactFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = EmergencyContact
-    
+
     user = factory.SubFactory(UserFactory)
     name = factory.Faker('name')
     phone = '9876543210'
@@ -933,7 +1003,7 @@ class EmergencyContactFactory(factory.django.DjangoModelFactory):
 class GraduateCounselorFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GraduateCounselor
-    
+
     user = factory.SubFactory(UserFactory, role=User.COUNSELOR)
     university = 'XYZ University'
     graduation_year = 2023
@@ -945,7 +1015,7 @@ class GraduateCounselorFactory(factory.django.DjangoModelFactory):
 class LicensedTherapistFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = LicensedTherapist
-    
+
     user = factory.SubFactory(UserFactory, role=User.THERAPIST)
     license_number = 'LIC-12345'
     modalities = ['CBT', 'DBT']
@@ -955,10 +1025,11 @@ class LicensedTherapistFactory(factory.django.DjangoModelFactory):
 ```
 
 **Create `accounts/tests/test_auth.py`:**
+
 ```python
 import pytest
 from accounts.tests.factories import (
-    UserFactory, GraduateCounselorFactory, 
+    UserFactory, GraduateCounselorFactory,
     EmergencyContactFactory
 )
 
@@ -968,21 +1039,21 @@ class TestOTPRegistration:
         # POST /api/auth/register/request-otp/
         # Verify: OTPToken created, email sent
         pass
-    
+
     def test_verify_otp_invalid(self):
         # Wrong OTP code
         # Verify: 400 error
         pass
-    
+
     def test_verify_otp_expired(self):
         # OTP past expiry
         # Verify: 400 error
         pass
-    
+
     def test_register_counselor_unverified(self):
         # Register → counselor created, is_verified=False
         pass
-    
+
     def test_counselor_cannot_access_queue_unverified(self):
         # Unverified counselor on protected endpoint
         # Verify: 403
@@ -995,12 +1066,12 @@ class TestLogin:
         # POST /api/auth/login/
         # Verify: access token returned
         pass
-    
+
     def test_login_invalid_password(self):
         # Wrong password
         # Verify: 401
         pass
-    
+
     def test_token_refresh(self):
         # POST /api/auth/refresh/
         # Verify: new access token issued
@@ -1012,7 +1083,7 @@ class TestPermissions:
         # User token on counselor endpoint
         # Verify: 403
         pass
-    
+
     def test_emergency_contacts_minimum_2(self):
         # Register with < 2 contacts
         # Verify: 400 error
@@ -1020,6 +1091,7 @@ class TestPermissions:
 ```
 
 **Run tests:**
+
 ```bash
 pytest accounts/tests/test_auth.py -v
 ```
@@ -1031,6 +1103,7 @@ pytest accounts/tests/test_auth.py -v
 **By end of Phase 1, verify:**
 
 ### ✅ Infrastructure
+
 - [ ] `docker-compose up --build` starts all 10 services cleanly
 - [ ] Django accessible: `localhost:8000`
 - [ ] PostgreSQL in TablePlus with ~25 tables
@@ -1040,6 +1113,7 @@ pytest accounts/tests/test_auth.py -v
 - [ ] Flower: `localhost:5555`
 
 ### ✅ Authentication
+
 - [ ] OTP request endpoint working
 - [ ] OTP verification working
 - [ ] All 3 roles can register
@@ -1048,18 +1122,21 @@ pytest accounts/tests/test_auth.py -v
 - [ ] Role boundaries enforced (403 errors work)
 
 ### ✅ Database
+
 - [ ] All ~25 models migrated
 - [ ] Emergency contact minimum 2 enforced
 - [ ] Foreign keys and constraints in place
 - [ ] OTPToken model working
 
 ### ✅ Admin
+
 - [ ] Django Admin: `/localhost:8000/admin/`
 - [ ] Counselor approval workflow E2E
 - [ ] Approval emails in Mailhog
 - [ ] Verified counselor can access counselor endpoints
 
 ### ✅ Mobile App
+
 - [ ] React Native running on physical device
 - [ ] All auth screens working
 - [ ] Request OTP → Verify OTP → Register → Login
@@ -1067,11 +1144,13 @@ pytest accounts/tests/test_auth.py -v
 - [ ] Token stored securely in SecureStore
 
 ### ✅ API Documentation
+
 - [ ] Swagger at `localhost:8000/api/docs/`
 - [ ] All endpoints documented
 - [ ] "Try it out" button functional
 
 ### ✅ Testing
+
 - [ ] Base factories created
 - [ ] At least 20 tests written
 - [ ] All tests passing locally
@@ -1081,6 +1160,7 @@ pytest accounts/tests/test_auth.py -v
 ## TESTING CHECKLIST
 
 ### OTP Tests
+
 - [ ] Request OTP → email sent
 - [ ] Verify OTP → success
 - [ ] Invalid OTP → 400
@@ -1088,6 +1168,7 @@ pytest accounts/tests/test_auth.py -v
 - [ ] Already verified OTP → cannot verify again
 
 ### Auth Tests
+
 - [ ] Login with valid credentials → 200 + tokens
 - [ ] Login with invalid password → 401
 - [ ] Login with non-existent email → 401
@@ -1096,18 +1177,21 @@ pytest accounts/tests/test_auth.py -v
 - [ ] Old token after logout → 401
 
 ### Permission Tests
+
 - [ ] User token on counselor endpoint → 403
 - [ ] Unverified counselor on counselor endpoint → 403
 - [ ] Verified counselor on counselor endpoint → 200
 - [ ] User token on user endpoint → 200
 
 ### Model Tests
+
 - [ ] Register with < 2 emergency contacts → 400
 - [ ] Register with 2+ emergency contacts → 200
 - [ ] Counselor files → MinIO ✓
 - [ ] Admin approve → email sent ✓
 
 ### Mobile Tests
+
 - [ ] Complete auth flow on iOS device
 - [ ] Complete auth flow on Android device
 - [ ] Zero crashes
@@ -1116,14 +1200,14 @@ pytest accounts/tests/test_auth.py -v
 
 ## TIMELINE
 
-| Week | Focus | Milestone |
-|---|---|---|
-| 1 | Environment (Tasks 1-3) | Docker running |
-| 2 | Django setup (Tasks 4-5) | Models migrated |
-| 3 | Auth + OTP (Tasks 6-9) | Registration working |
-| 4 | Admin + Files (Tasks 10-11) | Credential workflow E2E |
-| 5 | Mobile + Tests (Tasks 12-14) | App on device, tests pass |
-| 6-8 | Buffer, refinement, security audit | Phase 1 complete |
+| Week | Focus                              | Milestone                 |
+| ---- | ---------------------------------- | ------------------------- |
+| 1    | Environment (Tasks 1-3)            | Docker running            |
+| 2    | Django setup (Tasks 4-5)           | Models migrated           |
+| 3    | Auth + OTP (Tasks 6-9)             | Registration working      |
+| 4    | Admin + Files (Tasks 10-11)        | Credential workflow E2E   |
+| 5    | Mobile + Tests (Tasks 12-14)       | App on device, tests pass |
+| 6-8  | Buffer, refinement, security audit | Phase 1 complete          |
 
 ---
 
@@ -1161,11 +1245,13 @@ pytest accounts/tests/test_auth.py -v
 ## Email Service Credentials NEEDED
 
 **You must provide (via .env.local):**
+
 - EMAIL_SERVICE: brevo or sendgrid
 - API credentials for chosen service
 - Sender email address
 
 **Currently in .env.local as placeholders:**
+
 ```env
 EMAIL_SERVICE=brevo
 BREVO_API_KEY=placeholder_add_actual_key
