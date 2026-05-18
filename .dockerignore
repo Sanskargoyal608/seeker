@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Django
+*.sqlite3
+staticfiles/
+mediafiles/
+
+# Environment files (never in image)
+.env
+.env.local
+.env.local.example
+
+# Node / Next.js (not needed in Python image)
+node_modules/
+.next/
+mobile/node_modules/
+
+# Expo / React Native
+.expo/
+mobile/.expo/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+
+# Docs
+*.md
+*.docx

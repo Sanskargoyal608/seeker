@@ -1,8 +1,7 @@
+# accounts/admin.py
 from django.contrib import admin
-from .models import PlaceholderUser
+from .models import User
 
-
-@admin.register(PlaceholderUser)
-class PlaceholderUserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'first_name', 'last_name',
-                    'is_active', 'created_at')
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ('email', 'first_name', 'last_name', 'role', 'is_active', 'created_at')

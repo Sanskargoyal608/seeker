@@ -1,19 +1,26 @@
-from django.db import models
+# accounts/models.py
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
+class User(AbstractUser):
+    # Define roles
+    GENERAL_USER = 'GENERAL_USER'
+    COUNSELOR = 'COUNSELOR'
+    THERAPIST = 'THERAPIST'
+    
+    ROLE_CHOICES = [
+        (GENERAL_USER, 'General User'),
+        (COUNSELOR, 'Counselor'),
+        (THERAPIST, 'Therapist'),
+    ]
 
-class PlaceholderUser(AbstractUser):
-    """
-    Custom User model for Seeker platform.
-    Placeholder for Phase 1, will be extended with domain-specific fields in later phases.
-    Inherits all required User fields from AbstractUser.
-    """
     email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=GENERAL_USER)
+    phone = models.CharField(max_length=20, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.email

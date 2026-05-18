@@ -1,41 +1,30 @@
 services:
   django:
-    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: seeker-app:latest          # tag the built image so celery/beat can reuse it
     container_name: seeker-django
-    working_dir: /app
     env_file:
       - .env.local
     environment:
-      PYTHONUNBUFFERED: "1"
       DJANGO_SETTINGS_MODULE: config.settings
     volumes:
-      - .:/app
+      - .:/app                         # mounts source for live code edits
     ports:
       - "8000:8000"
-    command: >
-      sh -c "
-        if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi;
-        if [ -f manage.py ]; then
-          daphne -b 0.0.0.0 -p 8000 config.asgi:application;
-        else
-          python -m http.server 8000;
-        fi
-      "
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8000'', timeout=2)"',
-        ]
+      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:8000/api/accounts/health/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 30s
     restart: unless-stopped
     networks:
       - seeker-network
@@ -78,25 +67,15 @@ services:
       - seeker-network
 
   celery:
-    image: python:3.11-slim
+    image: seeker-app:latest             # reuses the image built by the django service
     container_name: seeker-celery
-    working_dir: /app
     env_file:
       - .env.local
     environment:
-      PYTHONUNBUFFERED: "1"
       DJANGO_SETTINGS_MODULE: config.settings
     volumes:
       - .:/app
-    command: >
-      sh -c "
-        if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi;
-        if [ -f manage.py ]; then
-          celery -A config worker --loglevel=info;
-        else
-          python -c 'import time; print(\"Celery placeholder running until Django is scaffolded\", flush=True); time.sleep(31536000)';
-        fi
-      "
+    command: celery -A config worker --loglevel=info
     depends_on:
       django:
         condition: service_healthy
@@ -105,7 +84,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", 'python -c "print(''ok'')"']
+      test: ["CMD-SHELL", "python -c \"print('ok')\""]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -114,25 +93,15 @@ services:
       - seeker-network
 
   celery-beat:
-    image: python:3.11-slim
+    image: seeker-app:latest             # reuses the image built by the django service
     container_name: seeker-celery-beat
-    working_dir: /app
     env_file:
       - .env.local
     environment:
-      PYTHONUNBUFFERED: "1"
       DJANGO_SETTINGS_MODULE: config.settings
     volumes:
       - .:/app
-    command: >
-      sh -c "
-        if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi;
-        if [ -f manage.py ]; then
-          celery -A config beat --loglevel=info;
-        else
-          python -c 'import time; print(\"Celery beat placeholder running until Django is scaffolded\", flush=True); time.sleep(31536000)';
-        fi
-      "
+    command: celery -A config beat --loglevel=info
     depends_on:
       django:
         condition: service_healthy
@@ -141,7 +110,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", 'python -c "print(''ok'')"']
+      test: ["CMD-SHELL", "python -c \"print('ok')\""]
       interval: 30s
       timeout: 5s
       retries: 5
