@@ -1,0 +1,13 @@
+.env.local
+.env
+*.pyc
+__pycache__/
+.DS_Store
+node_modules/
+.expo/
+.venv/
+venv/
+.idea/
+.vscode/
+*.sqlite3
+.pytest_cache/
