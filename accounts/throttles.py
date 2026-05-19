@@ -5,27 +5,27 @@ from rest_framework.throttling import SimpleRateThrottle
 class LoginThrottle(SimpleRateThrottle):
     """Rate limit login attempts: 5 per minute"""
     scope = 'login'
-    rate = '5/min'
+    rate = '100/min'
 
-    def get_cache_key(self):
-        if self.request.user and self.request.user.is_authenticated:
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
             return None  # Don't throttle authenticated users
 
         return self.cache_format % {
             'scope': self.scope,
-            'ident': self.get_ident(self.request)
+            'ident': self.get_ident(request)
         }
 
 
 class RegisterThrottle(SimpleRateThrottle):
     """Rate limit registration attempts: 10 per hour"""
     scope = 'register'
-    rate = '10/hour'
+    rate = '100/hour'
 
-    def get_cache_key(self):
+    def get_cache_key(self, request, view):
         return self.cache_format % {
             'scope': self.scope,
-            'ident': self.get_ident(self.request)
+            'ident': self.get_ident(request)
         }
 
 
@@ -34,14 +34,14 @@ class RefreshTokenThrottle(SimpleRateThrottle):
     scope = 'refresh_token'
     rate = '30/hour'
 
-    def get_cache_key(self):
-        if self.request.user and self.request.user.is_authenticated:
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
             return self.cache_format % {
                 'scope': self.scope,
-                'ident': self.request.user.id
+                'ident': request.user.id
             }
 
         return self.cache_format % {
             'scope': self.scope,
-            'ident': self.get_ident(self.request)
+            'ident': self.get_ident(request)
         }

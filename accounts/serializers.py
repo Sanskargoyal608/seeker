@@ -50,10 +50,8 @@ class EmergencyContactSerializer(serializers.ModelSerializer):
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """Full user profile including role-specific data"""
-    counselor_profile = CounselorProfileSerializer(
-        source='counselor_profile', read_only=True)
-    therapist_profile = TherapistProfileSerializer(
-        source='therapist_profile', read_only=True)
+    counselor_profile = CounselorProfileSerializer(read_only=True)
+    therapist_profile = TherapistProfileSerializer(read_only=True)
     emergency_contacts = EmergencyContactSerializer(many=True, read_only=True)
 
     class Meta:
@@ -116,3 +114,139 @@ class RefreshTokenSerializer(serializers.Serializer):
 class LogoutSerializer(serializers.Serializer):
     """Serializer for logout endpoint"""
     refresh = serializers.CharField()
+
+
+# ============= REGISTRATION SERIALIZERS =============
+
+class RequestOTPSerializer(serializers.Serializer):
+    """Serializer for requesting OTP"""
+    email = serializers.EmailField()
+    role = serializers.ChoiceField(choices=['GENERAL_USER', 'COUNSELOR', 'THERAPIST'])
+
+    def validate_email(self, value):
+        # Check if user already exists
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already registered.")
+        return value
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    """Serializer for verifying OTP"""
+    email = serializers.EmailField()
+    otp_code = serializers.CharField(max_length=6, min_length=6)
+
+    def validate_otp_code(self, value):
+        # Ensure OTP is numeric
+        if not value.isdigit():
+            raise serializers.ValidationError("OTP must be numeric.")
+        return value
+
+
+class RegisterGeneralUserSerializer(serializers.Serializer):
+    """Serializer for registering a general user"""
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+    phone = serializers.CharField(max_length=20, required=False)
+    emergency_contacts = EmergencyContactSerializer(many=True)
+
+    def validate(self, data):
+        # Password confirmation
+        if data.get('password') != data.get('password_confirm'):
+            raise serializers.ValidationError({
+                'password_confirm': 'Passwords do not match.'
+            })
+
+        # Email verified check (handled by view)
+        # Username uniqueness
+        if User.objects.filter(username=data.get('username')).exists():
+            raise serializers.ValidationError({
+                'username': 'This username is already taken.'
+            })
+
+        return data
+
+    def validate_emergency_contacts(self, value):
+        if len(value) < 2:
+            raise serializers.ValidationError(
+                "Minimum 2 emergency contacts are required."
+            )
+        return value
+
+
+class RegisterCounselorSerializer(serializers.Serializer):
+    """Serializer for registering a graduate counselor"""
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    phone = serializers.CharField(max_length=20, required=False)
+
+    # Counselor specific
+    graduation_year = serializers.IntegerField(min_value=1900, max_value=2100)
+    university = serializers.CharField(max_length=200)
+    specialization = serializers.CharField(max_length=200)
+    years_experience = serializers.IntegerField(min_value=0)
+    bio = serializers.CharField(required=False)
+    per_minute_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
+
+    def validate(self, data):
+        if data.get('password') != data.get('password_confirm'):
+            raise serializers.ValidationError({
+                'password_confirm': 'Passwords do not match.'
+            })
+
+        if User.objects.filter(username=data.get('username')).exists():
+            raise serializers.ValidationError({
+                'username': 'This username is already taken.'
+            })
+
+        if User.objects.filter(email=data.get('email')).exists():
+            raise serializers.ValidationError({
+                'email': 'This email is already registered.'
+            })
+
+        return data
+
+
+class RegisterTherapistSerializer(serializers.Serializer):
+    """Serializer for registering a licensed therapist"""
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    phone = serializers.CharField(max_length=20, required=False)
+
+    # Therapist specific
+    license_number = serializers.CharField(max_length=100)
+    modalities = serializers.ListField(child=serializers.CharField())
+    languages = serializers.ListField(child=serializers.CharField())
+    bio = serializers.CharField(required=False)
+    per_minute_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
+    per_session_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
+    two_factor_phone = serializers.CharField(max_length=20, required=False)
+
+    def validate(self, data):
+        if data.get('password') != data.get('password_confirm'):
+            raise serializers.ValidationError({
+                'password_confirm': 'Passwords do not match.'
+            })
+
+        if User.objects.filter(username=data.get('username')).exists():
+            raise serializers.ValidationError({
+                'username': 'This username is already taken.'
+            })
+
+        if User.objects.filter(email=data.get('email')).exists():
+            raise serializers.ValidationError({
+                'email': 'This email is already registered.'
+            })
+
+        return data
