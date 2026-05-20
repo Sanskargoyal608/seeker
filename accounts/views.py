@@ -14,6 +14,7 @@ from accounts.serializers import (
 from accounts.throttles import LoginThrottle, RefreshTokenThrottle, RegisterThrottle
 from accounts.token_service import DeviceTokenService
 from accounts.otp_service import OTPService
+from accounts.services.file_upload import FileUploadService
 from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact
 import accounts.throttles as throttles
 
@@ -289,6 +290,7 @@ class RegisterCounselorView(APIView):
     Complete registration for a graduate counselor.
     Requires verified email via OTP.
     Created account will have is_verified=False until admin approval.
+    Supports optional file uploads (degree_file, graduation_certificate) to MinIO.
     """
     permission_classes = [AllowAny]
     throttle_classes = [throttles.RegisterThrottle]
@@ -322,6 +324,23 @@ class RegisterCounselorView(APIView):
                 is_active=True,
             )
 
+            # Handle file uploads to MinIO if provided
+            file_paths = {}
+            if 'degree_file' in request.FILES or 'graduation_certificate' in request.FILES:
+                upload_service = FileUploadService()
+
+                if 'degree_file' in request.FILES:
+                    degree_file = request.FILES['degree_file']
+                    file_paths['degree_file'] = upload_service.upload_file(
+                        degree_file, 'counselor_credentials', degree_file.name
+                    )
+
+                if 'graduation_certificate' in request.FILES:
+                    cert_file = request.FILES['graduation_certificate']
+                    file_paths['graduation_certificate'] = upload_service.upload_file(
+                        cert_file, 'counselor_credentials', cert_file.name
+                    )
+
             # Create counselor profile (is_verified=False by default)
             GraduateCounselor.objects.create(
                 user=user,
@@ -331,6 +350,8 @@ class RegisterCounselorView(APIView):
                 years_experience=serializer.validated_data['years_experience'],
                 bio=serializer.validated_data.get('bio', ''),
                 per_minute_rate=serializer.validated_data['per_minute_rate'],
+                degree_file=file_paths.get('degree_file', ''),
+                graduation_certificate=file_paths.get('graduation_certificate', ''),
                 is_verified=False,  # Requires admin approval
             )
 
@@ -360,6 +381,7 @@ class RegisterTherapistView(APIView):
     Complete registration for a licensed therapist.
     Requires verified email via OTP.
     Created account will have is_verified=False until admin approval.
+    Supports optional file upload (license_file) to MinIO.
     """
     permission_classes = [AllowAny]
     throttle_classes = [throttles.RegisterThrottle]
@@ -393,6 +415,15 @@ class RegisterTherapistView(APIView):
                 is_active=True,
             )
 
+            # Handle license file upload to MinIO if provided
+            license_file_path = ''
+            if 'license_file' in request.FILES:
+                upload_service = FileUploadService()
+                license_file = request.FILES['license_file']
+                license_file_path = upload_service.upload_file(
+                    license_file, 'therapist_credentials', license_file.name
+                )
+
             # Create therapist profile (is_verified=False by default)
             LicensedTherapist.objects.create(
                 user=user,
@@ -402,6 +433,7 @@ class RegisterTherapistView(APIView):
                 bio=serializer.validated_data.get('bio', ''),
                 per_minute_rate=serializer.validated_data['per_minute_rate'],
                 per_session_rate=serializer.validated_data['per_session_rate'],
+                license_file=license_file_path,
                 two_factor_phone=serializer.validated_data.get('two_factor_phone', ''),
                 is_verified=False,  # Requires admin approval
             )

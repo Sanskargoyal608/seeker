@@ -195,6 +195,10 @@ class RegisterCounselorSerializer(serializers.Serializer):
     bio = serializers.CharField(required=False)
     per_minute_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
 
+    # File uploads
+    degree_file = serializers.FileField(required=False)
+    graduation_certificate = serializers.FileField(required=False)
+
     def validate(self, data):
         if data.get('password') != data.get('password_confirm'):
             raise serializers.ValidationError({
@@ -232,6 +236,9 @@ class RegisterTherapistSerializer(serializers.Serializer):
     per_minute_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     per_session_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     two_factor_phone = serializers.CharField(max_length=20, required=False)
+
+    # File uploads
+    license_file = serializers.FileField(required=False)
 
     def validate(self, data):
         if data.get('password') != data.get('password_confirm'):
