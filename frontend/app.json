@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Seeker",
+    "slug": "seeker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.seeker.app"
+    },
+    "android": {
+      "package": "com.seeker.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "scheme": "seeker",
+    "extra": {
+      "API_BASE_URL": "http://192.168.31.175:8000",
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

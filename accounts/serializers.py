@@ -148,9 +148,9 @@ class RegisterGeneralUserSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
-    first_name = serializers.CharField(max_length=150, required=False)
-    last_name = serializers.CharField(max_length=150, required=False)
-    phone = serializers.CharField(max_length=20, required=False)
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
     emergency_contacts = EmergencyContactSerializer(many=True)
 
     def validate(self, data):
@@ -184,15 +184,15 @@ class RegisterCounselorSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
     first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
-    phone = serializers.CharField(max_length=20, required=False)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     # Counselor specific
     graduation_year = serializers.IntegerField(min_value=1900, max_value=2100)
     university = serializers.CharField(max_length=200)
     specialization = serializers.CharField(max_length=200)
     years_experience = serializers.IntegerField(min_value=0)
-    bio = serializers.CharField(required=False)
+    bio = serializers.CharField(required=False, allow_blank=True)
     per_minute_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
 
     # File uploads
@@ -225,17 +225,17 @@ class RegisterTherapistSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
     first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
-    phone = serializers.CharField(max_length=20, required=False)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     # Therapist specific
     license_number = serializers.CharField(max_length=100)
     modalities = serializers.ListField(child=serializers.CharField())
     languages = serializers.ListField(child=serializers.CharField())
-    bio = serializers.CharField(required=False)
+    bio = serializers.CharField(required=False, allow_blank=True)
     per_minute_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     per_session_rate = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
-    two_factor_phone = serializers.CharField(max_length=20, required=False)
+    two_factor_phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     # File uploads
     license_file = serializers.FileField(required=False)

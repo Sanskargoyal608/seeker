@@ -95,15 +95,11 @@ class OTPService:
         Returns:
             bool: True if email has valid verified OTP, False otherwise
         """
-        try:
-            OTPToken.objects.get(
-                email=email,
-                is_verified=True,
-                expires_at__gt=timezone.now()
-            )
-            return True
-        except OTPToken.DoesNotExist:
-            return False
+        return OTPToken.objects.filter(
+            email=email,
+            is_verified=True,
+            expires_at__gt=timezone.now()
+        ).exists()
 
     @classmethod
     def send_otp_email(cls, email: str, otp_code: str, user_name: str = None) -> bool:
