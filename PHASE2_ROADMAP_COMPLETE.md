@@ -344,7 +344,7 @@ Optional Parallelization (Sprints 4, 6, 7, 8 start after Sprint 2 done)
 ### Sprint 2 Success Criteria
 
 - [ ] `session.status` defaults to `WAITING`
-- [ ] Valid transitions (`WAITING → MATCHED → ACTIVE → PAID → ENDED`) all pass
+- [ ] Valid transitions (`WAITING → MATCHED → ACTIVE → PAYMENT_PENDING → PAID → ENDED`) all pass
 - [ ] Invalid transitions (e.g., `ENDED → MATCHED`) raise ValidationError
 - [ ] Django Admin shows current status with readable label
 - [ ] All pytest cases pass

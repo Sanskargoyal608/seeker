@@ -84,7 +84,7 @@ Seeker's core innovation is its AI-powered triage engine — a 4-question conver
 |---|---|
 | **Infrastructure** | Local Docker — single `docker-compose up` starts everything |
 | **Session Modes** | Text chat only (WebSocket) |
-| **AI Triage** | Claude API — 4-question intake, routing to counselor or therapist |
+| **AI Triage** | Gemini API — 4-question intake, routing to counselor or therapist |
 | **Crisis Detection** | Keyword detection running parallel to triage — immediate admin alert |
 | **Real-time Chat** | Django Channels + WebSockets |
 | **Auth** | JWT for all 3 roles; Google OAuth2; 2FA for therapists |
@@ -144,7 +144,7 @@ Seeker's core innovation is its AI-powered triage engine — a 4-question conver
 - Based on responses, AI triages into:
   - Direct connection to an available graduate counselor (peer support)
   - Recommendation to a licensed therapist (professional help needed)
-- Powered by **Claude API** — analyzing sentiment, urgency, and topic category.
+- Powered by **Gemini API** — analyzing sentiment, urgency, and topic category.
 - **Crisis keyword detection** runs in parallel — critical language immediately flags the session, notifies admin via email, and surfaces the escalation pathway.
 
 #### 3.1.2 Freemium Session Gateway
@@ -317,7 +317,7 @@ All services run locally via Docker Compose. **Zero cloud spend during MVP.**
 | **Task Queue** | Celery + Redis | Async tasks: reminders, payout processing, notifications |
 | **Primary Database** | PostgreSQL | All relational data: users, sessions, profiles, bookings, feedback |
 | **Cache & Channel Layer** | Redis | WebSocket channel layer, real-time presence (online/offline) |
-| **AI Engine** | Claude API (Anthropic) | 4-question triage, crisis keyword detection |
+| **AI Engine** | Gemini API (Google) | 4-question triage, crisis keyword detection |
 | **Search** | Typesense (Docker) | Therapist/counselor discovery and filtering |
 | **File Storage** | MinIO (Docker) | Profile photos, credential uploads — local S3-compatible |
 | **Payments** | Razorpay (Test Mode) | 5-min free gateway, in-chat payment, weekly payouts |
@@ -342,7 +342,7 @@ All services run locally via Docker Compose. **Zero cloud spend during MVP.**
 | Kubernetes | Docker Compose | Kubernetes is for 1000+ container scale |
 | Elasticsearch | Typesense (Docker) | Simpler, faster to set up, great for small datasets |
 | WebRTC / Agora / mediasoup | *(Post-MVP)* | Text chat only |
-| Hugging Face + PEFT | *(Post-MVP)* | Claude API handles all AI |
+| Hugging Face + PEFT | *(Post-MVP)* | Gemini API handles all AI |
 | Datadog / Sentry | Flower + Django logs | Sufficient for local testing |
 | Mixpanel / Amplitude | Manual observation | 50 users don't need an analytics platform |
 | Stripe | *(Removed)* | Razorpay test mode only |
@@ -501,7 +501,7 @@ helpline/
 1. Install and configure Django Channels with Redis channel layer — verify raw WebSocket handshake in Postman before any chat logic
 2. `ChatConsumer` WebSocket handler: send message, receive message, typing indicator, read receipt, user presence (online/offline in Redis)
 3. Session state machine as explicit model field: `WAITING → MATCHED → ACTIVE → PAYMENT_PENDING → PAID → ENDED` — invalid transitions rejected at API level
-4. Claude API triage module: system prompt engineered to ask 4 questions sequentially, parse final response for category (`peer_support / licensed_therapist`) and urgency (`low / medium / high / critical`)
+4. Gemini API triage module: system prompt engineered to ask 4 questions sequentially, parse final response for category (`peer_support / licensed_therapist`) and urgency (`low / medium / high / critical`)
 5. Crisis keyword detection: runs parallel to triage — critical language at any point → session flagged in DB → admin notified via Mailhog → escalation pathway surfaced in UI
 6. Triage routing: after 4th answer, route to correct pathway — display matched counselor info or 'Connecting...'
 7. **5-minute session timer:** server-side countdown stored in Redis — cannot be tampered by client. Broadcast remaining time via WebSocket every 30 seconds.
@@ -669,8 +669,8 @@ SECRET_KEY=your-local-secret-key-here
 DATABASE_URL=postgres://seeker:seekerpass@postgres:5432/seekerdb
 REDIS_URL=redis://redis:6379/0
 
-# Claude API
-ANTHROPIC_API_KEY=your-claude-api-key
+# Gemini API
+GEMINI_API_KEY=your-gemini-api-key
 
 # MinIO (local S3)
 MINIO_ENDPOINT=minio:9000
@@ -764,7 +764,7 @@ These are not abandoned — just deferred until the core loop is proven with rea
 
 - **Gamification** — Wellness points, activity completion, streaks, leaderboard, session minute redemption
 - **Audio Sessions** — Browser-native WebRTC (no Agora needed initially)
-- **AI Feedback Analysis** — FeedbackTheme extraction via Claude API, weekly Celery analysis task
+- **AI Feedback Analysis** — FeedbackTheme extraction via Gemini API, weekly Celery analysis task
 - **AI Session Summaries** — Auto-generated post-session bullet points
 - **Dynamic Intake Form Builder** — Therapist-configurable JSON forms with shareable token URLs
 - **Counselor Peer Community** — Moderated forum for graduate counselors
@@ -788,7 +788,7 @@ After validating with real users, move to a simple production setup — not AWS,
 
 ### Scale Phase — Month 12+
 
-- ML Fine-Tuning (Hugging Face + PEFT) for domain-specific mental health NLP
+- ML Fine-Tuning (Hugging Face + PEFT) for domain-specific mental health NLP — Gemini API for all AI in MVP
 - Voice-First Triage
 - Insurance Integration for licensed therapists
 - B2B Corporate Wellness plans
