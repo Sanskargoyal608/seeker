@@ -11,8 +11,8 @@
 | Sprint | Week | Title                 | Status    |
 | ------ | ---- | --------------------- | --------- |
 | 1      | 1    | WebSocket Foundation  | ✅ DONE   |
-| 2      | 2    | Session State Machine | Pending   |
-| 3      | 3    | Gemini AI Triage      | Pending   |
+| 2      | 2    | Session State Machine | ✅ DONE   |
+| 3      | 3    | Gemini AI Triage      | ✅ DONE   |
 | 4      | 4    | Crisis Detection      | Pending   |
 | 5      | 5    | Payment & Timer       | Pending   |
 | 6      | 6    | Counselor Queue       | Pending   |
@@ -46,3 +46,40 @@
 - [x] Two connections with same session_id receive all messages
 - [x] Logs show connection establishment 
 - [x] Code committed to Git (Simulated)
+
+## SPRINT 2: SESSION STATE MACHINE (Completed)
+
+**Objective:** Implement the state machine dictating the lifecycle of a `Session` (e.g., WAITING, CONNECTED, PAUSED, ENDED), with strict transition rules.
+
+### Deliverables Audited
+- ✅ `core/state_machine.py` — `SessionStateManager` implemented with transition rules and logic to update duration/timestamps.
+- ✅ `core/models.py` — Models integrated with state logic via manager functions.
+- ✅ `core/tests/test_session_states.py` — Comprehensive unit tests for state transitions, duration, and invalid actions.
+
+### Success Criteria Verified
+- [x] State transitions follow defined rules.
+- [x] Automatic duration calculation triggers on ENDED state.
+- [x] Invalid state transitions properly raise exceptions.
+- [x] All 11 unit tests for `test_session_states.py` execute and pass successfully.
+
+---
+
+## SPRINT 3: GEMINI AI TRIAGE (Completed)
+
+**Objective:** Implement the conversational AI triage system to chat empathetically with users and extract their intake details in the background.
+
+### Deliverables Audited
+- ✅ `requirements.txt` — Added `google-generativeai`.
+- ✅ `core/models.py` — Created `TriageSession` and `TriageMessage` models.
+- ✅ `core/services/triage_service.py` — Implemented `TriageService` with Gemini prompt injection to parse conversational text into structured form state.
+- ✅ `core/views.py` — Implemented `TriageStartView` and `TriageRespondView`.
+- ✅ `core/urls.py` — Configured routing for the triage endpoints.
+- ✅ `core/tests/test_triage.py` — Built test suite to mock the Gemini responses, handle DRF auth securely, and test conversation progression up to auto-creating a true `Session` and `SessionNote` upon completion.
+
+### Success Criteria Verified
+- [x] Docker image rebuilt successfully with `google-generativeai`.
+- [x] Migrations created and run for Triage models.
+- [x] Triage can initiate and respond via REST endpoints.
+- [x] The `TriageService` saves user and AI messages to the DB successfully.
+- [x] `Session` and private `SessionNote` are auto-created when Gemini flags the intake as complete.
+- [x] Unit tests passing successfully with no DB/Network errors.

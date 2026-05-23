@@ -199,3 +199,41 @@ class PayoutRecord(models.Model):
     class Meta:
         verbose_name = 'Payout Record'
         verbose_name_plural = 'Payout Records'
+
+
+class TriageSession(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='triage_sessions'
+    )
+    is_complete = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Form state
+    emotional_state = models.TextField(blank=True, null=True)
+    primary_concern = models.TextField(blank=True, null=True)
+    support_preference = models.TextField(blank=True, null=True)
+    urgency = models.CharField(max_length=20, blank=True, null=True)
+    
+    # Outcomes
+    routing_decision = models.CharField(max_length=50, blank=True, null=True)
+    resulting_session = models.OneToOneField(
+        Session, on_delete=models.SET_NULL, null=True, blank=True, related_name='triage_source'
+    )
+
+    def __str__(self):
+        return f"TriageSession {self.pk} for User {self.user_id}"
+
+
+class TriageMessage(models.Model):
+    triage_session = models.ForeignKey(
+        TriageSession, on_delete=models.CASCADE, related_name='messages'
+    )
+    role = models.CharField(max_length=10) # 'user' or 'model'
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message {self.pk} [{self.role}]"

@@ -89,3 +89,41 @@ class GeneralUserDashboardView(APIView):
             'role': request.user.role,
             'name': f'{request.user.first_name} {request.user.last_name}',
         }, status=status.HTTP_200_OK)
+
+
+from .serializers import TriageSessionSerializer, TriageRespondRequestSerializer
+from .services.triage_service import TriageService
+
+class TriageStartView(APIView):
+    """Starts a new AI triage conversation."""
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={201: TriageSessionSerializer})
+    def post(self, request):
+        service = TriageService()
+        triage_session = service.start_triage(request.user)
+        serializer = TriageSessionSerializer(triage_session)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class TriageRespondView(APIView):
+    """Processes user response in the AI triage conversation."""
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=TriageRespondRequestSerializer,
+        responses={200: TriageSessionSerializer}
+    )
+    def post(self, request):
+        req_serializer = TriageRespondRequestSerializer(data=request.data)
+        if not req_serializer.is_valid():
+            return Response(req_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        triage_session_id = req_serializer.validated_data['triage_session_id']
+        user_response = req_serializer.validated_data['response']
+        
+        service = TriageService()
+        triage_session = service.process_response(triage_session_id, user_response)
+        
+        serializer = TriageSessionSerializer(triage_session)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+

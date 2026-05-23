@@ -25,3 +25,4 @@ brevo-python>=2.3
 whitenoise>=6.0
 cryptography>=42.0
 python-dotenv>=1.0
+google-generativeai>=0.8
