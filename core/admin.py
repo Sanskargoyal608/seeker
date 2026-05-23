@@ -1,6 +1,10 @@
 # core/admin.py
 from django.contrib import admin
-from .models import Session, ChatMessage, SessionNote, EscalationEvent, EarningsRecord, PayoutRecord
+from .models import (
+    Session, ChatMessage, SessionNote, 
+    EscalationEvent, EarningsRecord, PayoutRecord,
+    CrisisKeyword, CrisisAlert, EmergencyContact, SessionTimer
+)
 
 
 @admin.register(Session)
@@ -43,3 +47,36 @@ class PayoutRecordAdmin(admin.ModelAdmin):
     list_display = ('id', 'status', 'counselor', 'therapist', 'total_amount', 'payout_date', 'created_at')
     list_filter = ('status', 'created_at', 'payout_date')
     search_fields = ('counselor__user__email', 'therapist__user__email')
+
+from .models import TriageSession, TriageMessage
+
+@admin.register(TriageSession)
+class TriageSessionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'is_complete', 'routing_decision', 'created_at')
+
+@admin.register(TriageMessage)
+class TriageMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'triage_session', 'role', 'created_at')
+
+@admin.register(CrisisKeyword)
+class CrisisKeywordAdmin(admin.ModelAdmin):
+    list_display = ('keyword', 'category', 'created_at')
+    search_fields = ('keyword',)
+    list_filter = ('category',)
+
+@admin.register(CrisisAlert)
+class CrisisAlertAdmin(admin.ModelAdmin):
+    list_display = ('id', 'session', 'matched_keyword', 'is_resolved', 'created_at')
+    list_filter = ('is_resolved',)
+    search_fields = ('message_content',)
+
+@admin.register(EmergencyContact)
+class EmergencyContactAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+
+@admin.register(SessionTimer)
+class SessionTimerAdmin(admin.ModelAdmin):
+    list_display = ('id', 'session', 'start_time', 'end_time', 'is_paid')
+    list_filter = ('is_paid',)
+

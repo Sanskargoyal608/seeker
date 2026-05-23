@@ -8,4 +8,5 @@ urlpatterns = [
     path('user/dashboard/', views.GeneralUserDashboardView.as_view(), name='user-dashboard'),
     path('triage/start/', views.TriageStartView.as_view(), name='triage-start'),
     path('triage/respond/', views.TriageRespondView.as_view(), name='triage-respond'),
+    path('sessions/<int:session_id>/verify-payment/', views.VerifyPaymentView.as_view(), name='verify-payment'),
 ]

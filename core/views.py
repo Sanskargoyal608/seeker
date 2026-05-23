@@ -127,3 +127,55 @@ class TriageRespondView(APIView):
         serializer = TriageSessionSerializer(triage_session)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class VerifyPaymentView(APIView):
+    """
+    Mock payment endpoint for Sprint 5.
+    Marks the session as PAID and delivers any held messages.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id):
+        from .models import Session, SessionTimer, ChatMessage
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        try:
+            session = Session.objects.get(id=session_id)
+            
+            # 1. Update session status
+            if session.status == Session.PAYMENT_PENDING:
+                session.status = Session.PAID
+                session.save(update_fields=['status'])
+                
+            # 2. Update timer
+            from django.utils import timezone
+            from datetime import timedelta
+            timer, _ = SessionTimer.objects.get_or_create(
+                session=session,
+                defaults={'end_time': timezone.now() + timedelta(minutes=15)}
+            )
+            timer.is_paid = True
+            timer.save(update_fields=['is_paid'])
+            
+            # 3. Release held messages
+            channel_layer = get_channel_layer()
+            room_group_name = f'chat_{session.id}'
+            
+            held_messages = ChatMessage.objects.filter(session=session, is_held_for_payment=True)
+            for msg in held_messages:
+                msg.is_held_for_payment = False
+                msg.save(update_fields=['is_held_for_payment'])
+                
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {
+                        'type': 'chat.message',
+                        'message': msg.message_text,
+                        'sender': 'Other'
+                    }
+                )
+                
+            return Response({'status': 'PAID', 'message': 'Payment verified and session resumed'}, status=status.HTTP_200_OK)
+        except Session.DoesNotExist:
+            return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
+
