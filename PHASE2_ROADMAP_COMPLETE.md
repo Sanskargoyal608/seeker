@@ -707,8 +707,8 @@ Response: 200 OK (session data only, no notes field)
 | Escalation Model         | Backend  | 1 day  | EscalationEvent: counselor → therapist; urgency; reason               |
 | Escalation Notifications | Backend  | 1 day  | FCM + email to therapist on escalation                                |
 | Backchannel Room         | Backend  | 1 day  | Private WebSocket room for counselor + therapist (user cannot access) |
-| React Native Notes Panel | Frontend | 1 day  | Split-panel UI; collapsible notes (hidden from user)                  |
-| React Native Escalation  | Frontend | 1 day  | Escalate button; reason form; confirmation                            |
+| React Native Notes Panel | Frontend | 1 day  | Split-panel UI; collapsible notes (hidden from user) (Deferred to later) |
+| React Native Escalation  | Frontend | 1 day  | Escalate button; reason form; confirmation (Deferred to later)           |
 | Security Tests           | Testing  | 1 day  | 50+ attempts to access notes via different paths → all 403            |
 
 ### Sprint 7 Deliverables

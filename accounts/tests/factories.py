@@ -8,13 +8,12 @@ class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
         django_get_or_create = ('email',)
-        skip_postgeneration_save = True
 
     username = factory.Sequence(lambda n: f'user{n}')
     email = factory.Sequence(lambda n: f'user{n}@example.com')
     first_name = factory.Faker('first_name')
     last_name = factory.Faker('last_name')
-    phone = factory.Faker('phone_number')
+    phone = factory.Sequence(lambda n: f'555123{n:04d}')
     role = User.GENERAL_USER
     password = factory.PostGenerationMethodCall('set_password', 'testpass123')
 
@@ -55,7 +54,7 @@ class EmergencyContactFactory(factory.django.DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     name = factory.Faker('name')
-    phone = factory.Faker('phone_number')
+    phone = factory.Sequence(lambda n: f'555999{n:04d}')
     relationship = factory.Iterator(['Family', 'Friend', 'Partner'])
 
 

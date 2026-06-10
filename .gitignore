@@ -11,3 +11,4 @@ venv/
 .vscode/
 *.sqlite3
 .pytest_cache/
+firebase-credentials.json

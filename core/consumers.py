@@ -112,6 +112,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender': sender
         }))
 
+    # Receive system alert from room group
+    async def system_alert(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'type': 'system.alert',
+            'message': message
+        }))
+
+
     @database_sync_to_async
     def get_timer_status(self):
         from core.models import Session, SessionTimer

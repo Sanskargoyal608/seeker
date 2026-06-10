@@ -105,25 +105,41 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [(os.getenv('REDIS_HOST', 'redis'), int(os.getenv('REDIS_PORT', 6379)))]},
-    },
-}
+import sys
+if 'pytest' in sys.modules or 'test' in sys.argv:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {'hosts': [(os.getenv('REDIS_HOST', 'redis'), int(os.getenv('REDIS_PORT', 6379)))]},
+        },
+    }
 
 # Redis Caching Configuration (for device-based token management)
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://redis:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': 'seeker',
-        'TIMEOUT': 300,
+import sys
+if 'pytest' in sys.modules or 'test' in sys.argv:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': os.getenv('REDIS_URL', 'redis://redis:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'seeker',
+            'TIMEOUT': 300,
+        }
+    }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -184,3 +200,19 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+# Firebase Cloud Messaging
+import firebase_admin
+from firebase_admin import credentials
+
+firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
+if firebase_credentials_path and os.path.exists(os.path.join(BASE_DIR, firebase_credentials_path)):
+    try:
+        cred = credentials.Certificate(os.path.join(BASE_DIR, firebase_credentials_path))
+        # Ensure we only initialize the default app once
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+    except Exception as e:
+        print(f"Failed to initialize Firebase Admin: {e}")
+else:
+    print("Warning: FIREBASE_CREDENTIALS_PATH is not set or file does not exist.")

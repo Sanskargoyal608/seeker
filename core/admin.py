@@ -80,3 +80,12 @@ class SessionTimerAdmin(admin.ModelAdmin):
     list_display = ('id', 'session', 'start_time', 'end_time', 'is_paid')
     list_filter = ('is_paid',)
 
+from .models import CounselorAvailability
+
+@admin.register(CounselorAvailability)
+class CounselorAvailabilityAdmin(admin.ModelAdmin):
+    list_display = ('counselor', 'status', 'last_updated')
+    list_filter = ('status',)
+    search_fields = ('counselor__user__email',)
+
+

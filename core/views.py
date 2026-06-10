@@ -179,3 +179,207 @@ class VerifyPaymentView(APIView):
         except Session.DoesNotExist:
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
+from .services.matching_service import MatchingService, SessionAlreadyAcceptedException
+
+class QueueView(APIView):
+    """
+    Counselor-only endpoint to list all WAITING sessions.
+    """
+    permission_classes = [IsAuthenticated, IsGraduateCounselor, IsVerified]
+
+    def get(self, request):
+        sessions = MatchingService.get_waiting_sessions()
+        data = [
+            {
+                'id': session.id,
+                'created_at': session.created_at,
+                'is_crisis_flagged': session.is_crisis_flagged,
+            }
+            for session in sessions
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+class AcceptSessionView(APIView):
+    """
+    Counselor-only endpoint to accept a waiting session.
+    """
+    permission_classes = [IsAuthenticated, IsGraduateCounselor, IsVerified]
+
+    def patch(self, request, session_id):
+        counselor = request.user.counselor_profile
+        
+        try:
+            session = MatchingService.accept_session(counselor, session_id)
+            return Response(
+                {'message': 'Session accepted successfully.', 'session_id': session.id},
+                status=status.HTTP_200_OK
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except SessionAlreadyAcceptedException as e:
+            return Response(
+                {'error': str(e), 'message': 'Already some one else accepted it gently.'},
+                status=status.HTTP_409_CONFLICT
+            )
+
+from django.shortcuts import get_object_or_404
+from .models import Session, SessionNote, ChatMessage, EscalationEvent
+from .serializers import SessionNoteSerializer, EscalationEventSerializer
+from .permissions import IsNoteOwnerOrTherapist
+
+class SessionNoteListView(APIView):
+    """GET/POST /api/sessions/{id}/notes/"""
+    permission_classes = [IsAuthenticated, IsNoteOwnerOrTherapist]
+    
+    def get(self, request, session_id):
+        # We enforce that the session ID belongs to a session the user has access to
+        session = get_object_or_404(Session, id=session_id)
+        
+        # Double check object permissions for the session context
+        # (Though IsNoteOwnerOrTherapist is typically run on the note object itself, 
+        # we can manually check if they have business here)
+        if request.user.role == request.user.COUNSELOR:
+            if session.counselor != request.user.counselor_profile:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        elif request.user.role == request.user.THERAPIST:
+            if session.therapist != request.user.therapist_profile:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+            
+        notes = SessionNote.objects.filter(session=session)
+        serializer = SessionNoteSerializer(notes, many=True)
+        return Response(serializer.data)
+        
+    def post(self, request, session_id):
+        session = get_object_or_404(Session, id=session_id)
+        
+        if request.user.role == request.user.COUNSELOR:
+            if session.counselor != request.user.counselor_profile:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        elif request.user.role == request.user.THERAPIST:
+            if session.therapist != request.user.therapist_profile:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+            
+        serializer = SessionNoteSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(session=session, author=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SessionNoteDetailView(APIView):
+    """DELETE /api/sessions/{session_id}/notes/{note_id}/"""
+    permission_classes = [IsAuthenticated, IsNoteOwnerOrTherapist]
+    
+    def delete(self, request, session_id, note_id):
+        note = get_object_or_404(SessionNote, id=note_id, session_id=session_id)
+        self.check_object_permissions(request, note)
+        note.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class MessageHighlightView(APIView):
+    """PATCH /api/messages/{id}/highlight/"""
+    permission_classes = [IsAuthenticated] # Needs custom logic to restrict to counselor/therapist
+    
+    def patch(self, request, message_id):
+        if request.user.role == request.user.GENERAL_USER:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+            
+        message = get_object_or_404(ChatMessage, id=message_id)
+        session = message.session
+        
+        # Verify access to session
+        if request.user.role == request.user.COUNSELOR:
+            if session.counselor != request.user.counselor_profile:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        elif request.user.role == request.user.THERAPIST:
+            if session.therapist != request.user.therapist_profile:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+                
+        # Toggle highlight
+        message.is_highlighted = not message.is_highlighted
+        message.save(update_fields=['is_highlighted'])
+        
+        # Create note if highlighted
+        note = None
+        if message.is_highlighted:
+            note_text = request.data.get('note', 'Highlighted message')
+            note = SessionNote.objects.create(
+                session=session,
+                author=request.user,
+                note_text=note_text,
+                linked_message=message
+            )
+            return Response({'is_highlighted': True, 'note_id': note.id}, status=status.HTTP_200_OK)
+        else:
+            # Delete associated note if unhighlighted
+            SessionNote.objects.filter(linked_message=message).delete()
+            return Response({'is_highlighted': False}, status=status.HTTP_200_OK)
+
+from .tasks import send_escalation_notifications
+
+class EscalateSessionView(APIView):
+    """POST /api/sessions/{id}/escalate/"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, session_id):
+        if request.user.role != request.user.COUNSELOR:
+            return Response({"error": "Only counselors can escalate."}, status=status.HTTP_403_FORBIDDEN)
+            
+        session = get_object_or_404(Session, id=session_id)
+        if session.counselor != request.user.counselor_profile:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+            
+        serializer = EscalationEventSerializer(data=request.data)
+        if serializer.is_valid():
+            escalation = serializer.save(
+                session=session, 
+                from_counselor=request.user.counselor_profile,
+                status=EscalationEvent.PENDING
+            )
+            
+            # Fire celery task
+            send_escalation_notifications.delay(escalation.id)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+from django.utils import timezone
+from .tasks import calculate_earnings
+from notifications.tasks import send_feedback_prompt
+
+class SessionEndView(APIView):
+    """POST /api/sessions/{id}/end/"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, session_id):
+        session = get_object_or_404(Session, id=session_id)
+        
+        # Verify access
+        if request.user.role == request.user.GENERAL_USER and session.user != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        elif request.user.role == request.user.COUNSELOR and session.counselor != request.user.counselor_profile:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        elif request.user.role == request.user.THERAPIST and session.therapist != request.user.therapist_profile:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+            
+        if session.status == Session.ENDED:
+            return Response({'message': 'Session already ended'}, status=status.HTTP_200_OK)
+            
+        session.status = Session.ENDED
+        session.end_time = timezone.now()
+        
+        # Calculate duration
+        if session.start_time:
+            delta = session.end_time - session.start_time
+            session.duration_minutes = int(delta.total_seconds() // 60)
+            
+        session.save(update_fields=['status', 'end_time', 'duration_minutes'])
+        
+        # Trigger Celery tasks
+        calculate_earnings.delay(session.id)
+        send_feedback_prompt.apply_async(args=[session.id], countdown=300) # 5 minutes
+        
+        return Response({'message': 'Session ended gracefully.', 'duration_minutes': session.duration_minutes}, status=status.HTTP_200_OK)

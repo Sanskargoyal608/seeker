@@ -282,3 +282,27 @@ class SessionTimer(models.Model):
     
     def __str__(self):
         return f"Timer for Session {self.session_id} [Paid: {self.is_paid}]"
+
+class CounselorAvailability(models.Model):
+    AVAILABLE = 'AVAILABLE'
+    BUSY = 'BUSY'
+    AWAY = 'AWAY'
+    
+    STATUS_CHOICES = [
+        (AVAILABLE, 'Available'),
+        (BUSY, 'Busy'),
+        (AWAY, 'Away'),
+    ]
+    
+    counselor = models.OneToOneField(
+        'accounts.GraduateCounselor', on_delete=models.CASCADE, related_name='availability'
+    )
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=AWAY)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.counselor.user.email} - {self.status}"
+    
+    class Meta:
+        verbose_name_plural = "Counselor Availabilities"
+
