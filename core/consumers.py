@@ -10,7 +10,19 @@ logger = logging.getLogger(__name__)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            await self.close(code=4003)
+            return
+
         self.session_id = self.scope['url_route']['kwargs']['session_id']
+        
+        # Check specific authorization
+        is_authorized = await self.check_authorization()
+        if not is_authorized:
+            await self.close(code=4003)
+            return
+
         self.room_group_name = f'chat_{self.session_id}'
 
         # Join room group
@@ -29,10 +41,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.timer_task.cancel()
             
         # Leave room group
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
 
     async def timer_loop(self):
         try:
@@ -96,20 +109,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'chat.message',
                     'message': message,
-                    'sender': 'Other' 
+                    'sender_id': self.scope['user'].id,
+                    'sender_role': self.scope['user'].role
                 }
             )
 
     # Receive message from room group
     async def chat_message(self, event):
         message = event['message']
-        sender = event.get('sender', 'System')
+        sender_id = event.get('sender_id')
+        sender_role = event.get('sender_role')
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
             'type': 'chat.message',
             'message': message,
-            'sender': sender
+            'sender_id': sender_id,
+            'sender_role': sender_role
         }))
 
     # Receive system alert from room group
@@ -181,4 +197,83 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return CrisisDetectionService.scan_message(session, content)
         except Session.DoesNotExist:
             return False
+
+
+    @database_sync_to_async
+    def check_authorization(self):
+        from core.models import Session
+        from accounts.models import User
+        try:
+            session = Session.objects.get(id=self.session_id)
+            user = self.scope['user']
+            
+            if user.role == User.GENERAL_USER:
+                return session.user == user
+            elif user.role == User.COUNSELOR:
+                return session.counselor == getattr(user, 'counselor_profile', None)
+            elif user.role == User.THERAPIST:
+                return session.therapist == getattr(user, 'therapist_profile', None)
+            
+            return False
+        except Session.DoesNotExist:
+            return False
+
+class EscalationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        from accounts.models import User
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated or getattr(user, 'role', '') not in [User.THERAPIST, User.COUNSELOR]:
+            await self.close(code=4003)
+            return
+
+        # Use the appropriate profile ID
+        try:
+            if user.role == User.COUNSELOR:
+                profile = await self.get_counselor_profile(user)
+                self.room_group_name = f'escalations_counselor_{profile.id}'
+            else:
+                profile = await self.get_therapist_profile(user)
+                self.room_group_name = f'escalations_therapist_{profile.id}'
+        except Exception as e:
+            logger.error(f"Error getting provider profile: {e}")
+            await self.close(code=4003)
+            return
+
+        # Join room group
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
+
+    # Receive escalation event from room group
+    async def escalation_alert(self, event):
+        escalation_id = event['escalation_id']
+        urgency = event['urgency']
+        reason = event['reason']
+        triage_session_id = event['triage_session_id']
+
+        await self.send(text_data=json.dumps({
+            'type': 'escalation.alert',
+            'escalation_id': escalation_id,
+            'urgency': urgency,
+            'reason': reason,
+            'triage_session_id': triage_session_id
+        }))
+
+    @database_sync_to_async
+    def get_counselor_profile(self, user):
+        return user.counselor_profile
+        
+    @database_sync_to_async
+    def get_therapist_profile(self, user):
+        return user.therapist_profile
 

@@ -9,7 +9,9 @@ from drf_spectacular.utils import extend_schema
 from accounts.serializers import (
     LoginSerializer, TokenSerializer, RefreshTokenSerializer, LogoutSerializer, UserDetailSerializer,
     RequestOTPSerializer, VerifyOTPSerializer, RegisterGeneralUserSerializer,
-    RegisterCounselorSerializer, RegisterTherapistSerializer
+    RegisterCounselorSerializer, RegisterTherapistSerializer,
+    ForgotPasswordRequestSerializer, ForgotPasswordResetSerializer,
+    ProfileUpdateSerializer
 )
 from accounts.throttles import LoginThrottle, RefreshTokenThrottle, RegisterThrottle
 from accounts.token_service import DeviceTokenService
@@ -55,6 +57,50 @@ class LoginView(APIView):
             'device_hash': tokens['device_hash'],
             'user': user_serializer.data,
         }, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordRequestView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=ForgotPasswordRequestSerializer, responses={200: {'example': {'message': 'If the email exists, an OTP has been sent.'}}})
+    def post(self, request):
+        serializer = ForgotPasswordRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        
+        # Generate OTP
+        otp_code, otp_token = OTPService.create_otp_for_email(email)
+        
+        # Send OTP email
+        OTPService.send_otp_email(email, otp_code)
+        
+        return Response({'message': 'If the email exists, an OTP has been sent.'}, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=ForgotPasswordResetSerializer, responses={200: {'example': {'message': 'Password reset successful'}}})
+    def post(self, request):
+        serializer = ForgotPasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = serializer.validated_data['user']
+        otp = serializer.validated_data['otp']
+        new_password = serializer.validated_data['new_password']
+        
+        # Mark OTP as verified
+        otp.is_verified = True
+        otp.save()
+        
+        # Update password
+        user.set_password(new_password)
+        user.save()
+        
+        # Invalidate all device tokens (log them out everywhere)
+        DeviceTokenService.invalidate_all_user_tokens(user.id)
+        
+        return Response({'message': 'Password reset successful'}, status=status.HTTP_200_OK)
 
 
 class RefreshTokenView(APIView):
@@ -457,3 +503,20 @@ class RegisterTherapistView(APIView):
                 {'detail': f'Registration failed: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class ProfileUpdateView(APIView):
+    """
+    Update the authenticated user's profile data.
+    Allows updating first_name, last_name, phone, and role-specific data.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=ProfileUpdateSerializer, responses={200: UserDetailSerializer})
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_user = serializer.save()
+        
+        # Return the full updated profile using UserDetailSerializer
+        response_serializer = UserDetailSerializer(updated_user)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

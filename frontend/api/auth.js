@@ -5,6 +5,30 @@ import apiClient, { API_BASE_URL } from './axios';
 
 const BASE = '/api/accounts';
 
+// ── Forgot Password Flow ───────────────────────────────────────────────
+
+/**
+ * Request password reset OTP
+ * POST /api/accounts/auth/forgot-password/
+ */
+export const requestPasswordReset = async (email) => {
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/forgot-password/`, { email });
+  return data;
+};
+
+/**
+ * Reset password using OTP
+ * POST /api/accounts/auth/reset-password/
+ */
+export const resetPassword = async (email, otp_code, new_password) => {
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/reset-password/`, {
+    email,
+    otp_code,
+    new_password,
+  });
+  return data;
+};
+
 // ── OTP Registration Flow ────────────────────────────────────────────
 
 /**
@@ -12,7 +36,7 @@ const BASE = '/api/accounts';
  * POST /api/accounts/auth/register/request-otp/
  */
 export const requestOTP = async (email, role) => {
-  const { data } = await apiClient.post(`${BASE}/auth/register/request-otp/`, {
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/register/request-otp/`, {
     email,
     role,
   });
@@ -24,7 +48,7 @@ export const requestOTP = async (email, role) => {
  * POST /api/accounts/auth/register/verify-otp/
  */
 export const verifyOTP = async (email, otp_code) => {
-  const { data } = await apiClient.post(`${BASE}/auth/register/verify-otp/`, {
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/register/verify-otp/`, {
     email,
     otp_code,
   });
@@ -37,8 +61,8 @@ export const verifyOTP = async (email, otp_code) => {
  * Body: { email, username, password, first_name, last_name, phone, emergency_contacts: [{name, phone, relationship}] }
  */
 export const registerGeneralUser = async (payload) => {
-  const { data } = await apiClient.post(
-    `${BASE}/auth/register/general-user/`,
+  const { data } = await axios.post(
+    `${API_BASE_URL}${BASE}/auth/register/general-user/`,
     payload
   );
   return data;
@@ -50,8 +74,8 @@ export const registerGeneralUser = async (payload) => {
  * Sends as multipart/form-data to support optional file uploads
  */
 export const registerCounselor = async (formData) => {
-  const { data } = await apiClient.post(
-    `${BASE}/auth/register/counselor/`,
+  const { data } = await axios.post(
+    `${API_BASE_URL}${BASE}/auth/register/counselor/`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } }
   );
@@ -64,8 +88,8 @@ export const registerCounselor = async (formData) => {
  * Sends as multipart/form-data to support optional file uploads
  */
 export const registerTherapist = async (formData) => {
-  const { data } = await apiClient.post(
-    `${BASE}/auth/register/therapist/`,
+  const { data } = await axios.post(
+    `${API_BASE_URL}${BASE}/auth/register/therapist/`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } }
   );
@@ -79,8 +103,8 @@ export const registerTherapist = async (formData) => {
  * POST /api/accounts/auth/login/
  */
 export const login = async (email, password) => {
-  const { data } = await apiClient.post(`${BASE}/auth/login/`, {
-    email,
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/login/`, {
+    email_or_username: email,
     password,
   });
   return data;

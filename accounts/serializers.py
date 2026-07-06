@@ -1,7 +1,7 @@
 # accounts/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact
+from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact, OTPToken
 
 
 class UserSimpleSerializer(serializers.ModelSerializer):
@@ -96,6 +96,89 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("User account is inactive")
 
         data['user'] = user
+        return data
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating the user's profile.
+    Handles User fields and delegates to counselor/therapist profile serializers.
+    """
+    counselor_profile = CounselorProfileSerializer(required=False)
+    therapist_profile = TherapistProfileSerializer(required=False)
+    emergency_contacts = EmergencyContactSerializer(many=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone', 'counselor_profile', 'therapist_profile', 'emergency_contacts']
+        
+    def update(self, instance, validated_data):
+        # Update user fields
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.save()
+        
+        # Update counselor profile if provided
+        counselor_data = validated_data.get('counselor_profile')
+        if counselor_data and hasattr(instance, 'counselor_profile'):
+            counselor_serializer = CounselorProfileSerializer(
+                instance.counselor_profile, data=counselor_data, partial=True
+            )
+            if counselor_serializer.is_valid():
+                counselor_serializer.save()
+                
+        # Update therapist profile if provided
+        therapist_data = validated_data.get('therapist_profile')
+        if therapist_data and hasattr(instance, 'therapist_profile'):
+            therapist_serializer = TherapistProfileSerializer(
+                instance.therapist_profile, data=therapist_data, partial=True
+            )
+            if therapist_serializer.is_valid():
+                therapist_serializer.save()
+
+        # Update emergency contacts if provided
+        emergency_contacts_data = validated_data.get('emergency_contacts')
+        if emergency_contacts_data is not None:
+            # For simplicity, we delete existing and recreate them when updating.
+            instance.emergency_contacts.all().delete()
+            for contact_data in emergency_contacts_data:
+                EmergencyContact.objects.create(user=instance, **contact_data)
+                
+        return instance
+
+
+class ForgotPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("No account found with this email")
+        return value
+
+
+class ForgotPasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp_code = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get('email')
+        otp_code = data.get('otp_code')
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No account found with this email")
+
+        try:
+            from django.utils import timezone
+            otp = OTPToken.objects.get(email=email, otp_code=otp_code, expires_at__gt=timezone.now())
+        except OTPToken.DoesNotExist:
+            raise serializers.ValidationError("Invalid or expired OTP")
+            
+        data['user'] = user
+        data['otp'] = otp
         return data
 
 

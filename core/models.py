@@ -6,6 +6,7 @@ from django.db import models
 class Session(models.Model):
     WAITING = 'WAITING'
     MATCHED = 'MATCHED'
+    SCHEDULED = 'SCHEDULED'
     ACTIVE = 'ACTIVE'
     PAYMENT_PENDING = 'PAYMENT_PENDING'
     PAID = 'PAID'
@@ -14,6 +15,7 @@ class Session(models.Model):
     STATUS_CHOICES = [
         (WAITING, 'Waiting'),
         (MATCHED, 'Matched'),
+        (SCHEDULED, 'Scheduled'),
         (ACTIVE, 'Active'),
         (PAYMENT_PENDING, 'Payment Pending'),
         (PAID, 'Paid'),
@@ -95,7 +97,7 @@ class SessionNote(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Note {self.pk} in Session {self.session_id}"
+        return f"Note {self.pk} by {self.author.email}"
 
     class Meta:
         verbose_name = 'Session Note'
@@ -142,6 +144,49 @@ class EscalationEvent(models.Model):
     class Meta:
         verbose_name = 'Escalation Event'
         verbose_name_plural = 'Escalation Events'
+
+
+class EscalationRequest(models.Model):
+    HIGH = 'HIGH'
+    MEDIUM = 'MEDIUM'
+    LOW = 'LOW'
+
+    URGENCY_CHOICES = [
+        (HIGH, 'High'), (MEDIUM, 'Medium'), (LOW, 'Low'),
+    ]
+
+    PENDING = 'PENDING'
+    ACCEPTED = 'ACCEPTED'
+    DECLINED = 'DECLINED'
+    RESOLVED = 'RESOLVED'
+
+    STATUS_CHOICES = [
+        (PENDING, 'Pending'), (ACCEPTED, 'Accepted'), 
+        (DECLINED, 'Declined'), (RESOLVED, 'Resolved'),
+    ]
+
+    counselor = models.ForeignKey(
+        'accounts.GraduateCounselor', on_delete=models.CASCADE, related_name='escalation_requests_sent'
+    )
+    therapist = models.ForeignKey(
+        'accounts.LicensedTherapist', on_delete=models.CASCADE, related_name='escalation_requests_received'
+    )
+    session = models.ForeignKey(
+        'core.Session', on_delete=models.CASCADE, related_name='escalation_requests', null=True, blank=True
+    )
+    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default=MEDIUM)
+    reason = models.TextField()
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=PENDING)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Escalation Request {self.pk} [{self.status}]"
+
+    class Meta:
+        verbose_name = 'Escalation Request'
+        verbose_name_plural = 'Escalation Requests'
 
 
 class EarningsRecord(models.Model):
@@ -305,4 +350,3 @@ class CounselorAvailability(models.Model):
     
     class Meta:
         verbose_name_plural = "Counselor Availabilities"
-

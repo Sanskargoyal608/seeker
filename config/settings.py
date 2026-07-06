@@ -201,6 +201,17 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
+CELERY_BEAT_SCHEDULE = {
+    'send-session-reminders-every-15-mins': {
+        'task': 'notifications.tasks.send_scheduled_session_reminders',
+        'schedule': 900.0, # 15 minutes in seconds
+    },
+    'check-queue-timeout-every-minute': {
+        'task': 'core.tasks.queue_timeout_task',
+        'schedule': 60.0,
+    }
+}
+
 # Firebase Cloud Messaging
 import firebase_admin
 from firebase_admin import credentials
@@ -216,3 +227,8 @@ if firebase_credentials_path and os.path.exists(os.path.join(BASE_DIR, firebase_
         print(f"Failed to initialize Firebase Admin: {e}")
 else:
     print("Warning: FIREBASE_CREDENTIALS_PATH is not set or file does not exist.")
+
+# Typesense Configuration
+TYPESENSE_HOST = os.getenv('TYPESENSE_HOST', 'typesense')
+TYPESENSE_PORT = os.getenv('TYPESENSE_PORT', '8108')
+TYPESENSE_API_KEY = os.getenv('TYPESENSE_API_KEY', 'local-typesense-key')

@@ -3,45 +3,45 @@
 
 export const COLORS = {
   // Backgrounds
-  background: '#0A0E1A',
-  surface: '#141826',
-  card: '#1E2336',
-  overlay: 'rgba(10, 14, 26, 0.85)',
+  background: '#F7F9FC', // Light grayish blue
+  surface: '#FFFFFF', // Clean white
+  card: '#FFFFFF',
+  overlay: 'rgba(247, 249, 252, 0.85)',
 
   // Borders
-  border: '#2A3050',
-  borderFocused: '#6C63FF',
+  border: '#E2E8F0', // Soft gray
+  borderFocused: '#4A90E2', // Gentle blue
 
   // Brand
-  primary: '#6C63FF',
-  primaryDark: '#5A52E8',
-  primaryLight: 'rgba(108, 99, 255, 0.15)',
-  accent: '#00D4AA',
-  accentDark: '#00B894',
-  accentLight: 'rgba(0, 212, 170, 0.15)',
+  primary: '#4A90E2', // Gentle calm blue
+  primaryDark: '#357ABD',
+  primaryLight: 'rgba(74, 144, 226, 0.15)',
+  accent: '#50E3C2', // Soft teal/green
+  accentDark: '#3EBA9E',
+  accentLight: 'rgba(80, 227, 194, 0.15)',
 
   // Gradient pairs
-  gradientPrimary: ['#6C63FF', '#A78BFA'],
-  gradientAccent: ['#00D4AA', '#6C63FF'],
-  gradientDanger: ['#FF5F6D', '#FFC371'],
+  gradientPrimary: ['#4A90E2', '#86B9FF'],
+  gradientAccent: ['#50E3C2', '#4A90E2'],
+  gradientDanger: ['#FF7675', '#FF9A9E'],
 
   // Status
-  error: '#FF5F6D',
-  errorLight: 'rgba(255, 95, 109, 0.15)',
-  warning: '#FFB347',
-  warningLight: 'rgba(255, 179, 71, 0.15)',
-  success: '#00D4AA',
-  successLight: 'rgba(0, 212, 170, 0.15)',
+  error: '#FF7675', // Soft red
+  errorLight: 'rgba(255, 118, 117, 0.15)',
+  warning: '#FDCB6E', // Soft yellow
+  warningLight: 'rgba(253, 203, 110, 0.15)',
+  success: '#50E3C2',
+  successLight: 'rgba(80, 227, 194, 0.15)',
 
   // Text
-  text: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#4A5568',
-  textLink: '#6C63FF',
+  text: '#2D3748', // Dark gray, not harsh black
+  textSecondary: '#718096', // Medium gray
+  textMuted: '#A0AEC0', // Light gray
+  textLink: '#4A90E2',
 
   // Inputs
-  inputBackground: '#1E2336',
-  inputBorder: '#2A3050',
+  inputBackground: '#F7F9FC',
+  inputBorder: '#E2E8F0',
 
   // Misc
   white: '#FFFFFF',

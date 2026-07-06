@@ -134,6 +134,9 @@ export default function LoginScreen() {
                 <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
               </Pressable>
             </View>
+            <Pressable onPress={() => router.push('/(auth)/forgot-password')} style={{ alignSelf: 'flex-end', marginTop: 4 }}>
+              <Text style={{ color: COLORS.textLink, fontSize: FONTS.sizes.sm }}>Forgot Password?</Text>
+            </Pressable>
           </View>
 
           {/* Login button */}

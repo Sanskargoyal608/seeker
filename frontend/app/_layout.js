@@ -8,11 +8,13 @@ export { ErrorBoundary };
 
 // frontend/app/_layout.js
 import { Stack } from 'expo-router';
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
+import React, { useEffect } from 'react';
+import { registerDeviceToken } from '../api/core';
 import { store } from '../store/store';
 
 const queryClient = new QueryClient({
@@ -21,14 +23,21 @@ const queryClient = new QueryClient({
   },
 });
 
+function PushNotificationWrapper({ children }) {
+  // Temporarily disabled for debugging the white screen crash
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
-            <StatusBar style="light" />
-            <Stack screenOptions={{ headerShown: false }} />
+            <PushNotificationWrapper>
+              <StatusBar style="light" />
+              <Stack screenOptions={{ headerShown: false }} />
+            </PushNotificationWrapper>
           </SafeAreaProvider>
         </QueryClientProvider>
       </Provider>

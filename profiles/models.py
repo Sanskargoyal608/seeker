@@ -95,6 +95,11 @@ class Booking(models.Model):
     scheduled_datetime = models.DateTimeField()
     duration_minutes = models.IntegerField(default=60)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=SCHEDULED)
+    
+    # Reminders
+    reminder_24h_sent = models.BooleanField(default=False)
+    reminder_1h_sent = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -124,3 +129,27 @@ class IntakeResponse(models.Model):
     class Meta:
         verbose_name = 'Intake Response'
         verbose_name_plural = 'Intake Responses'
+
+# Typesense Signals
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from accounts.models import LicensedTherapist
+from .services.typesense_service import TypesenseService
+
+@receiver(post_save, sender=LicensedTherapist)
+def sync_therapist_to_typesense(sender, instance, created, **kwargs):
+    service = TypesenseService()
+    try:
+        service.init_collection() # Ensure collection exists
+        service.upsert_therapist(instance)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Typesense sync error: {e}")
+
+@receiver(post_delete, sender=LicensedTherapist)
+def remove_therapist_from_typesense(sender, instance, **kwargs):
+    service = TypesenseService()
+    try:
+        service.delete_therapist(instance.id)
+    except Exception as e:
+        pass

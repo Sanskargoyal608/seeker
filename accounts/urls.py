@@ -17,4 +17,11 @@ urlpatterns = [
     path('auth/register/general-user/', views.RegisterGeneralUserView.as_view(), name='register-general-user'),
     path('auth/register/counselor/', views.RegisterCounselorView.as_view(), name='register-counselor'),
     path('auth/register/therapist/', views.RegisterTherapistView.as_view(), name='register-therapist'),
+
+    # Forgot password endpoints
+    path('auth/forgot-password/request/', views.ForgotPasswordRequestView.as_view(), name='forgot-password-request'),
+    path('auth/forgot-password/reset/', views.ForgotPasswordResetView.as_view(), name='forgot-password-reset'),
+
+    # Profile endpoints
+    path('profile/update/', views.ProfileUpdateView.as_view(), name='profile-update'),
 ]

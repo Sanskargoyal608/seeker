@@ -59,3 +59,91 @@ def send_feedback_prompt(session_id):
     except Session.DoesNotExist:
         logger.error(f"Session {session_id} not found for feedback prompt.")
         return "Session not found."
+
+@shared_task
+def send_session_request_notification(therapist_user_id, patient_name, session_id):
+    from accounts.models import User
+    try:
+        user = User.objects.get(id=therapist_user_id)
+        NotificationService.send_push_notification(
+            user=user,
+            title="New Session Request",
+            body=f"You have a new session request from {patient_name}.",
+            data={'type': 'session_request', 'session_id': str(session_id)}
+        )
+    except User.DoesNotExist:
+        logger.error(f"User {therapist_user_id} not found for session request notification.")
+
+@shared_task
+def send_scheduled_session_reminders():
+    """
+    Checks for scheduled bookings and sends 24-hour and 1-hour reminders via FCM and email.
+    """
+    from profiles.models import Booking
+    from django.core.mail import send_mail
+    from django.utils import timezone
+    from datetime import timedelta
+
+    now = timezone.now()
+    
+    # 24-hour reminders
+    time_24h_from_now = now + timedelta(hours=24)
+    time_24h_window_start = time_24h_from_now - timedelta(minutes=15)
+    
+    bookings_24h = Booking.objects.filter(
+        status=Booking.SCHEDULED,
+        reminder_24h_sent=False,
+        scheduled_datetime__gte=time_24h_window_start,
+        scheduled_datetime__lte=time_24h_from_now
+    )
+    
+    for booking in bookings_24h:
+        # Send FCM
+        NotificationService.send_push_notification(
+            user=booking.user,
+            title="Session Reminder (24h)",
+            body=f"You have a session scheduled with {booking.therapist.user.first_name} tomorrow at {booking.scheduled_datetime.strftime('%I:%M %p')}.",
+            data={'type': 'session_reminder_24h', 'booking_id': str(booking.id)}
+        )
+        # Send Email
+        send_mail(
+            subject="Session Reminder (24h)",
+            message=f"You have a session scheduled with {booking.therapist.user.first_name} tomorrow at {booking.scheduled_datetime.strftime('%I:%M %p')}.",
+            from_email="noreply@seeker.com",
+            recipient_list=[booking.user.email],
+            fail_silently=False,
+        )
+        booking.reminder_24h_sent = True
+        booking.save()
+
+    # 1-hour reminders
+    time_1h_from_now = now + timedelta(hours=1)
+    time_1h_window_start = time_1h_from_now - timedelta(minutes=15)
+    
+    bookings_1h = Booking.objects.filter(
+        status=Booking.SCHEDULED,
+        reminder_1h_sent=False,
+        scheduled_datetime__gte=time_1h_window_start,
+        scheduled_datetime__lte=time_1h_from_now
+    )
+    
+    for booking in bookings_1h:
+        # Send FCM
+        NotificationService.send_push_notification(
+            user=booking.user,
+            title="Session Reminder (1h)",
+            body=f"Your session with {booking.therapist.user.first_name} starts in 1 hour.",
+            data={'type': 'session_reminder_1h', 'booking_id': str(booking.id)}
+        )
+        # Send Email
+        send_mail(
+            subject="Session Reminder (1h)",
+            message=f"Your session with {booking.therapist.user.first_name} starts in 1 hour.",
+            from_email="noreply@seeker.com",
+            recipient_list=[booking.user.email],
+            fail_silently=False,
+        )
+        booking.reminder_1h_sent = True
+        booking.save()
+
+    return f"Processed {bookings_24h.count()} 24h reminders and {bookings_1h.count()} 1h reminders."

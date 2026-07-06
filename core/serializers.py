@@ -34,3 +34,33 @@ class EscalationEventSerializer(serializers.ModelSerializer):
         model = EscalationEvent
         fields = ['id', 'session', 'from_counselor', 'to_therapist', 'reason', 'urgency', 'status', 'created_at']
         read_only_fields = ['id', 'session', 'from_counselor', 'status', 'created_at']
+
+from .models import EscalationRequest
+
+class EscalationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EscalationRequest
+        fields = ['id', 'counselor', 'therapist', 'session', 'urgency', 'reason', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'counselor', 'status', 'created_at', 'updated_at']
+
+from .models import Session
+
+class SessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Session
+        fields = ['id', 'user', 'counselor', 'therapist', 'status', 'start_time', 'end_time', 'duration_minutes', 'is_crisis_flagged', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+from accounts.models import LicensedTherapist, User
+
+class TherapistListSerializer(serializers.ModelSerializer):
+    # Flattening out some user fields for ease of use in UI
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    
+    class Meta:
+        model = LicensedTherapist
+        fields = [
+            'id', 'first_name', 'last_name', 'bio', 'profile_photo',
+            'per_session_rate', 'modalities', 'languages'
+        ]

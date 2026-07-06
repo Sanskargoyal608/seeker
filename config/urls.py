@@ -9,5 +9,7 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),
     path('api/core/', include('core.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/profiles/', include('profiles.urls')),
+    path('api/helpline/', include('helpline.urls')),
     path('api/', include('feedback.urls')),
 ]

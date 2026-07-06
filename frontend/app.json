@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.seeker.app"
@@ -18,11 +20,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "seeker",
     "extra": {
-      "API_BASE_URL": "http://192.168.31.175:8000",
+      "API_BASE_URL": "http://192.168.52.110:8000",
       "router": {
         "origin": false
       }

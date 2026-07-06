@@ -50,17 +50,34 @@ Do not include markdown blocks, just the JSON string."""
     def _call_gemini(self, history):
         if not self.model:
             # Fallback mock for testing when API key is missing
-            return json.dumps({
-                "message_to_user": "[Mock] How are you feeling emotionally?",
-                "form_state": {
-                    "emotional_state": None,
-                    "primary_concern": None,
-                    "support_preference": None,
-                    "urgency": None
-                },
-                "is_complete": False,
-                "routing_decision": None
-            })
+            user_msg_count = sum(1 for msg in history if msg.role == 'user')
+            
+            if user_msg_count <= 1:
+                return json.dumps({
+                    "message_to_user": "I'm here to help. Could you tell me a little bit about what's been bothering you lately?",
+                    "form_state": {},
+                    "is_complete": False,
+                    "routing_decision": None
+                })
+            elif user_msg_count == 2:
+                return json.dumps({
+                    "message_to_user": "Thank you for sharing that. Do you feel like you need to talk to a licensed professional, or would a peer counselor be okay?",
+                    "form_state": {"primary_concern": "User shared concern"},
+                    "is_complete": False,
+                    "routing_decision": None
+                })
+            else:
+                return json.dumps({
+                    "message_to_user": "I understand. I'm going to connect you with someone who can support you right now.",
+                    "form_state": {
+                        "primary_concern": "User shared concern",
+                        "support_preference": "Peer or Professional",
+                        "emotional_state": "Distressed",
+                        "urgency": "Medium"
+                    },
+                    "is_complete": True,
+                    "routing_decision": "PEER_SUPPORT"
+                })
 
         prompt = self.get_system_prompt() + "\n\nConversation History:\n"
         for msg in history:
