@@ -90,9 +90,29 @@ export const createEscalationRequest = async (sessionId, therapistId, urgency, r
   return data;
 };
 
-export const respondToEscalationRequest = async (escalationId, action) => {
-  const { data } = await apiClient.post(`/api/core/escalations/${escalationId}/respond/`, { action });
-  return data;
+export const respondToEscalationRequest = async (id, action) => {
+  const response = await apiClient.post(`/api/core/escalations/${id}/respond/`, { action });
+  return response.data;
+};
+
+// --- Notifications ---
+
+export const registerDeviceToken = async (fcmToken, platform) => {
+  const response = await apiClient.post('/api/notifications/devices/register/', {
+    fcm_token: fcmToken,
+    platform: platform
+  });
+  return response.data;
+};
+
+export const getNotifications = async () => {
+  const response = await apiClient.get('/api/notifications/');
+  return response.data;
+};
+
+export const markNotificationRead = async (id) => {
+  const response = await apiClient.post(`/api/notifications/${id}/read/`);
+  return response.data;
 };
 
 export const createTherapistFollowUp = async (userId) => {
@@ -111,14 +131,7 @@ export const getHelplines = async () => {
   return data;
 };
 
-// Notifications API
-export const registerDeviceToken = async (token, deviceType = 'android') => {
-  const { data } = await apiClient.post('/api/notifications/device/', {
-    token,
-    device_type: deviceType,
-  });
-  return data;
-};
+
 
 export const getSession = async (sessionId) => {
   const { data } = await apiClient.get(`/api/core/sessions/${sessionId}/`);

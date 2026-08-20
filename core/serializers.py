@@ -64,3 +64,48 @@ class TherapistListSerializer(serializers.ModelSerializer):
             'id', 'first_name', 'last_name', 'bio', 'profile_photo',
             'per_session_rate', 'modalities', 'languages'
         ]
+
+from core.models import CounselorAvailability
+class CounselorAvailabilitySerializer(serializers.ModelSerializer):
+    # Flattening out some user fields for ease of use in UI
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    
+    class Meta:
+        model = CounselorAvailability
+        fields = ['status', 'last_updated']
+        read_only_fields = ['last_updated']
+
+from core.models import SeekerBillingRecord
+
+class SeekerBillingRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SeekerBillingRecord
+        fields = ['id', 'amount', 'description', 'date', 'is_paid']
+
+from .models import TherapistAvailability, ClientTherapistRelationship, EarningsRecord, PayoutRecord
+
+class TherapistAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TherapistAvailability
+        fields = ['id', 'therapist', 'day_of_week', 'start_time', 'end_time', 'is_available']
+        read_only_fields = ['id', 'therapist']
+
+class ClientTherapistRelationshipSerializer(serializers.ModelSerializer):
+    client_email = serializers.CharField(source='client.email', read_only=True)
+    client_name = serializers.CharField(source='client.first_name', read_only=True)
+    
+    class Meta:
+        model = ClientTherapistRelationship
+        fields = ['id', 'client', 'client_email', 'client_name', 'status', 'notes', 'created_at']
+        read_only_fields = ['id', 'client', 'created_at']
+
+class EarningsRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EarningsRecord
+        fields = ['id', 'session', 'duration_minutes', 'rate_per_minute', 'gross_amount', 'platform_fee_percent', 'net_amount', 'created_at']
+
+class PayoutRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayoutRecord
+        fields = ['id', 'total_amount', 'status', 'payout_date', 'created_at']

@@ -1,302 +1,474 @@
-// frontend/app/(app)/profile.js
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectUser, setUser } from '../../store/authSlice';
-import { useAuth } from '../../hooks/useAuth';
-import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
-import api from '../../api/axios';
+import { useSelector } from 'react-redux';
+import { selectUser } from '../../store/authSlice';
+import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import apiClient from '../../api/axios';
+import BottomNav from '../../components/BottomNav';
+import PanicButton from '../../components/PanicButton';
 
 export default function ProfileScreen() {
   const user = useSelector(selectUser);
-  const dispatch = useDispatch();
-  const { handleLogout } = useAuth();
   const router = useRouter();
+  
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  const [firstName, setFirstName] = useState(user?.first_name || '');
-  const [lastName, setLastName] = useState(user?.last_name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const { data } = await apiClient.get('/api/core/sessions/');
+        // Filter out completed or past sessions for history
+        const pastSessions = data.filter(s => s.status === 'COMPLETED').slice(0, 3);
+        setHistory(pastSessions);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
-  // Therapist fields
-  const [perSessionRate, setPerSessionRate] = useState(user?.therapist_profile?.per_session_rate?.toString() || '');
-  const [modalities, setModalities] = useState(user?.therapist_profile?.modalities?.join(', ') || '');
-  const [languages, setLanguages] = useState(user?.therapist_profile?.languages?.join(', ') || '');
-
-  // Counselor fields
-  const [specialization, setSpecialization] = useState(user?.counselor_profile?.specialization || '');
-  const [yearsExperience, setYearsExperience] = useState(user?.counselor_profile?.years_experience?.toString() || '');
-
-  // General fields
-  const [bio, setBio] = useState(user?.therapist_profile?.bio || user?.counselor_profile?.bio || '');
-
-  // Emergency Contacts (General User)
-  const [ec1Name, setEc1Name] = useState(user?.emergency_contacts?.[0]?.name || '');
-  const [ec1Phone, setEc1Phone] = useState(user?.emergency_contacts?.[0]?.phone || '');
-  const [ec2Name, setEc2Name] = useState(user?.emergency_contacts?.[1]?.name || '');
-  const [ec2Phone, setEc2Phone] = useState(user?.emergency_contacts?.[1]?.phone || '');
-
-  const [loading, setLoading] = useState(false);
-
-  const onLogout = () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: handleLogout },
-    ]);
+  const getBio = () => {
+    if (user?.role === 'THERAPIST') return user.therapist_profile?.bio;
+    if (user?.role === 'COUNSELOR') return user.counselor_profile?.bio;
+    return "Focused on mindfulness and cognitive behavioral growth. Part of the Buddy community.";
   };
 
-  const onSave = async () => {
-    setLoading(true);
-    try {
-      const payload = {
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone,
-      };
-
-      if (user?.role === 'THERAPIST') {
-        payload.therapist_profile = {
-          per_session_rate: parseFloat(perSessionRate) || 0,
-          modalities: modalities.split(',').map(m => m.trim()).filter(Boolean),
-          languages: languages.split(',').map(l => l.trim()).filter(Boolean),
-          bio: bio,
-        };
-      } else if (user?.role === 'COUNSELOR') {
-        payload.counselor_profile = {
-          specialization: specialization,
-          years_experience: parseInt(yearsExperience) || 0,
-          bio: bio,
-        };
-      } else if (user?.role === 'GENERAL_USER') {
-        const ecs = [];
-        if (ec1Name || ec1Phone) ecs.push({ name: ec1Name, phone: ec1Phone, relationship: 'Primary' });
-        if (ec2Name || ec2Phone) ecs.push({ name: ec2Name, phone: ec2Phone, relationship: 'Secondary' });
-        if (ecs.length > 0) {
-          payload.emergency_contacts = ecs;
-        }
-      }
-
-      const response = await api.patch('/api/accounts/profile/update/', payload);
-      dispatch(setUser(response.data));
-      Alert.alert('Success', 'Profile updated successfully.');
-    } catch (error) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to update profile.');
-    } finally {
-      setLoading(false);
-    }
+  const getRoleLabel = () => {
+    if (user?.role === 'THERAPIST') return 'Licensed Therapist';
+    if (user?.role === 'COUNSELOR') return 'Counselor';
+    return 'Verified Member';
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>&larr; Back</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>My Profile</Text>
-        <View style={{ width: 60 }} />
-      </View>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>First Name</Text>
-            <TextInput
-              style={styles.input}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="First Name"
-              placeholderTextColor={COLORS.textMuted}
-            />
-          </View>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={styles.input}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Last Name"
-              placeholderTextColor={COLORS.textMuted}
-            />
-          </View>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+1234567890"
-              placeholderTextColor={COLORS.textMuted}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          {user?.role === 'THERAPIST' && (
-            <>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Rate per Session ($)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={perSessionRate}
-                  onChangeText={setPerSessionRate}
-                  placeholder="150"
-                  placeholderTextColor={COLORS.textMuted}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Modalities (comma separated)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={modalities}
-                  onChangeText={setModalities}
-                  placeholder="CBT, EMDR, ACT"
-                  placeholderTextColor={COLORS.textMuted}
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Languages (comma separated)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={languages}
-                  onChangeText={setLanguages}
-                  placeholder="English, Spanish"
-                  placeholderTextColor={COLORS.textMuted}
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Bio</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="Tell us about yourself..."
-                  placeholderTextColor={COLORS.textMuted}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-            </>
-          )}
-
-          {user?.role === 'COUNSELOR' && (
-            <>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Specialization</Text>
-                <TextInput
-                  style={styles.input}
-                  value={specialization}
-                  onChangeText={setSpecialization}
-                  placeholder="Anxiety, Depression..."
-                  placeholderTextColor={COLORS.textMuted}
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Years of Experience</Text>
-                <TextInput
-                  style={styles.input}
-                  value={yearsExperience}
-                  onChangeText={setYearsExperience}
-                  placeholder="5"
-                  placeholderTextColor={COLORS.textMuted}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Bio</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="Tell us about yourself..."
-                  placeholderTextColor={COLORS.textMuted}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-            </>
-          )}
-
-          {user?.role === 'GENERAL_USER' && (
-            <>
-              <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Primary Contact Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={ec1Name}
-                  onChangeText={setEc1Name}
-                  placeholder="Jane Doe"
-                  placeholderTextColor={COLORS.textMuted}
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Primary Contact Phone</Text>
-                <TextInput
-                  style={styles.input}
-                  value={ec1Phone}
-                  onChangeText={setEc1Phone}
-                  placeholder="+1987654321"
-                  placeholderTextColor={COLORS.textMuted}
-                  keyboardType="phone-pad"
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Secondary Contact Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={ec2Name}
-                  onChangeText={setEc2Name}
-                  placeholder="John Smith"
-                  placeholderTextColor={COLORS.textMuted}
-                />
-              </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Secondary Contact Phone</Text>
-                <TextInput
-                  style={styles.input}
-                  value={ec2Phone}
-                  onChangeText={setEc2Phone}
-                  placeholder="+1122334455"
-                  placeholderTextColor={COLORS.textMuted}
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </>
-          )}
-
-          <Pressable style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]} onPress={onSave} disabled={loading}>
-            {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.btnText}>Save Changes</Text>}
+        <View style={styles.headerLeft}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </Pressable>
+          <Text style={styles.headerTitle}>Buddy Wellness</Text>
+        </View>
+        <PanicButton variant="outline" />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        
+        {/* Profile Info */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileTop}>
+            <View style={styles.avatarWrap}>
+               <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarText}>{user?.first_name?.[0] || 'U'}</Text>
+               </View>
+               <Pressable style={styles.editAvatarBtn} onPress={() => router.push('/(app)/edit-profile')}>
+                  <Ionicons name="pencil" size={16} color={COLORS.onPrimary} />
+               </Pressable>
+            </View>
+            <View style={styles.profileDetails}>
+               <View style={styles.nameRow}>
+                  <Text style={styles.nameText}>{user?.first_name} {user?.last_name}</Text>
+                  <View style={styles.roleBadge}>
+                     <Text style={styles.roleBadgeText}>{getRoleLabel()}</Text>
+                  </View>
+               </View>
+               <Text style={styles.bioText} numberOfLines={3}>{getBio()}</Text>
+               
+               <View style={styles.actionRow}>
+                  <Pressable style={styles.primaryBtn} onPress={() => router.push('/(app)/settings')}>
+                     <Ionicons name="settings" size={18} color={COLORS.onPrimary} />
+                     <Text style={styles.primaryBtnText}>Account Settings</Text>
+                  </Pressable>
+                  <Pressable style={styles.secondaryBtn} onPress={() => router.push('/(app)/edit-profile')}>
+                     <Text style={styles.secondaryBtnText}>Edit Profile</Text>
+                  </Pressable>
+               </View>
+            </View>
+          </View>
         </View>
 
-        <Pressable style={({ pressed }) => [styles.btn, pressed && styles.btnPressed, { backgroundColor: COLORS.info || '#17a2b8', marginBottom: SPACING.md }]} onPress={() => router.push('/(app)/helpline')}>
-          <Text style={styles.btnText}>Crisis Helpline Directory</Text>
-        </Pressable>
+        <View style={styles.grid}>
+           {/* Session History */}
+           <View style={styles.gridItem}>
+              <View style={styles.gridCard}>
+                 <View style={styles.cardHeader}>
+                    <Ionicons name="time" size={20} color={COLORS.primary} />
+                    <Text style={styles.cardTitle}>Session History</Text>
+                 </View>
+                 
+                 {loadingHistory ? (
+                    <ActivityIndicator color={COLORS.primary} />
+                 ) : history.length > 0 ? (
+                    history.map(s => (
+                       <View key={s.id} style={styles.historyRow}>
+                          <View>
+                             <Text style={styles.historyName}>{s.provider_name || s.user_name}</Text>
+                             <Text style={styles.historySub}>{s.status}</Text>
+                          </View>
+                          <Text style={styles.historyDate}>
+                             {new Date(s.start_time || s.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          </Text>
+                       </View>
+                    ))
+                 ) : (
+                    <Text style={styles.emptyText}>No past sessions found.</Text>
+                 )}
 
-        <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.btnPressed]} onPress={onLogout}>
-          <Text style={styles.logoutBtnText}>Log Out</Text>
-        </Pressable>
+                 <Pressable style={styles.viewAllBtn}>
+                    <Text style={styles.viewAllText}>View all history</Text>
+                    <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                 </Pressable>
+              </View>
+           </View>
+
+           {/* Emergency Contacts (General User Only) */}
+           {user?.role === 'GENERAL_USER' && (
+           <View style={styles.gridItem}>
+              <View style={[styles.gridCard, { backgroundColor: 'rgba(253, 246, 227, 0.4)' }]}>
+                 <View style={styles.cardHeaderRow}>
+                    <View style={styles.cardHeader}>
+                       <Ionicons name="medical" size={20} color={COLORS.error} />
+                       <Text style={styles.cardTitle}>Emergency Contacts</Text>
+                    </View>
+                    <Text style={styles.contactCount}>
+                       {user?.emergency_contacts?.length || 0} Contacts
+                    </Text>
+                 </View>
+                 
+                 {user?.emergency_contacts && user.emergency_contacts.length > 0 ? (
+                    user.emergency_contacts.map((ec, idx) => (
+                       <View key={idx} style={styles.contactBox}>
+                          <View style={styles.contactTop}>
+                             <Text style={styles.contactName}>{ec.name}</Text>
+                             <View style={styles.contactRelBadge}>
+                                <Text style={styles.contactRelText}>{ec.relationship || 'Primary'}</Text>
+                             </View>
+                          </View>
+                          <View style={styles.contactDetail}>
+                             <Ionicons name="call" size={14} color={COLORS.onSurfaceVariant} />
+                             <Text style={styles.contactDetailText}>{ec.phone}</Text>
+                          </View>
+                       </View>
+                    ))
+                 ) : (
+                    <Text style={styles.emptyText}>No emergency contacts added.</Text>
+                 )}
+                 <Pressable style={styles.addContactBtn} onPress={() => router.push('/(app)/edit-profile')}>
+                    <Text style={styles.addContactText}>+ Add Contact</Text>
+                 </Pressable>
+              </View>
+           </View>
+           )}
+           
+        </View>
       </ScrollView>
+      <BottomNav />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  backBtn: { padding: SPACING.xs },
-  backBtnText: { color: COLORS.primary, fontSize: FONTS.sizes.body, fontWeight: FONTS.weights.bold },
-  headerTitle: { fontSize: FONTS.sizes.h3, fontWeight: FONTS.weights.bold, color: COLORS.text },
-  container: { padding: SPACING.lg },
-  card: { backgroundColor: COLORS.surface, padding: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.border, marginBottom: SPACING.xl },
-  sectionTitle: { fontSize: FONTS.sizes.h3, fontWeight: FONTS.weights.bold, color: COLORS.text, marginTop: SPACING.md, marginBottom: SPACING.sm },
-  fieldGroup: { marginBottom: SPACING.md },
-  label: { color: COLORS.textSecondary, fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.medium, marginBottom: SPACING.xs },
-  input: { backgroundColor: COLORS.inputBackground, borderWidth: 1, borderColor: COLORS.inputBorder, borderRadius: RADIUS.md, padding: SPACING.md, color: COLORS.text, fontSize: FONTS.sizes.body },
-  textArea: { minHeight: 80, textAlignVertical: 'top' },
-  btn: { backgroundColor: COLORS.primary, padding: SPACING.md, borderRadius: RADIUS.md, alignItems: 'center', marginTop: SPACING.md },
-  btnPressed: { opacity: 0.8 },
-  btnText: { color: COLORS.white, fontSize: FONTS.sizes.bodyLg, fontWeight: FONTS.weights.bold },
-  logoutBtn: { backgroundColor: COLORS.errorLight, padding: SPACING.md, borderRadius: RADIUS.md, alignItems: 'center', borderWidth: 1, borderColor: COLORS.error },
-  logoutBtnText: { color: COLORS.error, fontSize: FONTS.sizes.bodyLg, fontWeight: FONTS.weights.bold },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.marginMobile,
+    paddingVertical: 16,
+    backgroundColor: COLORS.surface,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  backBtn: {
+    padding: 4,
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: RADIUS.full,
+  },
+  headerTitle: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.bodyLg,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  crisisBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    backgroundColor: COLORS.errorContainer,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+  },
+  crisisBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    fontWeight: '600',
+    color: COLORS.onErrorContainer,
+  },
+  container: {
+    paddingHorizontal: SPACING.marginMobile,
+    paddingVertical: SPACING.lg,
+    paddingBottom: 80,
+  },
+  profileCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: RADIUS.xl,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 67, 86, 0.08)',
+    marginBottom: 24,
+  },
+  profileTop: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  avatarWrap: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  avatarPlaceholder: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: COLORS.surfaceContainerHighest,
+    borderWidth: 4,
+    borderColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.sm,
+  },
+  avatarText: {
+    fontFamily: FONTS.family.headline,
+    fontSize: 32,
+    color: COLORS.onSurfaceVariant,
+  },
+  editAvatarBtn: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    ...SHADOWS.md,
+  },
+  profileDetails: {
+    alignItems: 'center',
+  },
+  nameRow: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  nameText: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.headlineLgMobile,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+  roleBadge: {
+    backgroundColor: COLORS.secondaryContainer,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+  },
+  roleBadgeText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSecondaryContainer,
+    fontWeight: '600',
+  },
+  bioText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: RADIUS.full,
+    gap: 8,
+  },
+  primaryBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.onPrimary,
+    fontWeight: '600',
+  },
+  secondaryBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: RADIUS.full,
+  },
+  secondaryBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  grid: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  gridItem: {
+    width: '100%',
+  },
+  gridCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: RADIUS.xl,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 67, 86, 0.08)',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardTitle: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.outline,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  contactCount: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.outline,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainerLowest,
+    padding: 12,
+    borderRadius: RADIUS.md,
+    marginBottom: 12,
+  },
+  historyName: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  historySub: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+  },
+  historyDate: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.outline,
+  },
+  emptyText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd,
+    color: COLORS.onSurfaceVariant,
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 4,
+  },
+  viewAllText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  contactBox: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderStyle: 'dashed',
+    borderRadius: RADIUS.md,
+    padding: 16,
+    marginBottom: 12,
+  },
+  contactTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  contactName: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  contactRelBadge: {
+    backgroundColor: COLORS.surfaceContainerHighest,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: RADIUS.sm,
+  },
+  contactRelText: {
+    fontFamily: FONTS.family.body,
+    fontSize: 10,
+    color: COLORS.outline,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  contactDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  contactDetailText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+  },
+  addContactBtn: {
+    padding: 8,
+    alignItems: 'center',
+  },
+  addContactText: {
+    fontFamily: FONTS.family.body,
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontSize: FONTS.sizes.labelSm,
+  }
 });

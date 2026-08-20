@@ -66,11 +66,13 @@ class BlockedDate(models.Model):
         null=True, blank=True, related_name='blocked_dates'
     )
     date = models.DateField()
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
     reason = models.CharField(max_length=300, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Blocked {self.date}"
+        return f"Blocked {self.date} {self.start_time}-{self.end_time}"
 
     class Meta:
         verbose_name = 'Blocked Date'

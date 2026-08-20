@@ -10,6 +10,7 @@ urlpatterns = [
     path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('auth/logout-all/', views.LogoutAllDevicesView.as_view(), name='logout-all'),
     path('auth/me/', views.MeView.as_view(), name='me'),
+    path('auth/delete/', views.AccountDeleteView.as_view(), name='delete-account'),
 
     # Registration endpoints
     path('auth/register/request-otp/', views.RequestOTPView.as_view(), name='request-otp'),

@@ -23,8 +23,12 @@ const queryClient = new QueryClient({
   },
 });
 
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { selectUser } from '../store/authSlice';
+
 function PushNotificationWrapper({ children }) {
-  // Temporarily disabled for debugging the white screen crash
+  const user = useSelector(selectUser);
+  usePushNotifications(user);
   return <>{children}</>;
 }
 

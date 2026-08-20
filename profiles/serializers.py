@@ -48,4 +48,14 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             user=self.context['request'].user,
             responses_json=intake_data
         )
+        
+        # Trigger push notification
+        from notifications.tasks import send_session_request_notification
+        patient_name = self.context['request'].user.first_name or self.context['request'].user.email
+        send_session_request_notification.delay(
+            booking.therapist.user.id, 
+            patient_name, 
+            booking.id
+        )
+        
         return booking

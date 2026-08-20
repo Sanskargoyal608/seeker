@@ -12,8 +12,13 @@ urlpatterns = [
     # Scheduling & Availability
     path('availability/', views.AvailabilitySlotListCreateView.as_view(), name='availability-list-create'),
     path('availability/<int:pk>/', views.AvailabilitySlotDetailView.as_view(), name='availability-detail'),
+    path('availability/bulk/', views.BulkAvailabilityUpdateView.as_view(), name='availability-bulk-update'),
     path('blocked-dates/', views.BlockedDateListCreateView.as_view(), name='blocked-dates-list-create'),
     path('blocked-dates/<int:pk>/', views.BlockedDateDetailView.as_view(), name='blocked-dates-detail'),
+    
+    # Therapist Calendar Management
+    path('therapist/calendar/<str:date_str>/', views.TherapistDayScheduleView.as_view(), name='therapist-day-schedule'),
+    path('therapist/calendar/<str:date_str>/toggle-block/', views.ToggleSlotBlockView.as_view(), name='therapist-toggle-block'),
     
     # Booking
     path('therapists/<int:therapist_id>/slots/', views.AvailableSlotsView.as_view(), name='available-slots'),

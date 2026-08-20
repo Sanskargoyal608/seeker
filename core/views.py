@@ -61,13 +61,35 @@ class TherapistQueueView(APIView):
     """
     permission_classes = [IsAuthenticated, IsLicensedTherapist, IsVerified]
 
-    @extend_schema(responses={200: {'example': {'message': 'Access granted to therapist queue', 'recent_sessions': []}}})
+    @extend_schema(responses={200: {'example': {'message': 'Access granted to therapist queue', 'recent_sessions': [], 'escalations': []}}})
     def get(self, request):
         from .serializers import SessionSerializer
+        from .models import Session, EscalationRequest
         
-        # Get therapist's session history
-        sessions = Session.objects.filter(therapist=request.user.therapist_profile).order_by('-created_at')[:10]
+        # Get therapist's active sessions (exclude ENDED)
+        sessions = Session.objects.filter(
+            therapist=request.user.therapist_profile
+        ).exclude(status=Session.ENDED).order_by('-created_at')[:10]
         sessions_data = SessionSerializer(sessions, many=True).data
+        
+        # Get active escalations
+        escalations = EscalationRequest.objects.filter(
+            therapist=request.user.therapist_profile,
+            status=EscalationRequest.PENDING
+        ).order_by('-created_at')
+        
+        # Serialize escalations manually or create a small serializer
+        escalations_data = []
+        for esc in escalations:
+            escalations_data.append({
+                'id': esc.id,
+                'session': esc.session.id if esc.session else None,
+                'urgency': esc.urgency,
+                'reason': esc.reason,
+                'status': esc.status,
+                'counselor_name': esc.counselor.user.first_name + ' ' + esc.counselor.user.last_name if esc.counselor else 'Unknown',
+                'created_at': esc.created_at.isoformat()
+            })
         
         return Response({
             'message': 'Access granted to therapist queue',
@@ -75,6 +97,7 @@ class TherapistQueueView(APIView):
             'role': request.user.role,
             'is_verified': request.user.therapist_profile.is_verified,
             'recent_sessions': sessions_data,
+            'escalations': escalations_data,
         }, status=status.HTTP_200_OK)
 
 
@@ -752,6 +775,10 @@ class EscalateCreateView(APIView):
             }
         )
         
+        # Trigger Push Notification
+        from notifications.tasks import send_escalation_alert
+        send_escalation_alert.delay(therapist.user.id, urgency, session.id)
+        
         serializer = EscalationRequestSerializer(escalation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -870,3 +897,59 @@ class SessionIntakeView(APIView):
             'responses_json': intake.responses_json,
             'submitted_at': intake.submitted_at
         }, status=status.HTTP_200_OK)
+
+from .models import SeekerBillingRecord
+from .serializers import SeekerBillingRecordSerializer
+
+class SeekerBillingRecordListView(APIView):
+    """
+    List billing records for the authenticated seeker.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: SeekerBillingRecordSerializer(many=True)})
+    def get(self, request):
+        records = SeekerBillingRecord.objects.filter(user=request.user).order_by('-date')
+        serializer = SeekerBillingRecordSerializer(records, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+from rest_framework import viewsets
+from .models import TherapistAvailability, ClientTherapistRelationship, EarningsRecord, PayoutRecord
+from .serializers import TherapistAvailabilitySerializer, ClientTherapistRelationshipSerializer, EarningsRecordSerializer, PayoutRecordSerializer
+
+class TherapistAvailabilityViewSet(viewsets.ModelViewSet):
+    serializer_class = TherapistAvailabilitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TherapistAvailability.objects.filter(therapist__user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(therapist=self.request.user.therapist_profile)
+
+class ClientTherapistRelationshipViewSet(viewsets.ModelViewSet):
+    serializer_class = ClientTherapistRelationshipSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ClientTherapistRelationship.objects.filter(therapist__user=self.request.user)
+
+class TherapistEarningsViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = EarningsRecordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return EarningsRecord.objects.filter(therapist__user=self.request.user)
+
+class TherapistPayoutViewSet(viewsets.ModelViewSet):
+    serializer_class = PayoutRecordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return PayoutRecord.objects.filter(therapist__user=self.request.user)
+        
+    def perform_create(self, serializer):
+        # Auto-accept payouts per user requirements
+        serializer.save(therapist=self.request.user.therapist_profile, status='PAID')

@@ -350,3 +350,62 @@ class CounselorAvailability(models.Model):
     
     class Meta:
         verbose_name_plural = "Counselor Availabilities"
+
+
+class SeekerBillingRecord(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='billing_records'
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=255)
+    date = models.DateTimeField(auto_now_add=True)
+    is_paid = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.user.email} - ${self.amount} - {self.description}"
+
+
+class TherapistAvailability(models.Model):
+    therapist = models.ForeignKey(
+        'accounts.LicensedTherapist', on_delete=models.CASCADE, related_name='availability'
+    )
+    # 0 = Monday, 6 = Sunday
+    day_of_week = models.IntegerField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    is_available = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.therapist.user.email} - Day {self.day_of_week} ({self.start_time} to {self.end_time})"
+
+    class Meta:
+        verbose_name_plural = "Therapist Availabilities"
+        ordering = ['day_of_week', 'start_time']
+
+
+class ClientTherapistRelationship(models.Model):
+    ACTIVE = 'ACTIVE'
+    DISCHARGED = 'DISCHARGED'
+    
+    STATUS_CHOICES = [
+        (ACTIVE, 'Active'),
+        (DISCHARGED, 'Discharged'),
+    ]
+
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='therapists'
+    )
+    therapist = models.ForeignKey(
+        'accounts.LicensedTherapist', on_delete=models.CASCADE, related_name='clients'
+    )
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=ACTIVE)
+    notes = models.TextField(blank=True, help_text="General intake notes for this client.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Client {self.client.email} -> Therapist {self.therapist.user.email}"
+        
+    class Meta:
+        unique_together = ('client', 'therapist')
+

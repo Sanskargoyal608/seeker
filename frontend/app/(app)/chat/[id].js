@@ -18,8 +18,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { selectAccessToken, selectUser } from '../../../store/authSlice';
 import apiClient from '../../../api/axios';
-import { COLORS, FONTS, RADIUS, SPACING } from '../../../constants/theme';
+import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../../constants/theme';
 import Constants from 'expo-constants';
+import { Ionicons, MaterialSymbols } from '@expo/vector-icons';
 import { endSession, submitFeedback, getTherapistsForEscalation, createEscalationRequest, getSession } from '../../../api/core';
 
 const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || 'http://localhost:8000';
@@ -40,14 +41,26 @@ export default function ChatScreen() {
   const [connected, setConnected] = useState(false);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
-  
-  // Feedback States
-  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
-  const [q1, setQ1] = useState('');
-  const [q2, setQ2] = useState('');
-  const [q3, setQ3] = useState('');
-  const [q4, setQ4] = useState('');
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [sessionNotes, setSessionNotes] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
+  const fetchNotes = async () => {
+    try {
+      setLoadingNotes(true);
+      const { data } = await apiClient.get(`/api/core/sessions/${id}/notes/`);
+      setSessionNotes(data);
+    } catch (err) {
+      console.log('Failed to fetch notes:', err);
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  useEffect(() => {
+    if (noteModalVisible && isProvider) {
+      fetchNotes();
+    }
+  }, [noteModalVisible]);
 
   // Escalation States
   const [escalateModalVisible, setEscalateModalVisible] = useState(false);
@@ -56,6 +69,9 @@ export default function ChatScreen() {
   const [escalateUrgency, setEscalateUrgency] = useState('MEDIUM');
   const [selectedTherapistId, setSelectedTherapistId] = useState(null);
   const [escalating, setEscalating] = useState(false);
+
+  // Payment State
+  const [paymentRequiredData, setPaymentRequiredData] = useState(null);
 
   const ws = useRef(null);
   const flatListRef = useRef(null);
@@ -80,7 +96,8 @@ export default function ChatScreen() {
         const formatted = data.map(msg => ({
           id: msg.id,
           text: msg.text,
-          sender: msg.sender_id == user?.id ? 'Me' : (msg.sender_role === 'System' ? 'System' : 'Other')
+          sender: msg.sender_id == user?.id ? 'Me' : (msg.sender_role === 'System' ? 'System' : 'Other'),
+          timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }));
         setMessages(formatted);
       } catch (err) {
@@ -102,24 +119,20 @@ export default function ChatScreen() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'chat.message') {
-          // Ignore if it's our own message echoing back (use == to handle string vs int)
           if (data.sender_id == user?.id) return;
-          
-          setMessages((prev) => [...prev, { id: Date.now().toString(), text: data.message, sender: 'Other' }]);
+          setMessages((prev) => [...prev, { 
+            id: Date.now().toString(), 
+            text: data.message, 
+            sender: 'Other',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }]);
         } else if (data.type === 'timer.update') {
           setTimer(data.time_remaining_seconds);
         } else if (data.type === 'payment.required') {
-          if (isCounselor) {
+          if (isProvider) {
             Alert.alert('System', 'The user needs to make a payment to continue the session.');
           } else {
-            Alert.alert(
-              'Payment Required', 
-              data.message,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Pay Now', onPress: handlePayment }
-              ]
-            );
+            setPaymentRequiredData(data.message);
           }
         } else if (data.type === 'system.alert') {
           Alert.alert('System', data.message);
@@ -148,6 +161,7 @@ export default function ChatScreen() {
   const handlePayment = async () => {
     try {
       await apiClient.post(`/api/core/sessions/${id}/verify-payment/`);
+      setPaymentRequiredData(null);
       Alert.alert('Success', 'Payment successful! Chat resumed.');
     } catch (err) {
       Alert.alert('Error', 'Payment failed.');
@@ -161,9 +175,8 @@ export default function ChatScreen() {
         note_text: noteText.trim(),
         is_private: true
       });
-      Alert.alert('Success', 'Note saved successfully.');
-      setNoteModalVisible(false);
       setNoteText('');
+      fetchNotes(); // refetch notes
     } catch (err) {
       Alert.alert('Error', 'Failed to save note.');
     }
@@ -172,8 +185,12 @@ export default function ChatScreen() {
   const sendMessage = () => {
     if (!inputText.trim() || !connected) return;
 
-    // Add locally to show immediately on right side
-    const myMsg = { id: Date.now().toString(), text: inputText.trim(), sender: 'Me' };
+    const myMsg = { 
+      id: Date.now().toString(), 
+      text: inputText.trim(), 
+      sender: 'Me',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
     setMessages((prev) => [...prev, myMsg]);
 
     ws.current.send(
@@ -224,7 +241,7 @@ export default function ChatScreen() {
           try {
             await endSession(id);
             if (!isProvider) {
-              setFeedbackModalVisible(true);
+              router.replace(`/(app)/feedback/${id}`);
             } else {
               router.replace('/(app)/dashboard');
             }
@@ -236,35 +253,15 @@ export default function ChatScreen() {
     ]);
   };
 
-  const handleFeedbackSubmit = async () => {
-    if (!q1.trim() || !q2.trim() || !q3.trim() || !q4.trim()) {
-      Alert.alert('Error', 'Please answer all questions to help us improve.');
-      return;
-    }
-    setSubmittingFeedback(true);
-    try {
-      await submitFeedback(id, {
-        q1_before_session: q1.trim(),
-        q2_after_session: q2.trim(),
-        q3_what_helped: q3.trim(),
-        q4_what_improve: q4.trim()
-      });
-      setFeedbackModalVisible(false);
-      Alert.alert('Thank You', 'Your feedback has been recorded!', [
-        { text: 'OK', onPress: () => router.replace('/(app)/dashboard') }
-      ]);
-    } catch (err) {
-      Alert.alert('Error', err.response?.data?.error || 'Failed to submit feedback.');
-    } finally {
-      setSubmittingFeedback(false);
-    }
-  };
+
 
   const renderItem = ({ item }) => {
     if (item.sender === 'System') {
       return (
-        <View style={styles.systemMsgContainer}>
-          <Text style={styles.systemMsgText}>{item.text}</Text>
+        <View style={styles.systemMsgWrap}>
+           <View style={styles.systemMsgContainer}>
+             <Text style={styles.systemMsgText}>{item.text}</Text>
+           </View>
         </View>
       );
     }
@@ -275,66 +272,141 @@ export default function ChatScreen() {
         <View style={[styles.msgBubble, isMe ? styles.msgBubbleRight : styles.msgBubbleLeft]}>
           <Text style={[styles.msgText, isMe ? styles.msgTextRight : styles.msgTextLeft]}>{item.text}</Text>
         </View>
+        <Text style={styles.msgTime}>{item.timestamp || 'Just now'}</Text>
       </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Top Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>&larr; Exit</Text>
-        </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={styles.title}>Session #{id}</Text>
-          {timer !== null && (
-            <Text style={styles.timerText}>
-              Time left: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
-            </Text>
-          )}
+        <View style={styles.headerLeft}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.onSurfaceVariant} />
+          </Pressable>
+          <View style={styles.headerProviderInfo}>
+             <View style={styles.avatarWrap}>
+                <View style={styles.avatarPlaceholder}>
+                   <Text style={{ fontFamily: FONTS.family.headline, color: COLORS.onSurfaceVariant, fontSize: 16 }}>{sessionData?.provider_name?.[0] || 'Dr'}</Text>
+                </View>
+                <View style={[styles.statusDot, { backgroundColor: connected ? COLORS.statusAvailable : COLORS.error }]} />
+             </View>
+             <View>
+                <Text style={styles.providerName}>{sessionData?.provider_name || 'Provider'}</Text>
+                <Text style={styles.providerTitle}>Session #{id}</Text>
+             </View>
+          </View>
         </View>
         <View style={styles.headerRight}>
-          <View style={[styles.statusDot, { backgroundColor: connected ? COLORS.success : COLORS.error, marginRight: 10 }]} />
-          <Pressable onPress={handleEndSession} style={styles.endBtn}>
-            <Text style={styles.endBtnText}>End</Text>
-          </Pressable>
+           <Pressable onPress={handleEndSession} style={styles.endBtn}>
+              <Text style={styles.endBtnText}>End Session</Text>
+           </Pressable>
         </View>
       </View>
 
+      {/* Timer Bar */}
+      {timer !== null && (
+         <View style={styles.timerBar}>
+            <Ionicons name="timer-outline" size={18} color={COLORS.secondary} />
+            <Text style={styles.timerBarText}>
+               {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
+            </Text>
+         </View>
+      )}
+
+      {/* Provider Tools */}
       {isProvider && (
         <View style={styles.counselorTools}>
           <Pressable style={styles.toolBtn} onPress={() => setNoteModalVisible(true)}>
-            <Text style={styles.toolBtnText}>📝 Add Note</Text>
+            <Ionicons name="document-text-outline" size={16} color={COLORS.text} />
+            <Text style={styles.toolBtnText}>Note</Text>
           </Pressable>
           {isCounselor && (
             <Pressable style={[styles.toolBtn, styles.toolBtnDanger]} onPress={handleEscalate}>
-              <Text style={styles.toolBtnDangerText}>🚨 Escalate</Text>
+              <Ionicons name="alert-circle-outline" size={16} color={COLORS.error} />
+              <Text style={styles.toolBtnDangerText}>Escalate</Text>
             </Pressable>
           )}
           {sessionData?.has_escalation && (
             <Pressable style={[styles.toolBtn, { backgroundColor: '#E0F2FE', borderColor: '#0284C7' }]} onPress={() => router.push(`/(app)/backchannel/${id}`)}>
-              <Text style={[styles.toolBtnText, { color: '#0284C7' }]}>🔄 Join Backchannel</Text>
+              <Ionicons name="chatbubbles-outline" size={16} color="#0284C7" />
+              <Text style={[styles.toolBtnText, { color: '#0284C7' }]}>Backchannel</Text>
             </Pressable>
           )}
         </View>
       )}
 
-      <Modal visible={noteModalVisible} animationType="slide" transparent={true}>
+      {/* AI Emotion Analysis Mock */}
+      {isCounselor && (
+        <View style={styles.aiSupportBox}>
+           <Ionicons name="sparkles" size={16} color="#0284C7" style={{ marginRight: 6 }} />
+           <Text style={styles.aiSupportText}>AI Support: Emotional intensity rising (Anxiety score: 0.72)</Text>
+        </View>
+      )}
+
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.chatContainer}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
+
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.inputArea}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Share what's on your mind..."
+              placeholderTextColor={COLORS.outline}
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={sendMessage}
+            />
+          </View>
+          <Pressable style={styles.sendBtn} onPress={sendMessage}>
+             <Ionicons name="send" size={20} color={COLORS.onPrimary} />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* Modals */}
+      <Modal visible={noteModalVisible} animationType="fade" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Private Note</Text>
+            <Text style={styles.modalTitle}>Session Notes</Text>
+            
+            {loadingNotes ? (
+              <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: SPACING.md }} />
+            ) : (
+              <FlatList
+                data={sessionNotes}
+                keyExtractor={(item) => item.id.toString()}
+                style={{ maxHeight: 200, width: '100%', marginBottom: SPACING.md }}
+                ListEmptyComponent={<Text style={{ color: COLORS.textMuted, fontStyle: 'italic', marginBottom: SPACING.md }}>No notes yet.</Text>}
+                renderItem={({ item }) => (
+                  <View style={{ backgroundColor: COLORS.surfaceVariant, padding: SPACING.sm, borderRadius: RADIUS.sm, marginBottom: SPACING.xs }}>
+                    <Text style={{ fontSize: 10, color: COLORS.textMuted, marginBottom: 2 }}>{new Date(item.created_at).toLocaleString()}</Text>
+                    <Text style={{ fontSize: FONTS.sizes.sm, color: COLORS.onSurface }}>{item.note_text}</Text>
+                  </View>
+                )}
+              />
+            )}
+
             <TextInput
-              style={styles.modalInput}
-              placeholder="Type your clinical note here..."
+              style={styles.modalInputArea}
+              placeholder="Type a new clinical note here..."
               placeholderTextColor={COLORS.textMuted}
               multiline
-              numberOfLines={6}
+              numberOfLines={4}
               value={noteText}
               onChangeText={setNoteText}
             />
             <View style={styles.modalActions}>
               <Pressable style={styles.modalCancelBtn} onPress={() => { setNoteModalVisible(false); setNoteText(''); }}>
-                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+                <Text style={styles.modalCancelBtnText}>Close</Text>
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={handleSaveNote}>
                 <Text style={styles.modalSaveBtnText}>Save Note</Text>
@@ -344,47 +416,7 @@ export default function ChatScreen() {
         </View>
       </Modal>
 
-      <Modal visible={feedbackModalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <Text style={styles.modalTitle}>Session Feedback</Text>
-            <Text style={styles.modalSubtitle}>Please help us improve by answering a few quick questions.</Text>
-            
-            <FlatList
-              data={[
-                { key: 'q1', title: '1. How did you feel before the session?', state: q1, setState: setQ1 },
-                { key: 'q2', title: '2. How do you feel after the session?', state: q2, setState: setQ2 },
-                { key: 'q3', title: '3. What helped you the most?', state: q3, setState: setQ3 },
-                { key: 'q4', title: '4. What could we improve?', state: q4, setState: setQ4 },
-              ]}
-              keyExtractor={i => i.key}
-              renderItem={({ item }) => (
-                <View style={{ marginBottom: SPACING.md }}>
-                  <Text style={styles.feedbackLabel}>{item.title}</Text>
-                  <TextInput
-                    style={styles.feedbackInput}
-                    multiline
-                    numberOfLines={3}
-                    value={item.state}
-                    onChangeText={item.setState}
-                    placeholder="Your answer..."
-                    placeholderTextColor={COLORS.textMuted}
-                  />
-                </View>
-              )}
-            />
 
-            <View style={[styles.modalActions, { marginTop: SPACING.lg }]}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => { setFeedbackModalVisible(false); router.replace('/(app)/dashboard'); }}>
-                <Text style={styles.modalCancelBtnText}>Skip</Text>
-              </Pressable>
-              <Pressable style={styles.modalSaveBtn} onPress={handleFeedbackSubmit} disabled={submittingFeedback}>
-                {submittingFeedback ? <ActivityIndicator color={COLORS.white} size="small" /> : <Text style={styles.modalSaveBtnText}>Submit</Text>}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <Modal visible={escalateModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
@@ -408,7 +440,7 @@ export default function ChatScreen() {
 
               <Text style={styles.feedbackLabel}>Reason for Escalation</Text>
               <TextInput
-                style={styles.modalInput}
+                style={styles.modalInputArea}
                 multiline
                 numberOfLines={3}
                 value={escalateReason}
@@ -448,30 +480,43 @@ export default function ChatScreen() {
         </View>
       </Modal>
 
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.chatContainer}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-      />
+      {/* Payment Modal */}
+      <Modal visible={!!paymentRequiredData} animationType="fade" transparent={true}>
+        <View style={styles.modalOverlay}>
+           <View style={styles.paymentModalCard}>
+              <View style={styles.paymentIconWrap}>
+                 <Ionicons name="card" size={32} color={COLORS.onSecondaryContainer} />
+              </View>
+              <Text style={styles.paymentTitle}>Continue your session?</Text>
+              <Text style={styles.paymentSub}>{paymentRequiredData}</Text>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            placeholderTextColor={COLORS.textMuted}
-            value={inputText}
-            onChangeText={setInputText}
-            onSubmitEditing={sendMessage}
-          />
-          <Pressable style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]} onPress={sendMessage}>
-            <Text style={styles.sendBtnText}>Send</Text>
-          </Pressable>
+              <View style={styles.paymentOptions}>
+                 <Pressable style={styles.paymentOption}>
+                    <View>
+                       <Text style={styles.paymentOptionLabel}>30 Minute Session</Text>
+                       <Text style={styles.paymentOptionSub}>Intensive focus</Text>
+                    </View>
+                    <Text style={styles.paymentOptionPrice}>$20</Text>
+                 </Pressable>
+                 <Pressable style={[styles.paymentOption, styles.paymentOptionActive]}>
+                    <View>
+                       <Text style={styles.paymentOptionLabel}>60 Minute Session</Text>
+                       <Text style={styles.paymentOptionSub}>Deep exploration</Text>
+                    </View>
+                    <Text style={styles.paymentOptionPrice}>$35</Text>
+                 </Pressable>
+              </View>
+
+              <Pressable style={styles.payBtn} onPress={handlePayment}>
+                 <Text style={styles.payBtnText}>Pay to Continue</Text>
+                 <Ionicons name="lock-closed" size={16} color={COLORS.onPrimary} />
+              </Pressable>
+              <Pressable style={styles.payCancelBtn} onPress={() => { setPaymentRequiredData(null); handleEndSession(); }}>
+                 <Text style={styles.payCancelText}>End Session</Text>
+              </Pressable>
+           </View>
         </View>
-      </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -482,69 +527,456 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.marginMobile,
+    paddingVertical: 12,
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: 'rgba(113, 120, 124, 0.3)', // outline-variant/30
   },
-  backBtn: { padding: SPACING.sm },
-  backBtnText: { color: COLORS.primary, fontSize: FONTS.sizes.body },
-  headerCenter: { alignItems: 'center' },
-  title: { fontSize: FONTS.sizes.md, fontWeight: FONTS.weights.bold, color: COLORS.text },
-  timerText: { fontSize: FONTS.sizes.sm, color: COLORS.warning, marginTop: 2 },
-  headerRight: { padding: SPACING.sm },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backBtn: {
+    padding: 8,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceContainerLow,
+  },
+  headerProviderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceContainerHigh,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  providerName: {
+    fontFamily: FONTS.family.headline,
+    fontSize: 18,
+    color: COLORS.primary,
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  providerTitle: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  endBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+  },
+  endBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.error,
+  },
+  timerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(186, 235, 245, 0.9)', // secondary-container/90
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(54, 101, 110, 0.1)', // secondary/10
+    gap: 8,
+  },
+  timerBarText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.secondary,
+  },
   counselorTools: {
     flexDirection: 'row',
-    backgroundColor: '#F0F4F8',
+    backgroundColor: COLORS.surfaceContainerLow,
     padding: SPACING.sm,
     justifyContent: 'space-around',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS.outlineVariant,
   },
-  toolBtn: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: COLORS.white, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border },
-  toolBtnText: { color: COLORS.text, fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold },
-  toolBtnDanger: { borderColor: COLORS.error },
-  toolBtnDangerText: { color: COLORS.error, fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold },
-  chatContainer: { padding: SPACING.md, flexGrow: 1, justifyContent: 'flex-end' },
-  systemMsgContainer: { alignSelf: 'center', backgroundColor: COLORS.surface, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.full, marginVertical: SPACING.sm },
-  systemMsgText: { color: COLORS.textSecondary, fontSize: FONTS.sizes.xs, fontStyle: 'italic' },
-  msgWrapper: { width: '100%', marginBottom: SPACING.md, flexDirection: 'row' },
-  msgWrapperLeft: { justifyContent: 'flex-start' },
-  msgWrapperRight: { justifyContent: 'flex-end' },
-  msgBubble: { maxWidth: '80%', padding: SPACING.md, borderRadius: RADIUS.lg },
-  msgBubbleLeft: { backgroundColor: COLORS.surface, borderBottomLeftRadius: 4 },
-  msgBubbleRight: { backgroundColor: COLORS.primary, borderBottomRightRadius: 4 },
-  msgText: { fontSize: FONTS.sizes.body, lineHeight: 22 },
-  msgTextLeft: { color: COLORS.text },
-  msgTextRight: { color: COLORS.white },
-  inputContainer: { flexDirection: 'row', padding: SPACING.md, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border, alignItems: 'center' },
-  input: { flex: 1, backgroundColor: COLORS.background, borderRadius: RADIUS.full, paddingHorizontal: SPACING.lg, paddingVertical: Platform.OS === 'ios' ? 12 : 8, fontSize: FONTS.sizes.body, color: COLORS.text, marginRight: SPACING.md },
-  sendBtn: { backgroundColor: COLORS.primary, paddingHorizontal: SPACING.lg, paddingVertical: 10, borderRadius: RADIUS.full },
-  sendBtnDisabled: { opacity: 0.5 },
-  sendBtnText: { color: COLORS.white, fontWeight: FONTS.weights.bold, fontSize: FONTS.sizes.sm },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '90%', backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: SPACING.lg, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84 },
-  modalTitle: { fontSize: FONTS.sizes.lg, fontWeight: FONTS.weights.bold, color: COLORS.text, marginBottom: SPACING.md },
-  modalSubtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginBottom: SPACING.lg },
-  modalInput: { backgroundColor: COLORS.background, borderRadius: RADIUS.md, padding: SPACING.md, height: 120, textAlignVertical: 'top', fontSize: FONTS.sizes.body, color: COLORS.text, marginBottom: SPACING.lg, borderWidth: 1, borderColor: COLORS.border },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.md },
-  modalCancelBtn: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderRadius: RADIUS.sm },
-  modalCancelBtnText: { color: COLORS.textSecondary, fontWeight: FONTS.weights.bold },
-  modalSaveBtn: { backgroundColor: COLORS.primary, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg, borderRadius: RADIUS.sm },
-  modalSaveBtnText: { color: COLORS.white, fontWeight: FONTS.weights.bold },
-  endBtn: { backgroundColor: COLORS.error, paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.sm },
-  endBtnText: { color: COLORS.white, fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold },
-  feedbackLabel: { fontSize: FONTS.sizes.sm, fontWeight: FONTS.weights.bold, color: COLORS.text, marginBottom: SPACING.xs },
-  feedbackInput: { backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border, borderRadius: RADIUS.sm, padding: SPACING.sm, fontSize: FONTS.sizes.body, textAlignVertical: 'top', minHeight: 60 },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  urgencyContainer: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
-  urgencyBtn: { flex: 1, paddingVertical: SPACING.sm, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
-  urgencyBtnSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  urgencyBtnText: { color: COLORS.text, fontSize: FONTS.sizes.xs, fontWeight: FONTS.weights.bold },
-  urgencyBtnTextSelected: { color: COLORS.white },
-  therapistCard: { padding: SPACING.md, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border, marginBottom: SPACING.sm },
-  therapistCardSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
-  therapistNameSelected: { color: COLORS.primary },
+  toolBtn: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6, 
+    paddingHorizontal: 12, 
+    backgroundColor: COLORS.surface, 
+    borderRadius: RADIUS.full, 
+    borderWidth: 1, 
+    borderColor: COLORS.outlineVariant 
+  },
+  toolBtnText: { 
+    fontFamily: FONTS.family.body,
+    color: COLORS.onSurface, 
+    fontSize: FONTS.sizes.sm, 
+    fontWeight: '600' 
+  },
+  toolBtnDanger: { 
+    borderColor: COLORS.error 
+  },
+  toolBtnDangerText: { 
+    fontFamily: FONTS.family.body,
+    color: COLORS.error, 
+    fontSize: FONTS.sizes.sm, 
+    fontWeight: '600' 
+  },
+  chatContainer: { 
+    padding: SPACING.marginMobile, 
+    flexGrow: 1, 
+    justifyContent: 'flex-end',
+    gap: 24,
+  },
+  systemMsgWrap: {
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  systemMsgContainer: {
+    backgroundColor: COLORS.surfaceContainer,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+  },
+  systemMsgText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+  },
+  msgWrapper: {
+    flexDirection: 'column',
+    gap: 4,
+  },
+  msgWrapperLeft: {
+    alignItems: 'flex-start',
+  },
+  msgWrapperRight: {
+    alignItems: 'flex-end',
+  },
+  msgBubble: {
+    maxWidth: '85%',
+    padding: 16,
+    borderRadius: RADIUS.xl,
+  },
+  msgBubbleLeft: {
+    backgroundColor: 'rgba(186, 235, 245, 0.1)', // secondary-container/10
+    borderWidth: 1,
+    borderColor: 'rgba(54, 101, 110, 0.1)', // secondary/10
+    borderTopLeftRadius: 4,
+  },
+  msgBubbleRight: {
+    backgroundColor: COLORS.primary,
+    ...SHADOWS.sm,
+    borderTopRightRadius: 4,
+  },
+  msgText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd,
+    lineHeight: 24,
+  },
+  msgTextLeft: {
+    color: COLORS.onSurface,
+  },
+  msgTextRight: {
+    color: COLORS.onPrimary,
+  },
+  msgTime: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.outline,
+    paddingHorizontal: 8,
+  },
+  inputArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(193, 199, 204, 0.2)', // outline-variant/20
+    gap: 12,
+  },
+  inputContainer: {
+    flex: 1,
+  },
+  input: {
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd,
+    color: COLORS.onSurface,
+  },
+  sendBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.md,
+  },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(27, 28, 28, 0.4)', // on-surface/40
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  modalContent: { 
+    width: '100%', 
+    maxWidth: 400,
+    backgroundColor: COLORS.surfaceContainerLowest, 
+    borderRadius: RADIUS.xl, 
+    padding: 24, 
+    ...SHADOWS.lg,
+  },
+  modalTitle: { 
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.headlineMd, 
+    fontWeight: '700', 
+    color: COLORS.onSurface, 
+    marginBottom: 8,
+  },
+  modalSubtitle: { 
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd, 
+    color: COLORS.onSurfaceVariant, 
+    marginBottom: 24,
+  },
+  modalInputArea: { 
+    backgroundColor: COLORS.background, 
+    borderRadius: RADIUS.md, 
+    padding: SPACING.md, 
+    height: 120, 
+    textAlignVertical: 'top', 
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd, 
+    color: COLORS.text, 
+    marginBottom: SPACING.lg, 
+    borderWidth: 1, 
+    borderColor: COLORS.outlineVariant,
+  },
+  modalActions: { 
+    flexDirection: 'row', 
+    justifyContent: 'flex-end', 
+    gap: SPACING.md,
+  },
+  modalCancelBtn: { 
+    paddingVertical: SPACING.sm, 
+    paddingHorizontal: SPACING.md, 
+    borderRadius: RADIUS.sm,
+  },
+  modalCancelBtnText: { 
+    fontFamily: FONTS.family.body,
+    color: COLORS.textSecondary, 
+    fontWeight: '600',
+  },
+  modalSaveBtn: { 
+    backgroundColor: COLORS.primary, 
+    paddingVertical: SPACING.sm, 
+    paddingHorizontal: SPACING.lg, 
+    borderRadius: RADIUS.full, 
+  },
+  modalSaveBtnText: { 
+    fontFamily: FONTS.family.body,
+    color: COLORS.white, 
+    fontWeight: '600',
+  },
+  feedbackLabel: { 
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.sm, 
+    fontWeight: '600', 
+    color: COLORS.onSurface, 
+    marginBottom: 8,
+  },
+  feedbackInput: { 
+    backgroundColor: COLORS.surfaceContainerLowest, 
+    borderWidth: 1, 
+    borderColor: COLORS.outlineVariant, 
+    borderRadius: RADIUS.md, 
+    padding: SPACING.sm, 
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd, 
+    textAlignVertical: 'top', 
+    minHeight: 80,
+  },
+  urgencyContainer: { 
+    flexDirection: 'row', 
+    gap: SPACING.sm, 
+    marginBottom: SPACING.md,
+  },
+  urgencyBtn: { 
+    flex: 1, 
+    paddingVertical: SPACING.sm, 
+    borderRadius: RADIUS.sm, 
+    borderWidth: 1, 
+    borderColor: COLORS.outlineVariant, 
+    alignItems: 'center',
+  },
+  urgencyBtnSelected: { 
+    backgroundColor: COLORS.primary, 
+    borderColor: COLORS.primary,
+  },
+  urgencyBtnText: { 
+    fontFamily: FONTS.family.body,
+    color: COLORS.onSurface, 
+    fontSize: FONTS.sizes.xs, 
+    fontWeight: '600',
+  },
+  urgencyBtnTextSelected: { 
+    color: COLORS.onPrimary,
+  },
+  therapistCard: { 
+    padding: SPACING.md, 
+    borderRadius: RADIUS.md, 
+    borderWidth: 1, 
+    borderColor: COLORS.outlineVariant, 
+    marginBottom: SPACING.sm,
+  },
+  therapistCardSelected: { 
+    borderColor: COLORS.primary, 
+    backgroundColor: 'rgba(16, 67, 86, 0.05)', // primary/5
+  },
+  therapistName: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.bodyLg,
+    color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  therapistNameSelected: { 
+    color: COLORS.primary,
+  },
+  paymentModalCard: {
+    backgroundColor: COLORS.surfaceContainerLowest,
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: RADIUS.xl,
+    padding: 32,
+    alignItems: 'center',
+    ...SHADOWS.lg,
+  },
+  paymentIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.secondaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  aiSupportBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F2FE',
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+  },
+  aiSupportText: {
+    color: '#0284C7',
+    fontSize: FONTS.sizes.xs,
+    fontWeight: FONTS.weights.bold,
+  },
+  paymentTitle: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.headlineMd,
+    color: COLORS.onSurface,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  paymentSub: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  paymentOptions: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 32,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderRadius: RADIUS.xl,
+  },
+  paymentOptionActive: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(16, 67, 86, 0.05)',
+  },
+  paymentOptionLabel: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  paymentOptionSub: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+  },
+  paymentOptionPrice: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  payBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    width: '100%',
+    borderRadius: RADIUS.full,
+    gap: 8,
+    ...SHADOWS.md,
+  },
+  payBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    fontWeight: '600',
+    color: COLORS.onPrimary,
+  },
+  payCancelBtn: {
+    marginTop: 16,
+  },
+  payCancelText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+  }
 });

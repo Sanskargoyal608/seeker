@@ -14,6 +14,20 @@ class NotificationService:
         if data is None:
             data = {}
 
+        # Save to database so it shows up in Notification Center
+        from notifications.models import Notification
+        
+        notification_type = data.get('type', 'general')
+        related_id = data.get('session_id') or data.get('booking_id')
+        
+        Notification.objects.create(
+            user=user,
+            title=title,
+            body=body,
+            notification_type=notification_type,
+            related_id=related_id
+        )
+
         devices = UserDevice.objects.filter(user=user, is_active=True)
         if not devices.exists():
             logger.info(f"No active devices found for user {user.id}")

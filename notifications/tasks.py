@@ -75,6 +75,20 @@ def send_session_request_notification(therapist_user_id, patient_name, session_i
         logger.error(f"User {therapist_user_id} not found for session request notification.")
 
 @shared_task
+def send_escalation_alert(therapist_user_id, urgency, session_id):
+    from accounts.models import User
+    try:
+        user = User.objects.get(id=therapist_user_id)
+        NotificationService.send_push_notification(
+            user=user,
+            title=f"Escalation Alert ({urgency})",
+            body="A counselor has escalated a session to you.",
+            data={'type': 'escalation_alert', 'session_id': str(session_id)}
+        )
+    except User.DoesNotExist:
+        logger.error(f"User {therapist_user_id} not found for escalation alert.")
+
+@shared_task
 def send_scheduled_session_reminders():
     """
     Checks for scheduled bookings and sends 24-hour and 1-hour reminders via FCM and email.

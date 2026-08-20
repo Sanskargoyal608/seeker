@@ -79,7 +79,7 @@ export default function LoginScreen() {
         {/* Brand */}
         <View style={styles.brandSection}>
           <Text style={styles.logo}>🌿</Text>
-          <Text style={styles.brand}>Seeker</Text>
+          <Text style={styles.brand}>Buddy</Text>
           <Text style={styles.tagline}>Mental wellness, within reach</Text>
         </View>
 
@@ -180,7 +180,7 @@ export default function LoginScreen() {
         </View>
 
         <Text style={styles.footer}>
-          Seeker Mental Wellness Platform · v1.0
+          Buddy Mental Wellness Platform · v1.0
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

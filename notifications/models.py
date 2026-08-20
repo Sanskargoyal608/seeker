@@ -28,3 +28,21 @@ class UserDevice(models.Model):
         verbose_name = 'User Device'
         verbose_name_plural = 'User Devices'
         unique_together = [['user', 'fcm_token']]
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications'
+    )
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    notification_type = models.CharField(max_length=50) # e.g. new_message, session_reminder
+    related_id = models.CharField(max_length=50, blank=True, null=True) # e.g. session_id, booking_id
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.notification_type} for {self.user.email}"

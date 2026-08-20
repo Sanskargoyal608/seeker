@@ -22,7 +22,10 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { getDashboardData, getActiveTriage, respondToEscalationRequest, createTherapistFollowUp, getSessionIntake } from '../../api/core';
 import apiClient from '../../api/axios';
 import PanicButton from '../../components/PanicButton';
+import BuddyDashboard from '../../components/BuddyDashboard';
+import CounselorDashboard from '../../components/CounselorDashboard';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 
 const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || 'http://localhost:8000';
@@ -126,6 +129,12 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // Redirect Therapist to their dedicated layout
+      if (user?.role === 'THERAPIST') {
+        router.replace('/(app)/therapist/dashboard');
+        return;
+      }
+      
       fetchDashboard();
     }, [])
   );
@@ -275,6 +284,22 @@ export default function DashboardScreen() {
     );
   }
 
+  if (role === 'GENERAL_USER') {
+    return (
+      <BuddyDashboard 
+        user={user}
+        dashboardData={dashboardData}
+        activeTriage={activeTriage}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+      />
+    );
+  }
+
+  if (role === 'COUNSELOR') {
+    return <CounselorDashboard />;
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView 
@@ -289,12 +314,17 @@ export default function DashboardScreen() {
         <View style={styles.topBar}>
           <Pressable onPress={() => router.push('/(app)/profile')} style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
             <Text style={styles.greeting}>{greeting()},</Text>
-            <Text style={styles.userName}>{user?.first_name || user?.username || 'Seeker'}</Text>
+            <Text style={styles.userName}>{user?.first_name || user?.username || 'Buddy'}</Text>
             <Text style={{ color: COLORS.primary, fontSize: FONTS.sizes.sm, marginTop: 4 }}>View Profile &rarr;</Text>
           </Pressable>
-          <Pressable onPress={onLogout} disabled={loggingOut} style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}>
-            {loggingOut ? <ActivityIndicator color={COLORS.error} size="small" /> : <Text style={styles.logoutBtnText}>Log out</Text>}
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Pressable onPress={() => router.push('/(app)/notifications')} style={({ pressed }) => [{ marginRight: 15 }, pressed && { opacity: 0.7 }]}>
+              <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
+            </Pressable>
+            <Pressable onPress={onLogout} disabled={loggingOut} style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}>
+              {loggingOut ? <ActivityIndicator color={COLORS.error} size="small" /> : <Text style={styles.logoutBtnText}>Log out</Text>}
+            </Pressable>
+          </View>
         </View>
 
         <View style={[styles.roleCard, { borderColor: info.color }]}>
@@ -314,17 +344,6 @@ export default function DashboardScreen() {
             </View>
           )}
         </View>
-
-        {role === 'GENERAL_USER' && (
-          <View style={styles.actionRow}>
-            <Pressable style={({ pressed }) => [styles.actionBtn, styles.actionBtnPrimary, pressed && { opacity: 0.8 }]} onPress={() => router.push('/(app)/triage')}>
-              <Text style={styles.actionBtnPrimaryText}>{activeTriage ? 'Continue Chat' : 'Start New Chat'}</Text>
-            </Pressable>
-            <Pressable style={({ pressed }) => [styles.actionBtn, styles.actionBtnSecondary, pressed && { opacity: 0.8 }]} onPress={() => router.push('/(app)/therapist-search')}>
-              <Text style={styles.actionBtnSecondaryText}>Talk to Counselor</Text>
-            </Pressable>
-          </View>
-        )}
 
         {role === 'COUNSELOR' && (
           <View style={styles.actionRow}>
@@ -483,37 +502,6 @@ export default function DashboardScreen() {
                   </View>
                   <Text style={styles.sessionDate}>{new Date(session.created_at).toLocaleString()}</Text>
                   
-                  {role === 'GENERAL_USER' && session.provider_details && (
-                    <View style={{ marginTop: SPACING.sm, padding: SPACING.sm, backgroundColor: COLORS.background, borderRadius: RADIUS.md, flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.sm }}>
-                        {session.provider_details.photo ? (
-                          <Text>📷</Text>
-                        ) : (
-                          <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>{session.provider_details.name[0]}</Text>
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: 'bold', color: COLORS.textPrimary }}>{session.provider_details.name}</Text>
-                        <Text style={{ fontSize: 12, color: COLORS.textSecondary }}>{session.provider_details.title}</Text>
-                        {session.provider_details.specialization ? (
-                          <Text style={{ fontSize: 11, color: COLORS.primary, marginTop: 2 }}>{session.provider_details.specialization}</Text>
-                        ) : null}
-                      </View>
-                      
-                      {session.status === 'ENDED' && session.provider_details.title === 'Licensed Therapist' && (
-                        <Pressable 
-                          style={{ backgroundColor: COLORS.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            router.push(`/(app)/book/${session.provider_details.id}`);
-                          }}
-                        >
-                          <Text style={{ color: COLORS.white, fontSize: 12, fontWeight: 'bold' }}>💬 Chat Again</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-                  
                   {role === 'COUNSELOR' && (
                     <View style={[styles.sessionFooter, { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.sm }]}>
                       <Pressable 
@@ -536,24 +524,11 @@ export default function DashboardScreen() {
         </View>
 
         {/* App version */}
-        <Text style={styles.footer}>Seeker v1.0 · Phase 1 MVP</Text>
+        <Text style={styles.footer}>Buddy v1.0 · Phase 1 MVP</Text>
       </ScrollView>
 
       {/* Floating Action Buttons */}
-      {role === 'GENERAL_USER' && (
-        <View style={styles.fabContainer}>
-          {activeTriage && (
-            <Pressable 
-              style={({ pressed }) => [styles.chatFab, pressed && styles.fabPressed]} 
-              onPress={() => router.push('/(app)/triage')}
-            >
-              <Text style={styles.chatFabIcon}>💬</Text>
-              <View style={styles.chatFabDot} />
-            </Pressable>
-          )}
-          <PanicButton />
-        </View>
-      )}
+      {/* FABs for Providers can go here if needed */}
 
       {/* Notes Modal */}
       <Modal visible={notesModalVisible} animationType="slide" transparent={true}>

@@ -29,7 +29,11 @@
       "API_BASE_URL": "http://192.168.52.110:8000",
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "260e47d7-227e-442b-89f0-44fc80c541cb"
       }
-    }
+    },
+    "owner": "seeker2s-team"
   }
 }

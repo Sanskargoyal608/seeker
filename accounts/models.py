@@ -51,11 +51,14 @@ class GraduateCounselor(models.Model):
     # Credentials — stored as MinIO paths (strings)
     degree_file = models.CharField(max_length=500, blank=True)
     graduation_certificate = models.CharField(max_length=500, blank=True)
-    # Academic details
+    background_check_file = models.CharField(max_length=500, blank=True)
+    # Academic & Specialization details
     graduation_year = models.IntegerField(null=True, blank=True)
     university = models.CharField(max_length=200, blank=True)
     specialization = models.CharField(max_length=200, blank=True)
     years_experience = models.IntegerField(default=0)
+    modalities = models.JSONField(default=list, blank=True)   # e.g. ['CBT', 'DBT']
+    languages = models.JSONField(default=list, blank=True)    # e.g. ['English', 'Spanish']
     # Profile
     bio = models.TextField(blank=True)
     profile_photo = models.CharField(max_length=500, blank=True)
@@ -98,9 +101,10 @@ class LicensedTherapist(models.Model):
     # Profile
     bio = models.TextField(blank=True)
     profile_photo = models.CharField(max_length=500, blank=True)
-    # Pricing
+    # Pricing & Booking
     per_minute_rate = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     per_session_rate = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    session_duration = models.IntegerField(default=60)
     # Verification
     is_verified = models.BooleanField(default=False)
     verification_date = models.DateTimeField(null=True, blank=True)
@@ -162,3 +166,20 @@ class OTPToken(models.Model):
         indexes = [
             models.Index(fields=['email', 'otp_code']),
         ]
+
+
+class UserPreferences(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='preferences'
+    )
+    push_notifications = models.BooleanField(default=True)
+    email_notifications = models.BooleanField(default=True)
+    timezone = models.CharField(max_length=50, default='UTC')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Preferences for {self.user.email}"
+
+    class Meta:
+        verbose_name = 'User Preference'
+        verbose_name_plural = 'User Preferences'

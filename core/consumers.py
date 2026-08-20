@@ -178,6 +178,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def save_message(self, content, is_held):
         from core.models import Session, ChatMessage
+        from notifications.tasks import send_new_message_notification
         try:
             session = Session.objects.get(id=self.session_id)
             ChatMessage.objects.create(
@@ -185,8 +186,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 message_text=content,
                 is_held_for_payment=is_held
             )
+            
+            # Determine recipient for push notification
+            recipient = None
+            sender_name = "Someone"
+            
+            user = self.scope['user']
+            if user == session.user:
+                if session.therapist:
+                    recipient = session.therapist.user
+                elif session.counselor:
+                    recipient = session.counselor.user
+                sender_name = user.first_name
+            else:
+                recipient = session.user
+                if session.therapist and user == session.therapist.user:
+                    sender_name = user.first_name
+                elif session.counselor and user == session.counselor.user:
+                    sender_name = user.first_name
+            
+            if recipient:
+                # Trigger Celery task
+                message_preview = (content[:47] + '...') if len(content) > 50 else content
+                send_new_message_notification.delay(
+                    recipient.id,
+                    sender_name,
+                    message_preview,
+                    session.id
+                )
+                
         except Session.DoesNotExist:
             pass
+
 
     @database_sync_to_async
     def scan_for_crisis(self, content):

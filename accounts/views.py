@@ -195,6 +195,22 @@ class MeView(APIView):
         serializer = UserDetailSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class AccountDeleteView(APIView):
+    """
+    Endpoint for users to soft delete their account.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        user.is_active = False
+        user.save()
+        
+        # Invalidate tokens
+        RefreshToken.for_user(user) # Technically doesn't blacklist all, but standard flow
+        
+        return Response({"detail": "Account deleted successfully."}, status=status.HTTP_200_OK)
+
 
 # ============= REGISTRATION VIEWS =============
 

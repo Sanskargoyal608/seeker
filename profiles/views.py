@@ -219,10 +219,21 @@ class AvailableSlotsView(APIView):
         start_date = timezone.now().date()
         end_date = start_date + datetime.timedelta(days=days_ahead)
 
-        # Get blocked dates
+        # Get blocked dates (full day blocks)
         blocked_dates = set(BlockedDate.objects.filter(
-            therapist=therapist, date__range=(start_date, end_date)
+            therapist=therapist, date__range=(start_date, end_date), start_time__isnull=True
         ).values_list('date', flat=True))
+        
+        # Get slot-specific blocks
+        blocked_slots = BlockedDate.objects.filter(
+            therapist=therapist, date__range=(start_date, end_date), start_time__isnull=False
+        )
+        blocked_slot_map = {}
+        for bs in blocked_slots:
+            d_str = bs.date.isoformat()
+            if d_str not in blocked_slot_map:
+                blocked_slot_map[d_str] = set()
+            blocked_slot_map[d_str].add(bs.start_time.strftime('%H:%M:%S'))
 
         # Get availability templates
         availability_slots = AvailabilitySlot.objects.filter(therapist=therapist, is_active=True)
@@ -262,6 +273,8 @@ class AvailableSlotsView(APIView):
             for slot in daily_slots:
                 start_time_str = slot.start_time.strftime('%H:%M:%S')
                 if date_str in booked_times and start_time_str in booked_times[date_str]:
+                    continue
+                if date_str in blocked_slot_map and start_time_str in blocked_slot_map[date_str]:
                     continue
                 # Also skip past slots for today
                 if current_date == timezone.now().date() and slot.start_time <= timezone.now().time():
@@ -329,3 +342,151 @@ class StartBookingSessionView(APIView):
         )
 
         return Response({'session_id': session.id, 'status': session.status}, status=status.HTTP_200_OK)
+
+class BulkAvailabilityUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if getattr(user, 'role', None) != 'THERAPIST':
+            return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        therapist = user.therapist_profile
+        days = request.data.get('days', [])
+        start_time_str = request.data.get('start_time')
+        end_time_str = request.data.get('end_time')
+        session_duration = request.data.get('session_duration')
+
+        if not days or not start_time_str or not end_time_str or not session_duration:
+            return Response({'error': 'Missing fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update therapist session duration
+        therapist.session_duration = int(session_duration)
+        therapist.save()
+
+        # Delete existing availability for these days
+        AvailabilitySlot.objects.filter(therapist=therapist, day_of_week__in=days).delete()
+
+        # Create new slots chunked by session_duration
+        start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+        end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+        
+        import datetime as dt
+        duration_delta = dt.timedelta(minutes=therapist.session_duration)
+        
+        for day in days:
+            current_dt = dt.datetime.combine(dt.date.today(), start_time)
+            end_dt = dt.datetime.combine(dt.date.today(), end_time)
+            
+            while current_dt + duration_delta <= end_dt:
+                slot_start = current_dt.time()
+                slot_end = (current_dt + duration_delta).time()
+                AvailabilitySlot.objects.create(
+                    therapist=therapist,
+                    day_of_week=day,
+                    start_time=slot_start,
+                    end_time=slot_end
+                )
+                current_dt += duration_delta
+                
+        return Response({'message': 'Schedule updated successfully'}, status=status.HTTP_200_OK)
+
+class TherapistDayScheduleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, date_str):
+        user = request.user
+        if getattr(user, 'role', None) != 'THERAPIST':
+            return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        therapist = user.therapist_profile
+        try:
+            target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Scheduled bookings
+        bookings = Booking.objects.filter(
+            therapist=therapist,
+            scheduled_datetime__date=target_date,
+            status=Booking.SCHEDULED
+        ).select_related('user')
+        
+        booked_times = {}
+        scheduled_list = []
+        for b in bookings:
+            start_t = b.scheduled_datetime.time()
+            booked_times[start_t.strftime('%H:%M:%S')] = True
+            scheduled_list.append({
+                'id': b.id,
+                'patient_name': b.user.first_name or b.user.email,
+                'start_time': start_t.strftime('%H:%M'),
+                'duration': b.duration_minutes
+            })
+            
+        # Unscheduled slots
+        day_of_week = target_date.weekday()
+        slots = AvailabilitySlot.objects.filter(therapist=therapist, day_of_week=day_of_week, is_active=True).order_by('start_time')
+        
+        # Blocked dates for this specific date
+        blocked_qs = BlockedDate.objects.filter(therapist=therapist, date=target_date)
+        
+        unscheduled_list = []
+        for slot in slots:
+            st_str = slot.start_time.strftime('%H:%M:%S')
+            if st_str in booked_times:
+                continue
+            
+            # Check if this specific slot is blocked
+            is_blocked = blocked_qs.filter(start_time=slot.start_time, end_time=slot.end_time).exists()
+            
+            unscheduled_list.append({
+                'id': slot.id,
+                'start_time': slot.start_time.strftime('%H:%M'),
+                'end_time': slot.end_time.strftime('%H:%M'),
+                'is_blocked': is_blocked
+            })
+            
+        return Response({
+            'date': date_str,
+            'scheduled': scheduled_list,
+            'unscheduled': unscheduled_list
+        }, status=status.HTTP_200_OK)
+
+class ToggleSlotBlockView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, date_str):
+        user = request.user
+        if getattr(user, 'role', None) != 'THERAPIST':
+            return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        therapist = user.therapist_profile
+        try:
+            target_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        start_time_str = request.data.get('start_time')
+        end_time_str = request.data.get('end_time')
+        
+        if not start_time_str or not end_time_str:
+            return Response({'error': 'Missing start_time or end_time'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+        end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+        
+        # Check if it exists
+        blocked, created = BlockedDate.objects.get_or_create(
+            therapist=therapist,
+            date=target_date,
+            start_time=start_time,
+            end_time=end_time,
+            defaults={'reason': 'Manual block from calendar'}
+        )
+        
+        if not created:
+            blocked.delete()
+            return Response({'status': 'unblocked'}, status=status.HTTP_200_OK)
+            
+        return Response({'status': 'blocked'}, status=status.HTTP_200_OK)

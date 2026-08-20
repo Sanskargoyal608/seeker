@@ -41,7 +41,7 @@ export default function PanicButton() {
         {loading ? (
           <ActivityIndicator color={COLORS.white} />
         ) : (
-          <Text style={styles.panicText}>🚨 PANIC</Text>
+          <Text style={styles.panicText}>Crisis</Text>
         )}
       </Pressable>
     </View>
@@ -49,26 +49,20 @@ export default function PanicButton() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-  },
+  container: {},
   panicBtn: {
     backgroundColor: COLORS.error,
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    flexDirection: 'row',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    justifyContent: 'center',
   },
   panicText: {
     color: COLORS.white,
-    fontWeight: FONTS.weights.heavy,
+    fontWeight: FONTS.weights.bold,
     fontSize: FONTS.sizes.sm,
-    marginTop: 2,
   },
   btnPressed: {
     transform: [{ scale: 0.95 }],

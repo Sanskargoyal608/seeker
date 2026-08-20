@@ -1,7 +1,13 @@
 # accounts/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact, OTPToken
+from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact, OTPToken, UserPreferences
+
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreferences
+        fields = ['push_notifications', 'email_notifications', 'timezone']
 
 
 class UserSimpleSerializer(serializers.ModelSerializer):
@@ -17,8 +23,9 @@ class CounselorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraduateCounselor
         fields = [
-            'id', 'degree_file', 'graduation_certificate', 'graduation_year',
+            'id', 'degree_file', 'graduation_certificate', 'background_check_file', 'graduation_year',
             'university', 'specialization', 'years_experience', 'bio',
+            'modalities', 'languages',
             'profile_photo', 'per_minute_rate', 'is_verified',
             'verification_date', 'slug', 'created_at', 'updated_at'
         ]
@@ -32,7 +39,7 @@ class TherapistProfileSerializer(serializers.ModelSerializer):
         model = LicensedTherapist
         fields = [
             'id', 'license_number', 'license_file', 'modalities', 'languages',
-            'bio', 'profile_photo', 'per_minute_rate', 'per_session_rate',
+            'bio', 'profile_photo', 'per_minute_rate', 'per_session_rate', 'session_duration',
             'is_verified', 'verification_date', 'two_factor_enabled',
             'two_factor_phone', 'slug', 'created_at', 'updated_at'
         ]
@@ -53,13 +60,14 @@ class UserDetailSerializer(serializers.ModelSerializer):
     counselor_profile = CounselorProfileSerializer(read_only=True)
     therapist_profile = TherapistProfileSerializer(read_only=True)
     emergency_contacts = EmergencyContactSerializer(many=True, read_only=True)
+    preferences = UserPreferencesSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'username', 'first_name', 'last_name', 'role',
             'phone', 'is_active', 'created_at',
-            'counselor_profile', 'therapist_profile', 'emergency_contacts'
+            'counselor_profile', 'therapist_profile', 'emergency_contacts', 'preferences'
         ]
         read_only_fields = ['id', 'is_active', 'created_at']
 
@@ -107,10 +115,11 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     counselor_profile = CounselorProfileSerializer(required=False)
     therapist_profile = TherapistProfileSerializer(required=False)
     emergency_contacts = EmergencyContactSerializer(many=True, required=False)
+    preferences = UserPreferencesSerializer(required=False)
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone', 'counselor_profile', 'therapist_profile', 'emergency_contacts']
+        fields = ['first_name', 'last_name', 'phone', 'counselor_profile', 'therapist_profile', 'emergency_contacts', 'preferences']
         
     def update(self, instance, validated_data):
         # Update user fields
@@ -144,6 +153,16 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             instance.emergency_contacts.all().delete()
             for contact_data in emergency_contacts_data:
                 EmergencyContact.objects.create(user=instance, **contact_data)
+                
+        # Update preferences if provided
+        preferences_data = validated_data.get('preferences')
+        if preferences_data is not None:
+            if hasattr(instance, 'preferences'):
+                for attr, value in preferences_data.items():
+                    setattr(instance.preferences, attr, value)
+                instance.preferences.save()
+            else:
+                UserPreferences.objects.create(user=instance, **preferences_data)
                 
         return instance
 

@@ -41,17 +41,7 @@ export const useAuth = () => {
     dispatch(setTokens(tokenData));
     dispatch(setUser(userData));
 
-    // Register device for push notifications
-    try {
-      await apiClient.post('/api/notifications/devices/register/', {
-        fcm_token: 'dummy_expo_token_' + Math.random().toString(36).substring(7), // In a real app, use expo-notifications
-        platform: Platform.OS === 'ios' ? 'IOS' : Platform.OS === 'android' ? 'ANDROID' : 'WEB'
-      }, {
-        headers: { Authorization: `Bearer ${tokenData.access}` }
-      });
-    } catch (e) {
-      console.log('Failed to register device for notifications', e);
-    }
+    // Device registration is now handled by the usePushNotifications hook in _layout.js
   }, [dispatch]);
 
   /**

@@ -26,4 +26,16 @@ urlpatterns = [
     path('follow-up/', views.TherapistFollowUpView.as_view(), name='therapist-follow-up'),
     path('sessions/<int:session_id>/', views.SessionDetailView.as_view(), name='session-detail'),
     path('sessions/<int:session_id>/intake/', views.SessionIntakeView.as_view(), name='session-intake'),
+    path('user/billing/', views.SeekerBillingRecordListView.as_view(), name='billing-records'),
 ]
+
+from rest_framework.routers import DefaultRouter
+from .views import TherapistAvailabilityViewSet, ClientTherapistRelationshipViewSet, TherapistEarningsViewSet, TherapistPayoutViewSet
+
+router = DefaultRouter()
+router.register(r'therapist/availability', TherapistAvailabilityViewSet, basename='therapist-availability')
+router.register(r'therapist/clients', ClientTherapistRelationshipViewSet, basename='therapist-clients')
+router.register(r'therapist/earnings', TherapistEarningsViewSet, basename='therapist-earnings')
+router.register(r'therapist/payouts', TherapistPayoutViewSet, basename='therapist-payouts')
+
+urlpatterns += router.urls
