@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: seekerdb
+          POSTGRES_USER: seeker
+          POSTGRES_PASSWORD: seekerpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seeker -d seekerdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: ci-only-not-a-real-secret
+      DEBUG: "False"
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: seekerdb
+      POSTGRES_USER: seeker
+      POSTGRES_PASSWORD: seekerpass
+      REDIS_HOST: localhost
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements.lock
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -c requirements.lock
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Migrations are up to date
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Tests
+        run: pytest -q
