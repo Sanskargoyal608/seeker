@@ -140,8 +140,7 @@ from .services.typesense_service import TypesenseService
 
 @receiver(post_save, sender=LicensedTherapist)
 def sync_therapist_to_typesense(sender, instance, created, **kwargs):
-    import sys
-    if 'test' in sys.argv:
+    if settings.TESTING:
         return
     service = TypesenseService()
     try:
@@ -153,8 +152,7 @@ def sync_therapist_to_typesense(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=LicensedTherapist)
 def remove_therapist_from_typesense(sender, instance, **kwargs):
-    import sys
-    if 'test' in sys.argv:
+    if settings.TESTING:
         return
     service = TypesenseService()
     try:

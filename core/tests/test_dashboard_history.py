@@ -61,14 +61,15 @@ class TestDashboardHistory:
         
         user1 = UserFactory(role=User.GENERAL_USER)
         
-        # Sessions for this therapist
+        # The queue lists the therapist's open sessions; ended ones are excluded
+        active = Session.objects.create(user=user1, therapist=therapist, status=Session.MATCHED)
         Session.objects.create(user=user1, therapist=therapist, status=Session.ENDED)
-        
+
         self.api_client.force_authenticate(user=therapist_user)
         url = reverse('therapist-queue')
         response = self.api_client.get(url)
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert 'recent_sessions' in data
-        assert len(data['recent_sessions']) == 1
+        assert [s['id'] for s in data['recent_sessions']] == [active.id]

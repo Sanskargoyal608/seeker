@@ -106,7 +106,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 import sys
-if 'pytest' in sys.modules or 'test' in sys.argv:
+TESTING = 'pytest' in sys.modules or 'test' in sys.argv
+
+if TESTING:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -121,8 +123,7 @@ else:
     }
 
 # Redis Caching Configuration (for device-based token management)
-import sys
-if 'pytest' in sys.modules or 'test' in sys.argv:
+if TESTING:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
