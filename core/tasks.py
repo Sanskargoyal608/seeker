@@ -142,3 +142,25 @@ def calculate_earnings(session_id):
         return f"Earnings calculated for session {session_id}: Gross {gross_amount}, Net {net_amount}."
     except Session.DoesNotExist:
         return "Session not found."
+
+
+@shared_task
+def auto_withdraw_stale_sessions():
+    """
+    Runs every 5 minutes. Automatically marks WAITING sessions older than
+    60 minutes as ENDED so they are removed from the counselor queue.
+    This handles the case where no counselor accepted the session.
+    """
+    from core.models import Session
+
+    cutoff = timezone.now() - timedelta(minutes=60)
+    stale = Session.objects.filter(
+        status=Session.WAITING,
+        created_at__lt=cutoff,
+        counselor__isnull=True,  # only truly unaccepted sessions
+    )
+    count = stale.count()
+    if count:
+        stale.update(status=Session.ENDED)
+        logger.info(f"auto_withdraw_stale_sessions: withdrew {count} WAITING session(s) older than 60 minutes.")
+    return f"Withdrew {count} stale session(s)."

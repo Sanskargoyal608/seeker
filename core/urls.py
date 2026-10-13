@@ -5,7 +5,10 @@ urlpatterns = [
     # Permission boundary enforcement examples
     path('counselor/queue/', views.CounselorQueueView.as_view(), name='counselor-queue'),
     path('therapist/queue/', views.TherapistQueueView.as_view(), name='therapist-queue'),
+    
     path('user/dashboard/', views.DashboardView.as_view(), name='user-dashboard'),
+    path('sessions/my/', views.MySessionsView.as_view(), name='my-sessions'),
+
     path('triage/start/', views.TriageStartView.as_view(), name='triage-start'),
     path('triage/active/', views.TriageActiveView.as_view(), name='triage-active'),
     path('triage/respond/', views.TriageRespondView.as_view(), name='triage-respond'),
@@ -27,6 +30,12 @@ urlpatterns = [
     path('sessions/<int:session_id>/', views.SessionDetailView.as_view(), name='session-detail'),
     path('sessions/<int:session_id>/intake/', views.SessionIntakeView.as_view(), name='session-intake'),
     path('user/billing/', views.SeekerBillingRecordListView.as_view(), name='billing-records'),
+    path('therapists/', views.TherapistListView.as_view(), name='therapist-list'),
+    path('mood/', views.MoodEntryView.as_view(), name='mood-entry'),
+    path('counselor/availability/', views.CounselorAvailabilityUpdateView.as_view(), name='counselor-availability-update'),
+    path('mentorship/', views.MentorshipRequestView.as_view(), name='mentorship-requests'),
+    path('mentorship/<int:request_id>/respond/', views.MentorshipRespondView.as_view(), name='mentorship-respond'),
+    path('mentorship/<int:request_id>/chat/', views.MentorshipChatView.as_view(), name='mentorship-chat'),
 ]
 
 from rest_framework.routers import DefaultRouter

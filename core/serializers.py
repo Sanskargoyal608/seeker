@@ -12,8 +12,16 @@ class TriageSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TriageSession
         fields = [
-            'id', 'is_complete', 'emotional_state', 'primary_concern',
-            'support_preference', 'urgency', 'routing_decision',
+            'id', 'is_complete', 'conversation_phase', 'turn_count',
+            'chief_complaint', 'emotional_state', 'duration',
+            'primary_concern', 'suspected_conditions', 'relevant_screening',
+            'sleep_quality', 'appetite_change', 'social_functioning',
+            'triggers', 'physical_symptoms',
+            'urgency', 'crisis_flags', 'support_preference',
+            'routing_decision', 'ai_confidence', 'clinical_summary',
+            'provisional_conditions', 'functional_impairment', 'therapy_goals',
+            'recommended_modalities', 'specialization_tags', 'intake_dossier',
+            'suggested_chips', 'recommended_therapists',
             'resulting_session', 'created_at', 'messages'
         ]
 
@@ -46,10 +54,28 @@ class EscalationRequestSerializer(serializers.ModelSerializer):
 from .models import Session
 
 class SessionSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    last_message_date = serializers.SerializerMethodField()
+
     class Meta:
         model = Session
-        fields = ['id', 'user', 'counselor', 'therapist', 'status', 'start_time', 'end_time', 'duration_minutes', 'is_crisis_flagged', 'created_at']
+        fields = [
+            'id', 'user', 'user_name', 'counselor', 'therapist', 'status', 
+            'start_time', 'end_time', 'duration_minutes', 'is_crisis_flagged', 
+            'created_at', 'last_message_date'
+        ]
         read_only_fields = ['id', 'created_at']
+
+    def get_user_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}".strip() or f"User #{obj.user.id}"
+        return f"User #{obj.id}"
+
+    def get_last_message_date(self, obj):
+        last_msg = obj.messages.order_by('-created_at').first()
+        if last_msg:
+            return last_msg.created_at
+        return obj.created_at
 
 from accounts.models import LicensedTherapist, User
 

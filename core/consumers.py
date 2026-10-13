@@ -181,8 +181,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from notifications.tasks import send_new_message_notification
         try:
             session = Session.objects.get(id=self.session_id)
+            user = self.scope['user']
             ChatMessage.objects.create(
                 session=session,
+                sender=user,
                 message_text=content,
                 is_held_for_payment=is_held
             )
@@ -190,8 +192,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Determine recipient for push notification
             recipient = None
             sender_name = "Someone"
-            
-            user = self.scope['user']
             if user == session.user:
                 if session.therapist:
                     recipient = session.therapist.user
@@ -239,11 +239,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user = self.scope['user']
             
             if user.role == User.GENERAL_USER:
-                return session.user == user
+                return session.user_id == user.id
             elif user.role == User.COUNSELOR:
-                return session.counselor == getattr(user, 'counselor_profile', None)
+                counselor = getattr(user, 'counselor_profile', None)
+                return counselor is not None and session.counselor_id == counselor.id
             elif user.role == User.THERAPIST:
-                return session.therapist == getattr(user, 'therapist_profile', None)
+                therapist = getattr(user, 'therapist_profile', None)
+                return therapist is not None and session.therapist_id == therapist.id
+            elif user.is_staff:
+                return True
             
             return False
         except Session.DoesNotExist:

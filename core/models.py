@@ -248,20 +248,57 @@ class PayoutRecord(models.Model):
 
 
 class TriageSession(models.Model):
+    PHASE_CHOICES = [
+        ('OPENING', 'Opening'),
+        ('EXPLORATION', 'Exploration'),
+        ('DEEPENING', 'Deepening'),
+        ('CLOSING', 'Closing'),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='triage_sessions'
     )
     is_complete = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
-    # Form state
+    # Phase tracking
+    conversation_phase = models.CharField(max_length=20, choices=PHASE_CHOICES, default='OPENING')
+    
+    # Chief complaint & context
+    chief_complaint = models.TextField(blank=True, null=True)
     emotional_state = models.TextField(blank=True, null=True)
+    duration = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Clinical indicators
     primary_concern = models.TextField(blank=True, null=True)
+    suspected_conditions = models.JSONField(default=list, blank=True)
+    relevant_screening = models.JSONField(default=dict, blank=True)
+    sleep_quality = models.CharField(max_length=255, blank=True, null=True)
+    appetite_change = models.CharField(max_length=255, blank=True, null=True)
+    social_functioning = models.CharField(max_length=255, blank=True, null=True)
+    triggers = models.JSONField(default=list, blank=True)
+    physical_symptoms = models.JSONField(default=list, blank=True)
+    
+    # Risk & routing
+    urgency = models.CharField(max_length=50, blank=True, null=True)
+    crisis_flags = models.JSONField(default=list, blank=True)
     support_preference = models.TextField(blank=True, null=True)
-    urgency = models.CharField(max_length=20, blank=True, null=True)
+    routing_decision = models.CharField(max_length=100, blank=True, null=True)
+    
+    # AI meta & Intake Dossier
+    ai_confidence = models.FloatField(default=0.0)
+    clinical_summary = models.TextField(blank=True, null=True)
+    turn_count = models.IntegerField(default=0)
+    provisional_conditions = models.JSONField(default=list, blank=True)
+    functional_impairment = models.JSONField(default=dict, blank=True)
+    therapy_goals = models.JSONField(default=list, blank=True)
+    recommended_modalities = models.JSONField(default=list, blank=True)
+    specialization_tags = models.JSONField(default=list, blank=True)
+    intake_dossier = models.TextField(blank=True, null=True)
+    suggested_chips = models.JSONField(default=list, blank=True)
+    recommended_therapists = models.JSONField(default=list, blank=True)
     
     # Outcomes
-    routing_decision = models.CharField(max_length=50, blank=True, null=True)
     resulting_session = models.OneToOneField(
         Session, on_delete=models.SET_NULL, null=True, blank=True, related_name='triage_source'
     )
@@ -409,3 +446,72 @@ class ClientTherapistRelationship(models.Model):
     class Meta:
         unique_together = ('client', 'therapist')
 
+
+class MoodEntry(models.Model):
+    MOOD_CHOICES = [
+        ('great', 'Great'),
+        ('good', 'Good'),
+        ('okay', 'Okay'),
+        ('low', 'Low'),
+        ('bad', 'Bad'),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mood_entries'
+    )
+    mood = models.CharField(max_length=10, choices=MOOD_CHOICES)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.mood} at {self.created_at}"
+    
+    class Meta:
+        ordering = ['-created_at']
+
+
+class MentorshipRequest(models.Model):
+    PENDING = 'PENDING'
+    ACCEPTED = 'ACCEPTED'
+    DECLINED = 'DECLINED'
+    
+    STATUS_CHOICES = [
+        (PENDING, 'Pending'),
+        (ACCEPTED, 'Accepted'),
+        (DECLINED, 'Declined'),
+    ]
+    
+    counselor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentorship_requests_sent'
+    )
+    therapist = models.ForeignKey(
+        'accounts.LicensedTherapist', on_delete=models.CASCADE, related_name='mentorship_requests_received'
+    )
+    sop_message = models.TextField(help_text="Statement of Purpose from the counselor")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Mentorship: {self.counselor.email} -> {self.therapist.user.email} [{self.status}]"
+    
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('counselor', 'therapist')
+
+
+class MentorshipMessage(models.Model):
+    mentorship = models.ForeignKey(
+        MentorshipRequest, on_delete=models.CASCADE, related_name='messages'
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"MentorMsg {self.pk} in {self.mentorship_id}"
+    
+    class Meta:
+        ordering = ['created_at']

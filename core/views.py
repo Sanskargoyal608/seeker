@@ -310,7 +310,32 @@ class VerifyPaymentView(APIView):
 
 from .services.matching_service import MatchingService, SessionAlreadyAcceptedException
 
+
+class MySessionsView(APIView):
+    """
+    Returns all sessions for the logged-in user (counselor, therapist, or general user).
+    This acts as the inbox/chats list.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .serializers import SessionSerializer
+        from accounts.models import User
+        
+        if request.user.role == User.GENERAL_USER:
+            sessions = Session.objects.filter(user=request.user).order_by('-updated_at', '-created_at')
+        elif request.user.role == User.COUNSELOR:
+            sessions = Session.objects.filter(counselor=request.user.counselor_profile).order_by('-updated_at', '-created_at')
+        elif request.user.role == User.THERAPIST:
+            sessions = Session.objects.filter(therapist=request.user.therapist_profile).order_by('-updated_at', '-created_at')
+        else:
+            sessions = Session.objects.none()
+            
+        data = SessionSerializer(sessions, many=True).data
+        return Response(data)
+
 class QueueView(APIView):
+
     """
     Counselor-only endpoint to list all WAITING sessions.
     """
@@ -380,10 +405,11 @@ class SessionMessageListView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, session_id):
+    def get(self, request, session_id=None, pk=None, *args, **kwargs):
         from accounts.models import User
+        actual_id = session_id or pk or kwargs.get('session_id') or kwargs.get('pk')
         try:
-            session = Session.objects.get(id=session_id)
+            session = Session.objects.get(id=actual_id)
         except Session.DoesNotExist:
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -407,6 +433,64 @@ class SessionMessageListView(APIView):
             })
             
         return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, request, session_id=None, pk=None, *args, **kwargs):
+        from accounts.models import User
+        from core.models import ChatMessage
+        actual_id = session_id or pk or kwargs.get('session_id') or kwargs.get('pk')
+        try:
+            session = Session.objects.get(id=actual_id)
+        except Session.DoesNotExist:
+            return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        counselor_prof = getattr(user, 'counselor_profile', None)
+        therapist_prof = getattr(user, 'therapist_profile', None)
+
+        is_authorized = (
+            session.user_id == user.id or
+            (counselor_prof and session.counselor_id == counselor_prof.id) or
+            (therapist_prof and session.therapist_id == therapist_prof.id) or
+            user.is_staff
+        )
+
+        if not is_authorized:
+            return Response({'error': 'Unauthorized to send message in this session.'}, status=status.HTTP_403_FORBIDDEN)
+
+        text = request.data.get('message') or request.data.get('text')
+        if not text or not str(text).strip():
+            return Response({'error': 'Message text is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = ChatMessage.objects.create(
+            session=session,
+            sender=user,
+            message_text=str(text).strip()
+        )
+
+        # Broadcast via Channel Layer if running
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{session.id}',
+                {
+                    'type': 'chat.message',
+                    'message': msg.message_text,
+                    'sender_id': user.id,
+                    'timestamp': msg.created_at.isoformat()
+                }
+            )
+        except Exception as e:
+            pass
+
+        return Response({
+            'id': str(msg.id),
+            'text': msg.message_text,
+            'sender_id': user.id,
+            'sender_role': user.role,
+            'created_at': msg.created_at
+        }, status=status.HTTP_201_CREATED)
 
 from django.shortcuts import get_object_or_404
 from .models import Session, SessionNote, ChatMessage, EscalationEvent
@@ -782,6 +866,25 @@ class EscalateCreateView(APIView):
         serializer = EscalationRequestSerializer(escalation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
+class MoodEntryView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from core.models import MoodEntry
+        entries = MoodEntry.objects.filter(user=request.user).order_by('-created_at')[:30]
+        data = [{'id': e.id, 'mood': e.mood, 'note': e.note, 'created_at': e.created_at.isoformat()} for e in entries]
+        return Response(data)
+    
+    def post(self, request):
+        from core.models import MoodEntry
+        mood = request.data.get('mood')
+        note = request.data.get('note', '')
+        if mood not in ['great', 'good', 'okay', 'low', 'bad']:
+            return Response({'error': 'Invalid mood'}, status=400)
+        entry = MoodEntry.objects.create(user=request.user, mood=mood, note=note)
+        return Response({'id': entry.id, 'mood': entry.mood, 'note': entry.note, 'created_at': entry.created_at.isoformat()}, status=201)
+
 class EscalationRespondView(APIView):
     """
     POST /api/core/escalations/<id>/respond/
@@ -870,9 +973,10 @@ class SessionDetailView(APIView):
 class SessionIntakeView(APIView):
     """
     GET /api/core/sessions/<id>/intake/
-    Fetches the intake form responses for a given session's user.
+    Fetches the clinical intake dossier for a given session's user.
+    Accessible by the assigned counselor or therapist.
     """
-    permission_classes = [IsAuthenticated, IsLicensedTherapist]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
         from .models import Session
@@ -883,20 +987,40 @@ class SessionIntakeView(APIView):
         except Session.DoesNotExist:
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
             
-        if getattr(session, 'therapist', None) != getattr(request.user, 'licensedtherapist', None) and session.therapist != getattr(request.user, 'therapist_profile', None):
-            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        # Check authorization (counselor or therapist of session, or admin)
+        is_assigned_therapist = session.therapist and (
+            session.therapist == getattr(request.user, 'therapist_profile', None) or
+            session.therapist == getattr(request.user, 'licensedtherapist', None)
+        )
+        is_assigned_counselor = session.counselor and (
+            session.counselor == getattr(request.user, 'counselor_profile', None) or
+            session.counselor == getattr(request.user, 'graduatecounselor', None)
+        )
+        if not (is_assigned_therapist or is_assigned_counselor or request.user.is_staff or session.user == request.user):
+            return Response({'error': 'Unauthorized to view clinical intake'}, status=status.HTTP_403_FORBIDDEN)
             
-        # Get latest intake for this user
+        # Check triage dossier first
+        triage_source = getattr(session, 'triage_source', None)
+        if triage_source and triage_source.intake_dossier:
+            return Response({
+                'session_id': session.id,
+                'intake_dossier': triage_source.intake_dossier,
+                'provisional_conditions': triage_source.provisional_conditions,
+                'specialization_tags': triage_source.specialization_tags,
+                'routing_decision': triage_source.routing_decision,
+                'submitted_at': triage_source.created_at
+            }, status=status.HTTP_200_OK)
+
+        # Fallback to legacy IntakeResponse if exists
         intake = IntakeResponse.objects.filter(user=session.user).order_by('-submitted_at').first()
-        
-        if not intake:
-            return Response({'error': 'No intake found'}, status=status.HTTP_404_NOT_FOUND)
+        if intake:
+            return Response({
+                'session_id': session.id,
+                'responses_json': intake.responses_json,
+                'submitted_at': intake.submitted_at
+            }, status=status.HTTP_200_OK)
             
-        return Response({
-            'session_id': session.id,
-            'responses_json': intake.responses_json,
-            'submitted_at': intake.submitted_at
-        }, status=status.HTTP_200_OK)
+        return Response({'error': 'No intake dossier found for this session.'}, status=status.HTTP_404_NOT_FOUND)
 
 from .models import SeekerBillingRecord
 from .serializers import SeekerBillingRecordSerializer
@@ -953,3 +1077,142 @@ class TherapistPayoutViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Auto-accept payouts per user requirements
         serializer.save(therapist=self.request.user.therapist_profile, status='PAID')
+
+class CounselorAvailabilityUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from core.models import CounselorAvailability
+        avail, created = CounselorAvailability.objects.get_or_create(
+            counselor=request.user.counselor_profile,
+            defaults={'status': CounselorAvailability.AVAILABLE}
+        )
+        return Response({'status': avail.status})
+    
+    def patch(self, request):
+        from core.models import CounselorAvailability
+        new_status = request.data.get('status', 'AVAILABLE')
+        avail, created = CounselorAvailability.objects.get_or_create(
+            counselor=request.user.counselor_profile,
+            defaults={'status': new_status}
+        )
+        if not created:
+            avail.status = new_status
+            avail.save()
+        return Response({'status': avail.status})
+
+
+class MentorshipRequestView(APIView):
+    """Counselors send mentorship requests; Therapists list received requests."""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        from core.models import MentorshipRequest
+        user = request.user
+        # Therapists see requests received
+        if hasattr(user, 'therapist_profile'):
+            requests = MentorshipRequest.objects.filter(therapist=user.therapist_profile)
+            data = [{
+                'id': r.id,
+                'counselor_name': f"{r.counselor.first_name} {r.counselor.last_name}",
+                'counselor_email': r.counselor.email,
+                'counselor_id': r.counselor.id,
+                'sop_message': r.sop_message,
+                'status': r.status,
+                'created_at': r.created_at.isoformat(),
+            } for r in requests]
+        else:
+            # Counselors see their sent requests
+            requests = MentorshipRequest.objects.filter(counselor=user)
+            data = [{
+                'id': r.id,
+                'therapist_name': f"{r.therapist.user.first_name} {r.therapist.user.last_name}",
+                'therapist_id': r.therapist.user.id,
+                'sop_message': r.sop_message,
+                'status': r.status,
+                'created_at': r.created_at.isoformat(),
+            } for r in requests]
+        return Response(data)
+    
+    def post(self, request):
+        from core.models import MentorshipRequest
+        from accounts.models import LicensedTherapist
+        therapist_id = request.data.get('therapist_id')
+        sop_message = request.data.get('sop_message', '')
+        print(f"DEBUG: MentorshipRequestView POST. received therapist_id={therapist_id}")
+        if not therapist_id or not sop_message.strip():
+            return Response({'error': 'therapist_id and sop_message are required'}, status=400)
+        try:
+            therapist = LicensedTherapist.objects.get(id=therapist_id)
+        except LicensedTherapist.DoesNotExist:
+            print(f"DEBUG: Therapist {therapist_id} not found in DB!")
+            return Response({'error': 'Therapist not found'}, status=404)
+        req, created = MentorshipRequest.objects.get_or_create(
+            counselor=request.user, therapist=therapist,
+            defaults={'sop_message': sop_message}
+        )
+        if not created:
+            return Response({'error': 'You already sent a request to this therapist'}, status=400)
+        return Response({'id': req.id, 'status': req.status}, status=201)
+
+
+class MentorshipRespondView(APIView):
+    """Therapist accepts or declines a mentorship request."""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, request_id):
+        from core.models import MentorshipRequest
+        action = request.data.get('action', '').upper()
+        if action not in ['ACCEPT', 'DECLINE']:
+            return Response({'error': 'action must be ACCEPT or DECLINE'}, status=400)
+        try:
+            req = MentorshipRequest.objects.get(id=request_id, therapist__user=request.user)
+        except MentorshipRequest.DoesNotExist:
+            return Response({'error': 'Request not found'}, status=404)
+        req.status = MentorshipRequest.ACCEPTED if action == 'ACCEPT' else MentorshipRequest.DECLINED
+        req.save()
+        return Response({'id': req.id, 'status': req.status})
+
+
+class MentorshipChatView(APIView):
+    """Get and post messages for an accepted mentorship."""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, request_id):
+        from core.models import MentorshipRequest, MentorshipMessage
+        try:
+            req = MentorshipRequest.objects.get(id=request_id)
+        except MentorshipRequest.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+        # Only participants can view
+        if request.user != req.counselor and request.user != req.therapist.user:
+            return Response({'error': 'Not authorized'}, status=403)
+        messages = MentorshipMessage.objects.filter(mentorship=req)
+        data = [{
+            'id': m.id,
+            'sender_id': m.sender_id,
+            'sender_name': f"{m.sender.first_name} {m.sender.last_name}",
+            'text': m.text,
+            'created_at': m.created_at.isoformat(),
+        } for m in messages]
+        return Response(data)
+    
+    def post(self, request, request_id):
+        from core.models import MentorshipRequest, MentorshipMessage
+        try:
+            req = MentorshipRequest.objects.get(id=request_id, status='ACCEPTED')
+        except MentorshipRequest.DoesNotExist:
+            return Response({'error': 'Not found or not accepted'}, status=404)
+        if request.user != req.counselor and request.user != req.therapist.user:
+            return Response({'error': 'Not authorized'}, status=403)
+        text = request.data.get('text', '').strip()
+        if not text:
+            return Response({'error': 'text is required'}, status=400)
+        msg = MentorshipMessage.objects.create(mentorship=req, sender=request.user, text=text)
+        return Response({
+            'id': msg.id,
+            'sender_id': msg.sender_id,
+            'sender_name': f"{msg.sender.first_name} {msg.sender.last_name}",
+            'text': msg.text,
+            'created_at': msg.created_at.isoformat(),
+        }, status=201)
