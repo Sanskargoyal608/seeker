@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
@@ -110,6 +110,29 @@ export default function ProfileScreen() {
                           <View>
                              <Text style={styles.historyName}>{s.provider_name || s.user_name}</Text>
                              <Text style={styles.historySub}>{s.status}</Text>
+                             <Pressable 
+                               style={{ marginTop: 4 }} 
+                               onPress={async () => {
+                                 try {
+                                   const { data } = await apiClient.get(`/api/core/sessions/${s.id}/feedback/`);
+                                   if (data && data.length > 0) {
+                                     const fb = data[0];
+                                     Alert.alert('Session Feedback', 
+                                       `Rating: ${fb.rating}/5\nIssues Addressed: ${fb.issues_addressed ? 'Yes' : 'No'}\nRecommend: ${fb.recommend_counselor ? 'Yes' : 'No'}\nComments: ${fb.comments || 'None'}`);
+                                   } else {
+                                     Alert.alert('Feedback', 'No feedback submitted for this session.');
+                                   }
+                                 } catch (err) {
+                                   if (err.response?.status === 404) {
+                                     Alert.alert('Feedback', 'No feedback submitted for this session.');
+                                   } else {
+                                     Alert.alert('Error', 'Could not load feedback.');
+                                   }
+                                 }
+                               }}
+                             >
+                               <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: 'bold' }}>View Feedback</Text>
+                             </Pressable>
                           </View>
                           <Text style={styles.historyDate}>
                              {new Date(s.start_time || s.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}

@@ -102,7 +102,7 @@ export default function TherapistDashboard() {
             <Ionicons name="chatbubbles-outline" size={18} color={COLORS.primary} />
             <Text style={styles.actionBtnOutlineText}>User Chat</Text>
           </Pressable>
-          <Pressable style={styles.actionBtnOutline} onPress={() => Alert.alert('Backchannel', 'Opening chat with counselor...')}>
+          <Pressable style={styles.actionBtnOutline} onPress={() => router.push(`/(app)/backchannel/${item.session}`)}>
             <Ionicons name="people-outline" size={18} color={COLORS.primary} />
             <Text style={styles.actionBtnOutlineText}>Counselor</Text>
           </Pressable>

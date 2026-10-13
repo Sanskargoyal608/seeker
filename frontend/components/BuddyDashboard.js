@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,23 +6,42 @@ import { useRouter } from 'expo-router';
 import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../constants/theme';
 import PanicButton from './PanicButton';
 import BottomNav from './BottomNav';
+import { PageContainer } from './PageContainer';
+import apiClient from '../api/axios';
 
 export default function BuddyDashboard({ user, dashboardData, activeTriage, refreshing, onRefresh }) {
   const router = useRouter();
+  const [recommendedTherapist, setRecommendedTherapist] = useState(null);
+
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      try {
+        const { data } = await apiClient.get('/api/core/therapists/');
+        if (data && data.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.length);
+          setRecommendedTherapist(data[randomIndex]);
+        }
+      } catch (e) {
+        console.log('Failed to fetch therapist recommendation:', e);
+      }
+    };
+    fetchRecommended();
+  }, []);
 
   // Pick first upcoming session if any
   const upcomingSession = dashboardData?.upcoming_bookings?.[0];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
-        }
-      >
-        {/* TopAppBar */}
+      <PageContainer>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+          }
+        >
+          {/* TopAppBar */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Pressable onPress={() => router.push('/(app)/profile')} style={({ pressed }) => [styles.avatarContainer, pressed && { opacity: 0.7 }]}>
@@ -113,29 +132,29 @@ export default function BuddyDashboard({ user, dashboardData, activeTriage, refr
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Daily Practice</Text>
           <View style={styles.bentoGrid}>
-            <View style={[styles.bentoItem, styles.bentoSmall1]}>
+            <Pressable onPress={() => router.push('/(app)/breathing')} style={[styles.bentoItem, styles.bentoSmall1]}>
               <Ionicons name="body-outline" size={32} color={COLORS.onSecondaryContainer} />
               <View style={styles.bentoTextWrap}>
                 <Text style={[styles.bentoLabel, { color: COLORS.onSecondaryContainer }]}>Daily Meditation</Text>
                 <Text style={[styles.bentoHeading, { color: COLORS.onSecondaryContainer }]}>Focus & Calm</Text>
               </View>
-            </View>
+            </Pressable>
             
-            <View style={[styles.bentoItem, styles.bentoSmall2]}>
+            <Pressable onPress={() => router.push('/(app)/mood')} style={[styles.bentoItem, styles.bentoSmall2]}>
               <Ionicons name="pencil-outline" size={32} color={COLORS.onTertiaryFixed} />
               <View style={styles.bentoTextWrap}>
                 <Text style={[styles.bentoLabel, { color: COLORS.onTertiaryFixed }]}>Mood Check-in</Text>
                 <Text style={[styles.bentoHeading, { color: COLORS.onTertiaryFixed }]}>Daily Journal</Text>
               </View>
-            </View>
+            </Pressable>
 
-            <View style={[styles.bentoItem, styles.bentoLarge]}>
+            <Pressable onPress={() => router.push('/(app)/breathing')} style={[styles.bentoItem, styles.bentoLarge]}>
               <View>
                 <Text style={styles.bentoHeading}>Breathing Exercise</Text>
                 <Text style={styles.bentoSubtitle}>4-7-8 Technique • 3 min</Text>
               </View>
               <Ionicons name="play-circle" size={40} color={COLORS.primary} />
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -148,33 +167,33 @@ export default function BuddyDashboard({ user, dashboardData, activeTriage, refr
             </Pressable>
           </View>
           
-          <Pressable 
-             onPress={() => router.push('/(app)/therapist-search')}
-             style={styles.therapistCard}
-          >
-            <View style={styles.therapistImgPlaceholder} />
-            <View style={styles.therapistInfo}>
-              <View style={styles.therapistTopRow}>
-                <View>
-                  <Text style={styles.therapistName}>Dr. Sarah Chen</Text>
-                  <Text style={styles.therapistSpec}>Cognitive Behavioral Therapy</Text>
+          {recommendedTherapist ? (
+            <Pressable 
+               onPress={() => router.push('/(app)/public-profile?slug=' + (recommendedTherapist?.slug || recommendedTherapist?.id))}
+               style={styles.therapistCard}
+            >
+              <View style={styles.therapistImgPlaceholder} />
+              <View style={styles.therapistInfo}>
+                <View style={styles.therapistTopRow}>
+                  <View>
+                    <Text style={styles.therapistName}>{recommendedTherapist.user?.first_name} {recommendedTherapist.user?.last_name}</Text>
+                    <Text style={styles.therapistSpec}>{recommendedTherapist.modalities?.join(', ') || 'Mental Health Professional'}</Text>
+                  </View>
+                  <View style={styles.matchBadge}>
+                    <Text style={styles.matchBadgeText}>Recommended</Text>
+                  </View>
                 </View>
-                <View style={styles.matchBadge}>
-                  <Text style={styles.matchBadgeText}>98% Match</Text>
-                </View>
-              </View>
-              <View style={styles.therapistBottomRow}>
-                <View style={styles.availabilityWrap}>
-                  <View style={styles.dot} />
-                  <Text style={styles.availabilityText}>Available Tomorrow</Text>
-                </View>
-                <View style={styles.availabilityWrap}>
-                  <Ionicons name="cash-outline" size={14} color={COLORS.onSurfaceVariant} />
-                  <Text style={styles.availabilityText}>$120/session</Text>
+                <View style={styles.therapistBottomRow}>
+                  <View style={styles.availabilityWrap}>
+                    <View style={styles.dot} />
+                    <Text style={styles.availabilityText}>Tap to view profile</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Pressable>
+            </Pressable>
+          ) : (
+            <Text style={{ textAlign: 'center', marginVertical: 20, color: COLORS.onSurfaceVariant }}>Loading recommendation...</Text>
+          )}
         </View>
         
         {/* Active Session Chat Card */}
@@ -200,6 +219,7 @@ export default function BuddyDashboard({ user, dashboardData, activeTriage, refr
         ))}
         
       </ScrollView>
+      </PageContainer>
       <BottomNav />
     </SafeAreaView>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSelector } from 'react-redux';
@@ -7,6 +7,7 @@ import { selectUser } from '../../store/authSlice';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/axios';
+import apiClient from '../../api/axios';
 
 export default function PublicProfileScreen() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function PublicProfileScreen() {
     fetchProfile();
   }, [slug]);
 
-  const name = profile?.user?.first_name ? `${profile.user.first_name} ${profile.user.last_name}` : (user?.first_name ? `${user.first_name} ${user.last_name}` : 'Sarah Chen');
+  const name = profile?.user?.first_name ? `${profile.user.first_name} ${profile.user.last_name}` : (user?.first_name ? `${user.first_name} ${user.last_name}` : 'Unknown');
   const rate = profile?.per_minute_rate || 1.50;
 
   if (loading) {
@@ -94,7 +95,14 @@ export default function PublicProfileScreen() {
              <Text style={styles.rateDesc}>Professional guidance at an accessible rate.</Text>
           </View>
 
-          <Pressable style={styles.chatBtn}>
+          <Pressable style={styles.chatBtn} onPress={async () => {
+            try {
+              const { data } = await apiClient.post('/api/core/sessions/request-therapist/', { therapist_id: profile?.id });
+              router.push(`/(app)/chat/${data.id}`);
+            } catch(e) {
+              Alert.alert('Error', 'Could not start session. Please try again.');
+            }
+          }}>
              <Ionicons name="chatbubble-ellipses-outline" size={20} color={COLORS.onPrimary} />
              <Text style={styles.chatBtnText}>Start 5-Min Free Chat</Text>
           </Pressable>
@@ -150,20 +158,8 @@ export default function PublicProfileScreen() {
                  <Ionicons name="school-outline" size={20} color={COLORS.primary} />
               </View>
               <View style={styles.historyTextWrap}>
-                 <Text style={styles.historyTitle}>M.S. in Counseling & Mental Health Services</Text>
-                 <Text style={styles.historySub}>University of Pennsylvania • 2021 — 2023</Text>
-                 <Text style={styles.historyDesc}>Specialized focus on trauma-informed care and adolescent psychology.</Text>
-              </View>
-           </View>
-
-           <View style={[styles.historyRow, { marginTop: SPACING.lg }]}>
-              <View style={styles.iconBox}>
-                 <Ionicons name="ribbon-outline" size={20} color={COLORS.primary} />
-              </View>
-              <View style={styles.historyTextWrap}>
-                 <Text style={styles.historyTitle}>Clinical Practicum</Text>
-                 <Text style={styles.historySub}>UPenn Counseling Center • 2022 — 2023</Text>
-                 <Text style={styles.historyDesc}>Completed over 600 hours of supervised clinical direct service.</Text>
+                 <Text style={styles.historyTitle}>{profile?.university ? `Degree from ${profile.university}` : 'Education details not available'}</Text>
+                 <Text style={styles.historySub}>{profile?.graduation_year ? `Graduated ${profile.graduation_year}` : ''}</Text>
               </View>
            </View>
         </View>

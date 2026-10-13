@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../../api/axios';
-
-const MOCK_ON_CALL_THERAPISTS = [
-  { id: '1', name: 'Dr. Michael Vance', role: 'Licensed Clinical Psychologist', available: true },
-  { id: '2', name: 'Sarah Sterling, LCSW', role: 'Crisis Specialist', available: true },
-  { id: '3', name: 'Dr. Emily Chen', role: 'Trauma Specialist', available: false },
-];
+import apiClient from '../../api/axios';
 
 export default function EscalationScreen() {
   const router = useRouter();
+  const { session_id } = useLocalSearchParams();
+  const [therapists, setTherapists] = useState([]);
   const [urgency, setUrgency] = useState('Medium');
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState(null);
+
+  React.useEffect(() => {
+    apiClient.get('/api/core/therapists/')
+      .then(res => setTherapists(res.data))
+      .catch(e => console.log('Failed to fetch therapists', e));
+    if (session_id) {
+       apiClient.get(`/api/core/sessions/${session_id}/`)
+         .then(res => setSessionDetails(res.data))
+         .catch(e => console.log('Failed to fetch session', e));
+    }
+  }, [session_id]);
 
   const handleSubmit = async () => {
     if (!selectedTherapist) {
@@ -28,15 +36,18 @@ export default function EscalationScreen() {
       Alert.alert('Error', 'Please provide a reason for escalation.');
       return;
     }
+    if (!session_id) {
+      Alert.alert('Error', 'No session ID found.');
+      return;
+    }
 
     setLoading(true);
     try {
-      // Mock API call to create EscalationRequest
-      // In reality, this would hit /api/core/escalate/
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await apiClient.post('/api/core/escalate/', { session_id, therapist_id: selectedTherapist, urgency, reason });
+      const therapistName = therapists.find(t => t.id === selectedTherapist)?.user?.first_name || 'the selected therapist';
       Alert.alert(
         'Escalation Initiated',
-        `Clinical handover request sent to ${MOCK_ON_CALL_THERAPISTS.find(t => t.id === selectedTherapist)?.name}. They will join the session shortly.`,
+        `Clinical handover request sent to ${therapistName}. They will join the session shortly.`,
         [{ text: 'Return to Chat', onPress: () => router.back() }]
       );
     } catch (error) {
@@ -59,20 +70,20 @@ export default function EscalationScreen() {
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         
-        {/* Case Summary (Mocked Data) */}
+        {/* Case Summary */}
         <View style={styles.summaryCard}>
           <Text style={styles.sectionTitle}>Case Details</Text>
           <View style={styles.detailRow}>
              <Text style={styles.detailLabel}>Client:</Text>
-             <Text style={styles.detailValue}>Anonymous User #402</Text>
+             <Text style={styles.detailValue}>{sessionDetails?.user_name || `Anonymous User #${sessionDetails?.user || session_id || 'Unknown'}`}</Text>
           </View>
           <View style={styles.detailRow}>
              <Text style={styles.detailLabel}>Duration:</Text>
-             <Text style={styles.detailValue}>14m 32s</Text>
+             <Text style={styles.detailValue}>{sessionDetails?.duration_minutes || '0'}m</Text>
           </View>
           <View style={styles.detailRow}>
              <Text style={styles.detailLabel}>Primary Concern:</Text>
-             <Text style={styles.detailValue}>Severe Panic Attack (AI Flagged)</Text>
+             <Text style={styles.detailValue}>{sessionDetails?.is_crisis_flagged ? 'Crisis Flagged' : 'General'}</Text>
           </View>
         </View>
 
@@ -103,25 +114,27 @@ export default function EscalationScreen() {
 
         {/* Therapist Selection */}
         <Text style={styles.label}>On-Call Therapists</Text>
-        {MOCK_ON_CALL_THERAPISTS.map((therapist) => (
+        {therapists.map((therapist) => {
+          const isAvailable = true; // Replace with therapist availability logic if any
+          return (
           <Pressable 
             key={therapist.id} 
             style={[
               styles.therapistCard, 
               selectedTherapist === therapist.id && styles.therapistCardSelected,
-              !therapist.available && { opacity: 0.5 }
+              !isAvailable && { opacity: 0.5 }
             ]}
-            onPress={() => therapist.available && setSelectedTherapist(therapist.id)}
-            disabled={!therapist.available}
+            onPress={() => isAvailable && setSelectedTherapist(therapist.id)}
+            disabled={!isAvailable}
           >
             <View style={styles.therapistInfo}>
                <View style={styles.avatarWrap}>
-                  <Text style={styles.avatarInitial}>{therapist.name[0]}</Text>
-                  {therapist.available && <View style={styles.onlineDot} />}
+                  <Text style={styles.avatarInitial}>{therapist.user?.first_name?.[0] || 'T'}</Text>
+                  {isAvailable && <View style={styles.onlineDot} />}
                </View>
                <View>
-                 <Text style={styles.tName}>{therapist.name}</Text>
-                 <Text style={styles.tRole}>{therapist.role}</Text>
+                 <Text style={styles.tName}>{therapist.user?.first_name} {therapist.user?.last_name}</Text>
+                 <Text style={styles.tRole}>{therapist.modalities?.join(', ') || 'Licensed Therapist'}</Text>
                </View>
             </View>
             <Ionicons 
@@ -130,7 +143,8 @@ export default function EscalationScreen() {
                color={selectedTherapist === therapist.id ? COLORS.primary : COLORS.outlineVariant} 
             />
           </Pressable>
-        ))}
+          );
+        })}
 
         {/* Reason */}
         <Text style={styles.label}>Reason for Escalation</Text>

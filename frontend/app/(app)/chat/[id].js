@@ -14,6 +14,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsive } from '../../../hooks/useResponsive';
+import { PageContainer } from '../../../components/PageContainer';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { selectAccessToken, selectUser } from '../../../store/authSlice';
@@ -27,6 +29,7 @@ const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || 'http://localh
 const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
 
 export default function ChatScreen() {
+  const { isDesktop } = useResponsive();
   const { id } = useLocalSearchParams(); // session_id
   const router = useRouter();
   const token = useSelector(selectAccessToken);
@@ -39,10 +42,15 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [timer, setTimer] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [triageInfo, setTriageInfo] = useState(null);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [sessionNotes, setSessionNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
+
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+  const [contextMenuMessage, setContextMenuMessage] = useState(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ top: 0, left: 0 });
 
   const fetchNotes = async () => {
     try {
@@ -55,6 +63,12 @@ export default function ChatScreen() {
       setLoadingNotes(false);
     }
   };
+
+  useEffect(() => {
+    if (isProvider && id) {
+      fetchNotes();
+    }
+  }, [id]);
 
   useEffect(() => {
     if (noteModalVisible && isProvider) {
@@ -83,6 +97,14 @@ export default function ChatScreen() {
       try {
         const session = await getSession(id);
         setSessionData(session);
+        try {
+          const { data: triageData } = await apiClient.get(`/api/core/triage/active/`);
+          if (triageData && triageData.session === parseInt(id)) {
+            setTriageInfo(triageData);
+          }
+        } catch (e) {
+          // No active triage — that's OK
+        }
       } catch (err) {
         console.log('Failed to fetch session info:', err);
       }
@@ -97,7 +119,8 @@ export default function ChatScreen() {
           id: msg.id,
           text: msg.text,
           sender: msg.sender_id == user?.id ? 'Me' : (msg.sender_role === 'System' ? 'System' : 'Other'),
-          timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          is_highlighted: msg.is_highlighted || false,
         }));
         setMessages(formatted);
       } catch (err) {
@@ -182,24 +205,56 @@ export default function ChatScreen() {
     }
   };
 
-  const sendMessage = () => {
-    if (!inputText.trim() || !connected) return;
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      if (isCounselor) {
+        router.replace('/(app)/counselor-chats');
+      } else if (isProvider) {
+        router.replace('/(app)/therapist/dashboard');
+      } else {
+        router.replace('/(app)/dashboard');
+      }
+    }
+  };
+
+  const sendMessage = async () => {
+    const text = inputText.trim();
+    if (!text) return;
 
     const myMsg = { 
       id: Date.now().toString(), 
-      text: inputText.trim(), 
+      text, 
       sender: 'Me',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages((prev) => [...prev, myMsg]);
-
-    ws.current.send(
-      JSON.stringify({
-        type: 'message',
-        message: inputText.trim(),
-      })
-    );
     setInputText('');
+
+    let sentViaWs = false;
+    if (connected && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      try {
+        ws.current.send(
+          JSON.stringify({
+            type: 'message',
+            message: text,
+          })
+        );
+        sentViaWs = true;
+      } catch (err) {
+        console.log('WS send failed, falling back to HTTP:', err);
+      }
+    }
+
+    if (!sentViaWs) {
+      try {
+        await apiClient.post(`/api/core/sessions/${id}/messages/`, { message: text });
+      } catch (err) {
+        console.log('HTTP send error:', err);
+        Alert.alert('Error', 'Failed to deliver message. Please check your connection.');
+      }
+    }
   };
 
   const handleEscalate = async () => {
@@ -255,6 +310,21 @@ export default function ChatScreen() {
 
 
 
+  const handleHighlightMessage = async () => {
+    if (!contextMenuMessage) return;
+    try {
+      await apiClient.patch(`/api/core/messages/${contextMenuMessage.id}/highlight/`);
+      setMessages(prev => prev.map(m => 
+        m.id === contextMenuMessage.id ? { ...m, is_highlighted: !m.is_highlighted } : m
+      ));
+    } catch (err) {
+      Alert.alert('Error', 'Failed to highlight message.');
+    } finally {
+      setContextMenuVisible(false);
+      setContextMenuMessage(null);
+    }
+  };
+
   const renderItem = ({ item }) => {
     if (item.sender === 'System') {
       return (
@@ -268,21 +338,39 @@ export default function ChatScreen() {
 
     const isMe = item.sender === 'Me';
     return (
-      <View style={[styles.msgWrapper, isMe ? styles.msgWrapperRight : styles.msgWrapperLeft]}>
-        <View style={[styles.msgBubble, isMe ? styles.msgBubbleRight : styles.msgBubbleLeft]}>
+      <Pressable
+        onLongPress={() => {
+          if (isProvider) {
+            setContextMenuMessage(item);
+            setContextMenuVisible(true);
+          }
+        }}
+        delayLongPress={500}
+        style={[styles.msgWrapper, isMe ? styles.msgWrapperRight : styles.msgWrapperLeft]}
+      >
+        <View style={[styles.msgBubble, isMe ? styles.msgBubbleRight : styles.msgBubbleLeft, item.is_highlighted && styles.msgBubbleHighlighted]}>
           <Text style={[styles.msgText, isMe ? styles.msgTextRight : styles.msgTextLeft]}>{item.text}</Text>
         </View>
         <Text style={styles.msgTime}>{item.timestamp || 'Just now'}</Text>
-      </View>
+        {item.is_highlighted && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8 }}>
+            <Ionicons name="bookmark" size={12} color={COLORS.primary} />
+            <Text style={{ fontSize: 10, color: COLORS.primary }}>Highlighted</Text>
+          </View>
+        )}
+      </Pressable>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <PageContainer>
+        <View style={{ flexDirection: isDesktop ? 'row' : 'column', flex: 1 }}>
+          <View style={{ flex: isDesktop ? 0.65 : 1 }}>
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={handleBack} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color={COLORS.onSurfaceVariant} />
           </Pressable>
           <View style={styles.headerProviderInfo}>
@@ -338,10 +426,12 @@ export default function ChatScreen() {
       )}
 
       {/* AI Emotion Analysis Mock */}
-      {isCounselor && (
+      {isProvider && triageInfo && (
         <View style={styles.aiSupportBox}>
-           <Ionicons name="sparkles" size={16} color="#0284C7" style={{ marginRight: 6 }} />
-           <Text style={styles.aiSupportText}>AI Support: Emotional intensity rising (Anxiety score: 0.72)</Text>
+          <Ionicons name="sparkles" size={16} color="#0284C7" style={{ marginRight: 6 }} />
+          <Text style={styles.aiSupportText}>
+            Triage Assessment: {triageInfo.urgency_level || 'Unknown'} Urgency — {triageInfo.suspected_conditions?.join(', ') || triageInfo.current_phase || 'Assessment data'}
+          </Text>
         </View>
       )}
 
@@ -354,7 +444,7 @@ export default function ChatScreen() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 60}>
         <View style={styles.inputArea}>
           <View style={styles.inputContainer}>
             <TextInput
@@ -371,6 +461,54 @@ export default function ChatScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      </View>
+          {isDesktop && (
+            <View style={{ flex: 0.35, borderLeftWidth: 1, borderColor: COLORS.surfaceDim, padding: SPACING.md }}>
+              <Text style={{ fontFamily: FONTS.family.headline, fontSize: 18, color: COLORS.onSurface, marginBottom: SPACING.md }}>Session Info</Text>
+              
+              {sessionData && (
+                <View style={{ marginBottom: SPACING.lg }}>
+                  <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.caption, color: COLORS.outline, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Status</Text>
+                  <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.bodyMd, color: COLORS.onSurface, marginBottom: SPACING.md }}>{sessionData?.status || 'Unknown'}</Text>
+                  
+                  {sessionData?.provider_name && (
+                    <>
+                      <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.caption, color: COLORS.outline, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Provider</Text>
+                      <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.bodyMd, color: COLORS.onSurface, marginBottom: SPACING.md }}>{sessionData.provider_name}</Text>
+                    </>
+                  )}
+                </View>
+              )}
+              
+              {isProvider && (
+                <View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ fontFamily: FONTS.family.headline, fontSize: FONTS.sizes.labelSm, color: COLORS.onSurface, fontWeight: '600' }}>Clinical Notes</Text>
+                    <Pressable onPress={() => setNoteModalVisible(true)} style={{ padding: 4 }}>
+                      <Ionicons name="add-circle-outline" size={22} color={COLORS.primary} />
+                    </Pressable>
+                  </View>
+                  {loadingNotes ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  ) : sessionNotes.length === 0 ? (
+                    <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.caption, color: COLORS.outline, fontStyle: 'italic' }}>No notes yet. Add one using the + button.</Text>
+                  ) : (
+                    <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                      {sessionNotes.map((note) => (
+                        <View key={note.id} style={{ backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: RADIUS.md, marginBottom: 8 }}>
+                          <Text style={{ fontFamily: FONTS.family.body, fontSize: 10, color: COLORS.outline, marginBottom: 4 }}>{new Date(note.created_at).toLocaleString()}</Text>
+                          <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.bodyMd, color: COLORS.onSurface }}>{note.note_text}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </PageContainer>
 
       {/* Modals */}
       <Modal visible={noteModalVisible} animationType="fade" transparent={true}>
@@ -516,6 +654,23 @@ export default function ChatScreen() {
               </Pressable>
            </View>
         </View>
+      </Modal>
+      {/* Context Menu Modal */}
+      <Modal visible={contextMenuVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setContextMenuVisible(false)}>
+          <View style={[styles.modalContent, { padding: 16, maxWidth: 250 }]}>
+            <Text style={{ fontFamily: FONTS.family.headline, fontSize: FONTS.sizes.labelSm, color: COLORS.onSurface, fontWeight: '600', marginBottom: 12 }}>Message Actions</Text>
+            <Pressable 
+              style={{ flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: RADIUS.md, backgroundColor: COLORS.surfaceContainerLow, gap: 12 }}
+              onPress={handleHighlightMessage}
+            >
+              <Ionicons name={contextMenuMessage?.is_highlighted ? "bookmark" : "bookmark-outline"} size={20} color={COLORS.primary} />
+              <Text style={{ fontFamily: FONTS.family.body, fontSize: FONTS.sizes.bodyMd, color: COLORS.onSurface }}>
+                {contextMenuMessage?.is_highlighted ? 'Remove Highlight' : 'Highlight Message'}
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
@@ -672,10 +827,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   msgWrapperLeft: {
-    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
   },
   msgWrapperRight: {
-    alignItems: 'flex-end',
+    alignSelf: 'flex-end',
   },
   msgBubble: {
     maxWidth: '85%',
@@ -687,6 +842,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(54, 101, 110, 0.1)', // secondary/10
     borderTopLeftRadius: 4,
+  },
+  msgBubbleHighlighted: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(16, 67, 86, 0.05)',
   },
   msgBubbleRight: {
     backgroundColor: COLORS.primary,

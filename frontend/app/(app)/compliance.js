@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,7 +7,7 @@ import { selectUser, setUser } from '../../store/authSlice';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/axios';
-import * as DocumentPicker from 'expo-document-picker';
+import { pickDocument } from '../../utils/documentPicker';
 
 export default function ComplianceScreen() {
   const user = useSelector(selectUser);
@@ -19,22 +19,33 @@ export default function ComplianceScreen() {
 
   const handleUpload = async (field) => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({ type: '*/*' });
-      if (res.canceled) return;
+      const res = await pickDocument();
+      if (res.type === 'cancel') return;
 
       setLoading(true);
-      // In a real implementation, we would upload via multipart form-data to S3/MinIO
-      // For now, we'll just mock saving the file name to the backend profile
-      const fileUri = res.assets[0].uri;
-      const fileName = res.assets[0].name;
+      const file = res.assets[0];
+      
+      const formData = new FormData();
+      
+      if (Platform.OS === 'web' && file.file) {
+        formData.append('file', file.file, file.name);
+      } else {
+        formData.append('file', {
+          uri: file.uri,
+          name: file.name,
+          type: 'application/octet-stream',
+        });
+      }
+      formData.append('field_name', field);
 
-      const payload = { counselor_profile: {} };
-      payload.counselor_profile[field] = fileName;
-
-      const response = await api.patch('/api/accounts/profile/update/', payload);
+      const response = await api.post('/api/accounts/profile/upload-document/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
       dispatch(setUser(response.data));
-      Alert.alert('Success', `${fileName} uploaded successfully!`);
+      Alert.alert('Success', `${file.name} uploaded successfully!`);
     } catch (err) {
+      console.log('Upload error:', err);
       Alert.alert('Upload Error', 'Failed to upload document.');
     } finally {
       setLoading(false);

@@ -4,7 +4,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
-import api from '../../api/axios';
+import { requestPasswordReset, resetPassword } from '../../api/auth';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
     try {
-      await api.post('/api/accounts/auth/forgot-password/request/', { email });
+      await requestPasswordReset(email);
       setStep(2);
       Alert.alert('OTP Sent', 'If the email exists, an OTP has been sent to your inbox.');
     } catch (error) {
@@ -38,11 +38,7 @@ export default function ForgotPasswordScreen() {
     }
     setLoading(true);
     try {
-      await api.post('/api/accounts/auth/forgot-password/reset/', {
-        email,
-        otp,
-        new_password: newPassword,
-      });
+      await resetPassword(email, otp, newPassword);
       Alert.alert('Success', 'Your password has been reset successfully.', [
         { text: 'OK', onPress: () => router.replace('/login') },
       ]);

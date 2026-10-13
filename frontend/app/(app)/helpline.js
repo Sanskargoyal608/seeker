@@ -1,21 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, SectionList, ActivityIndicator, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { getHelplines } from '../../api/core';
+import apiClient from '../../api/axios';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
 
 export default function HelplineScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [helplines, setHelplines] = useState([]);
+  const [sections, setSections] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchHelplines = async () => {
       try {
-        const data = await getHelplines();
-        setHelplines(data);
+        const [linesData, catsData] = await Promise.all([
+          getHelplines(),
+          apiClient.get('/api/core/helpline/categories/').then(res => res.data).catch(() => [])
+        ]);
+        
+        let groups = [];
+        if (catsData && catsData.length > 0) {
+           groups = catsData.map(c => ({
+             title: c.name,
+             data: linesData.filter(l => l.category?.id === c.id || l.category === c.id || l.category === c.name || l.category?.name === c.name)
+           })).filter(g => g.data.length > 0);
+        } else {
+           // fallback grouping if categories endpoint fails or is different
+           const groupedByCat = linesData.reduce((acc, curr) => {
+             const catName = curr.category?.name || curr.category || 'Other';
+             if (!acc[catName]) acc[catName] = [];
+             acc[catName].push(curr);
+             return acc;
+           }, {});
+           groups = Object.keys(groupedByCat).map(k => ({ title: k, data: groupedByCat[k] }));
+        }
+        
+        setSections(groups);
       } catch (err) {
         setError('Failed to load helpline directory.');
         console.log(err);
@@ -39,7 +61,7 @@ export default function HelplineScreen() {
         <Text style={styles.headerTitle}>Crisis Helpline Directory</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.scrollContent}>
         <Text style={styles.disclaimer}>
           If you or someone you know is in immediate danger, please contact local emergency services immediately.
         </Text>
@@ -48,37 +70,46 @@ export default function HelplineScreen() {
           <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
         ) : error ? (
           <Text style={styles.errorText}>{error}</Text>
-        ) : helplines.length === 0 ? (
+        ) : sections.length === 0 ? (
           <Text style={styles.emptyText}>No helplines currently available.</Text>
         ) : (
-          helplines.map((entry) => (
-            <View key={entry.id} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{entry.name}</Text>
-                {entry.category && (
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{entry.category.name}</Text>
-                  </View>
-                )}
-              </View>
-              
-              <Text style={styles.descriptionText}>{entry.description}</Text>
-              
-              <View style={styles.detailsRow}>
-                {entry.region ? <Text style={styles.detailItem}>📍 {entry.region}</Text> : null}
-                {entry.is_24_7 ? <Text style={styles.detailItem}>🕒 24/7</Text> : null}
-              </View>
+          <SectionList
+            sections={sections}
+            keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+            renderSectionHeader={({ section: { title } }) => (
+              <Text style={styles.sectionHeader}>{title}</Text>
+            )}
+            renderItem={({ item: entry }) => (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>{entry.name}</Text>
+                  {entry.category && (
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryText}>{entry.category.name || entry.category}</Text>
+                    </View>
+                  )}
+                </View>
+                
+                <Text style={styles.descriptionText}>{entry.description}</Text>
+                
+                <View style={styles.detailsRow}>
+                  {entry.region ? <Text style={styles.detailItem}>📍 {entry.region}</Text> : null}
+                  {entry.is_24_7 ? <Text style={styles.detailItem}>🕒 24/7</Text> : null}
+                </View>
 
-              <Pressable 
-                style={({ pressed }) => [styles.callBtn, pressed && { opacity: 0.8 }]} 
-                onPress={() => handleCall(entry.phone)}
-              >
-                <Text style={styles.callBtnText}>📞 Call {entry.phone}</Text>
-              </Pressable>
-            </View>
-          ))
+                <Pressable 
+                  style={({ pressed }) => [styles.callBtn, pressed && { opacity: 0.8 }]} 
+                  onPress={() => handleCall(entry.phone)}
+                >
+                  <Text style={styles.callBtnText}>📞 Call {entry.phone}</Text>
+                </Pressable>
+              </View>
+            )}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+          />
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -133,4 +164,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   callBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: FONTS.sizes.md },
+  sectionHeader: { fontSize: FONTS.sizes.lg, fontWeight: 'bold', color: COLORS.textPrimary, marginVertical: SPACING.sm },
 });

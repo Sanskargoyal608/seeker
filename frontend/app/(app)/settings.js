@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Alert, Switch, Modal, TextInput, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert, Switch, Modal, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser } from '../../store/authSlice';
 import { useAuth } from '../../hooks/useAuth';
 import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../constants/theme';
 import { Ionicons, MaterialSymbols } from '@expo/vector-icons';
 import apiClient from '../../api/axios';
-import { requestPasswordReset, resetPassword } from '../../api/auth';
+import { requestPasswordReset, resetPassword, logoutAllDevices } from '../../api/auth';
 import PanicButton from '../../components/PanicButton';
 
 export default function SettingsScreen() {
@@ -22,12 +22,49 @@ export default function SettingsScreen() {
   const [emailNotif, setEmailNotif] = useState(false);
   const [sessionNotif, setSessionNotif] = useState(true);
 
+  const [billingRecords, setBillingRecords] = useState([]);
+
   // Change Password State
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loadingPassword, setLoadingPassword] = useState(false);
+
+  useEffect(() => {
+    if (user?.preferences) {
+      setPushNotif(user.preferences.push_notifications ?? true);
+      setEmailNotif(user.preferences.email_notifications ?? false);
+    }
+  }, [user]);
+
+  const updatePreference = async (key, value) => {
+    try {
+      await apiClient.patch('/api/accounts/profile/update/', {
+        preferences: { [key]: value }
+      });
+    } catch (e) {
+      console.log('Pref update error:', e);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const fetchBilling = async () => {
+        try {
+          const res = await apiClient.get('/api/core/user/billing/');
+          if (isActive) {
+            setBillingRecords(res.data || []);
+          }
+        } catch (e) {
+          console.log('Billing fetch error:', e);
+        }
+      };
+      fetchBilling();
+      return () => { isActive = false; };
+    }, [])
+  );
 
   const handleChangePasswordRequest = async () => {
     setLoadingPassword(true);
@@ -64,9 +101,35 @@ export default function SettingsScreen() {
   };
 
   const onLogout = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to log out?')) {
+        handleLogout();
+      }
+      return;
+    }
     Alert.alert('Log out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log out', style: 'destructive', onPress: handleLogout },
+    ]);
+  };
+
+  const onLogoutAll = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to log out from all devices?')) {
+        logoutAllDevices().then(() => handleLogout()).catch(console.error);
+      }
+      return;
+    }
+    Alert.alert('Log Out All Devices', 'Are you sure you want to log out from all devices?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out All', style: 'destructive', onPress: async () => {
+          try {
+            await logoutAllDevices();
+            handleLogout();
+          } catch (e) {
+            console.error(e);
+          }
+      }},
     ]);
   };
 
@@ -92,6 +155,31 @@ export default function SettingsScreen() {
       }
     }
   };
+
+  const getRoleBadge = () => {
+    if (user?.role === 'GENERAL_USER') return 'User';
+    if (user?.role === 'COUNSELOR') return 'Counselor';
+    if (user?.role === 'THERAPIST') return 'Therapist';
+    return 'Member';
+  };
+
+  const totalInvested = billingRecords.reduce((acc, curr) => {
+    if (curr.is_paid) {
+      return acc + Number(curr.amount || 0);
+    }
+    return acc;
+  }, 0);
+
+  const thisMonthInvested = billingRecords.reduce((acc, curr) => {
+    if (curr.is_paid && curr.created_at) {
+      const date = new Date(curr.created_at);
+      const now = new Date();
+      if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
+        return acc + Number(curr.amount || 0);
+      }
+    }
+    return acc;
+  }, 0);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -121,13 +209,13 @@ export default function SettingsScreen() {
            </View>
            <View style={styles.profileContextInfo}>
               <Text style={styles.nameText}>{user?.first_name} {user?.last_name}</Text>
-              <Text style={styles.memberSince}>Active Buddy since {new Date(user?.date_joined || Date.now()).getFullYear()}</Text>
+              <Text style={styles.memberSince}>Active Buddy since {new Date(user?.date_joined || user?.created_at || Date.now()).getFullYear()}</Text>
               <View style={styles.badges}>
                  <View style={styles.premiumBadge}>
-                    <Text style={styles.premiumBadgeText}>Premium Member</Text>
+                    <Text style={styles.premiumBadgeText}>{getRoleBadge()}</Text>
                  </View>
                  <View style={styles.goalBadge}>
-                    <Text style={styles.goalBadgeText}>Daily Goal: Mindful Breath</Text>
+                    <Text style={styles.goalBadgeText}>Member since {new Date(user?.date_joined || user?.created_at || Date.now()).getFullYear()}</Text>
                  </View>
               </View>
            </View>
@@ -138,31 +226,28 @@ export default function SettingsScreen() {
            <Ionicons name="wallet-outline" size={120} color="rgba(255,255,255,0.1)" style={styles.financeBgIcon} />
            <Text style={styles.financeTitle}>Financial Summary</Text>
            
-           <View style={styles.financeBalanceRow}>
-              <Text style={styles.financeAmount}>$1,420.50</Text>
-              <Text style={styles.financeLabel}>Total Invested</Text>
-           </View>
+           {billingRecords.length === 0 ? (
+             <View style={styles.financeBalanceRow}>
+                <Text style={styles.financeAmount}>$0.00</Text>
+                <Text style={styles.financeLabel}>No billing history yet</Text>
+             </View>
+           ) : (
+             <>
+               <View style={styles.financeBalanceRow}>
+                  <Text style={styles.financeAmount}>${totalInvested.toFixed(2)}</Text>
+                  <Text style={styles.financeLabel}>Total Invested</Text>
+               </View>
 
-           <View style={styles.financeStatsGrid}>
-              <View style={styles.financeStatBox}>
-                 <Text style={styles.financeStatLabel}>This Month</Text>
-                 <Text style={styles.financeStatValue}>$185.00</Text>
-              </View>
-              <View style={styles.financeStatBox}>
-                 <Text style={styles.financeStatLabel}>Next Billing</Text>
-                 <Text style={styles.financeStatValue}>Oct 12</Text>
-              </View>
-              <View style={styles.financeStatBox}>
-                 <Text style={styles.financeStatLabel}>Saved</Text>
-                 <Text style={styles.financeStatValue}>$240.00</Text>
-              </View>
-              <View style={styles.financeStatBox}>
-                 <Text style={styles.financeStatLabel}>Credits</Text>
-                 <Text style={styles.financeStatValue}>4 Left</Text>
-              </View>
-           </View>
+               <View style={styles.financeStatsGrid}>
+                  <View style={styles.financeStatBox}>
+                     <Text style={styles.financeStatLabel}>This Month</Text>
+                     <Text style={styles.financeStatValue}>${thisMonthInvested.toFixed(2)}</Text>
+                  </View>
+               </View>
+             </>
+           )}
 
-           <Pressable style={styles.financeBtn}>
+           <Pressable style={styles.financeBtn} onPress={() => Alert.alert('Detailed History', 'Full history coming soon.')}>
               <Text style={styles.financeBtnText}>View Detailed History</Text>
            </Pressable>
         </View>
@@ -223,21 +308,42 @@ export default function SettingsScreen() {
                     <Ionicons name="notifications" size={20} color={COLORS.onSurfaceVariant} style={{ marginRight: 16 }} />
                     <Text style={styles.settingTitle}>Push Notifications</Text>
                  </View>
-                 <Switch value={pushNotif} onValueChange={setPushNotif} trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }} thumbColor={COLORS.white} />
+                 <Switch 
+                    value={pushNotif} 
+                    onValueChange={(val) => {
+                      setPushNotif(val);
+                      updatePreference('push_notifications', val);
+                    }} 
+                    trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }} 
+                    thumbColor={COLORS.white} 
+                 />
               </View>
               <View style={[styles.settingRow, styles.settingRowBorder]}>
                  <View style={styles.settingRowLeft}>
                     <Ionicons name="mail" size={20} color={COLORS.onSurfaceVariant} style={{ marginRight: 16 }} />
                     <Text style={styles.settingTitle}>Email Updates</Text>
                  </View>
-                 <Switch value={emailNotif} onValueChange={setEmailNotif} trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }} thumbColor={COLORS.white} />
+                 <Switch 
+                    value={emailNotif} 
+                    onValueChange={(val) => {
+                      setEmailNotif(val);
+                      updatePreference('email_notifications', val);
+                    }} 
+                    trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }} 
+                    thumbColor={COLORS.white} 
+                 />
               </View>
               <View style={[styles.settingRow, styles.settingRowBorder]}>
                  <View style={styles.settingRowLeft}>
                     <Ionicons name="calendar" size={20} color={COLORS.onSurfaceVariant} style={{ marginRight: 16 }} />
                     <Text style={styles.settingTitle}>Session Reminders</Text>
                  </View>
-                 <Switch value={sessionNotif} onValueChange={setSessionNotif} trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }} thumbColor={COLORS.white} />
+                 <Switch 
+                    value={sessionNotif} 
+                    onValueChange={setSessionNotif} 
+                    trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }} 
+                    thumbColor={COLORS.white} 
+                 />
               </View>
            </View>
         </View>
@@ -249,6 +355,11 @@ export default function SettingsScreen() {
            <Pressable style={styles.logoutBtn} onPress={onLogout}>
               <Ionicons name="log-out-outline" size={20} color={COLORS.onSurfaceVariant} />
               <Text style={styles.logoutText}>Log Out</Text>
+           </Pressable>
+
+           <Pressable style={styles.logoutAllBtn} onPress={onLogoutAll}>
+              <Ionicons name="phone-portrait-outline" size={20} color={COLORS.error} />
+              <Text style={styles.logoutAllText}>Log Out All Devices</Text>
            </Pressable>
 
            <Pressable style={styles.deleteBtn} onPress={() => setDeleteModalVisible(true)}>
@@ -344,7 +455,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.marginMobile,
     paddingVertical: 16,
-    backgroundColor: 'rgba(251, 249, 248, 0.8)', // surface/80
+    backgroundColor: 'rgba(251, 249, 248, 0.8)',
     zIndex: 10,
   },
   headerLeft: {
@@ -374,10 +485,10 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.family.body,
     fontSize: FONTS.sizes.labelSm,
     color: COLORS.onSurfaceVariant,
-    display: 'none', // Shown on md screens in original, hiding on mobile
+    display: 'none',
   },
   crisisBtn: {
-    backgroundColor: 'rgba(186, 26, 26, 0.1)', // error/10
+    backgroundColor: 'rgba(186, 26, 26, 0.1)',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: RADIUS.full,
@@ -413,7 +524,7 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     backgroundColor: COLORS.surfaceContainerHighest,
     borderWidth: 4,
-    borderColor: 'rgba(45, 90, 110, 0.2)', // primary-container/20
+    borderColor: 'rgba(45, 90, 110, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -497,7 +608,7 @@ const styles = StyleSheet.create({
   financeTitle: {
     fontFamily: FONTS.family.body,
     fontSize: FONTS.sizes.labelSm,
-    color: 'rgba(163, 208, 231, 0.8)', // on-primary-container/80
+    color: 'rgba(163, 208, 231, 0.8)',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 8,
@@ -631,12 +742,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.onSurface,
   },
+  logoutAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 180, 171, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 180, 171, 0.3)',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: RADIUS.xl,
+    gap: 16,
+    marginBottom: 8,
+  },
+  logoutAllText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    fontWeight: '600',
+    color: COLORS.error,
+  },
   deleteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 218, 214, 0.1)', // error-container/10
+    backgroundColor: 'rgba(255, 218, 214, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(186, 26, 26, 0.2)', // error/20
+    borderColor: 'rgba(186, 26, 26, 0.2)',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: RADIUS.xl,
@@ -726,5 +855,28 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.family.body,
     fontSize: FONTS.sizes.labelSm,
     color: COLORS.onSurface,
+  },
+  modalInput: {
+    width: '100%',
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: COLORS.outline,
+    borderRadius: RADIUS.md,
+    padding: 12,
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.bodyMd,
+    color: COLORS.onSurface,
+    marginBottom: 16,
+  },
+  modalPrimaryBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: RADIUS.xl,
+    alignItems: 'center',
+  },
+  modalPrimaryBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    color: COLORS.onPrimary,
   }
 });

@@ -7,24 +7,41 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSelector } from 'react-redux';
 import { selectUser } from '../store/authSlice';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const user = useSelector(selectUser);
+  const { isDesktop } = useResponsive();
+
+  if (isDesktop) return null;
 
   const isCounselor = user?.role === 'COUNSELOR';
+  const isTherapist = user?.role === 'THERAPIST';
 
-  const tabs = isCounselor ? [
-    { name: 'Home', icon: 'home', route: '/(app)/dashboard' },
-    { name: 'Mentorship', icon: 'people', route: '/(app)/mentorship' },
-    { name: 'Profile', icon: 'person', route: '/(app)/counselor-profile' },
-  ] : [
-    { name: 'Home', icon: 'home', route: '/(app)/dashboard' },
-    { name: 'Discovery', icon: 'search', route: '/(app)/therapist-search' },
-    { name: 'Profile', icon: 'person', route: '/(app)/profile' },
-  ];
+  let tabs = [];
+  if (isCounselor) {
+    tabs = [
+      { name: 'Home', icon: 'home', route: '/(app)/dashboard' },
+      { name: 'Chats', icon: 'chatbubbles', route: '/(app)/counselor-chats' },
+      { name: 'Mentorship', icon: 'search', route: '/(app)/mentorship' },
+      { name: 'Profile', icon: 'person', route: '/(app)/counselor-profile' },
+    ];
+  } else if (isTherapist) {
+    tabs = [
+      { name: 'Home', icon: 'home', route: '/(app)/dashboard' },
+      { name: 'Mentees', icon: 'people', route: '/(app)/therapist/mentees' },
+      { name: 'Profile', icon: 'person', route: '/(app)/therapist/profile' },
+    ];
+  } else {
+    tabs = [
+      { name: 'Home', icon: 'home', route: '/(app)/dashboard' },
+      { name: 'Discovery', icon: 'search', route: '/(app)/therapist-search' },
+      { name: 'Profile', icon: 'person', route: '/(app)/profile' },
+    ];
+  }
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 12) }]}>

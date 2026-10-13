@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as SecureStore from 'expo-secure-store';
+import { storage as SecureStore } from '../../utils/storage';
 import * as DocumentPicker from 'expo-document-picker';
 import { useDispatch } from 'react-redux';
 import { setTokens, setUser, clearRegistrationFlow } from '../../store/authSlice';

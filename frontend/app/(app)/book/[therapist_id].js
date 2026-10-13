@@ -30,9 +30,28 @@ export default function BookTherapistScreen() {
   const [intakeReason, setIntakeReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
+  const [therapistProfile, setTherapistProfile] = useState(null);
 
   useEffect(() => {
     fetchSlots();
+  }, [therapist_id]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await apiClient.get(`/api/profiles/public/therapist/${therapist_id}/`);
+        setTherapistProfile(data);
+      } catch(e) {
+        // Try counselor profile
+        try {
+          const { data } = await apiClient.get(`/api/profiles/public/counselor/${therapist_id}/`);
+          setTherapistProfile(data);
+        } catch(e2) {
+          console.log('Could not fetch provider profile');
+        }
+      }
+    };
+    if (therapist_id) fetchProfile();
   }, [therapist_id]);
 
   const fetchSlots = async () => {
@@ -107,11 +126,17 @@ export default function BookTherapistScreen() {
           {/* Provider Info Card */}
           <View style={styles.providerCard}>
             <View style={styles.providerImgPlaceholder}>
-              <Text style={styles.providerImgInitial}>Dr</Text>
+              <Text style={styles.providerImgInitial}>
+                {therapistProfile?.first_name ? therapistProfile.first_name.charAt(0) : 'P'}
+              </Text>
             </View>
             <View style={styles.providerDetails}>
-              <Text style={styles.providerName}>Dr. Sarah Chen</Text>
-              <Text style={styles.providerSpec}>Licensed Psychotherapist • CBT</Text>
+              <Text style={styles.providerName}>
+                {therapistProfile?.first_name ? `${therapistProfile.first_name} ${therapistProfile.last_name}` : 'Provider'}
+              </Text>
+              <Text style={styles.providerSpec}>
+                {therapistProfile?.modalities?.join(', ') || 'Mental Health Professional'}
+              </Text>
               <View style={styles.acceptingBadge}>
                 <View style={styles.statusDot} />
                 <Text style={styles.acceptingText}>Accepting New Clients</Text>

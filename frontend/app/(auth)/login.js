@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as SecureStore from 'expo-secure-store';
+import { storage as SecureStore } from '../../utils/storage';
 import { useDispatch } from 'react-redux';
 import { setTokens, setUser } from '../../store/authSlice';
 import { login, getErrorMessage } from '../../api/auth';

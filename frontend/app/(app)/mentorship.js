@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, ActivityIndicator, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
@@ -12,6 +12,33 @@ export default function MentorshipScreen() {
   const [search, setSearch] = useState('');
   const [therapists, setTherapists] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [sopModalVisible, setSopModalVisible] = useState(false);
+  const [selectedTherapistId, setSelectedTherapistId] = useState(null);
+  const [selectedTherapistName, setSelectedTherapistName] = useState('');
+  const [sopText, setSopText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleApply = async () => {
+    if (!sopText.trim()) {
+      Alert.alert('Required', 'Please write your statement of purpose.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.post('/api/core/mentorship/', {
+        therapist_id: selectedTherapistId,
+        sop_message: sopText.trim(),
+      });
+      Alert.alert('Success', 'Your mentorship request has been sent!');
+      setSopModalVisible(false);
+      setSopText('');
+    } catch (e) {
+      Alert.alert('Error', e.response?.data?.error || 'Failed to send request.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const fetchTherapists = async (query = '') => {
     setLoading(true);
@@ -53,9 +80,6 @@ export default function MentorshipScreen() {
            <Text style={styles.heroText}>
              Connect with experienced Licensed Therapists to guide your clinical practicum, discuss complex cases, and advance your career.
            </Text>
-           <Pressable style={styles.matchBtn}>
-              <Text style={styles.matchBtnText}>Get Personalized Match</Text>
-           </Pressable>
         </View>
 
         {/* Search */}
@@ -94,10 +118,6 @@ export default function MentorshipScreen() {
                   <View style={styles.infoWrap}>
                      <Text style={styles.nameText}>{name}</Text>
                      <Text style={styles.expText}>Licensed Professional</Text>
-                     <View style={styles.ratingRow}>
-                        <Ionicons name="star" size={14} color="#F59E0B" />
-                        <Text style={styles.ratingText}>5.0 (New)</Text>
-                     </View>
                   </View>
                 </View>
 
@@ -116,7 +136,14 @@ export default function MentorshipScreen() {
                    >
                       <Text style={styles.viewBtnText}>View Profile</Text>
                    </Pressable>
-                   <Pressable style={styles.applyBtn}>
+                   <Pressable 
+                      style={styles.applyBtn}
+                      onPress={() => {
+                        setSelectedTherapistId(id);
+                        setSelectedTherapistName(name);
+                        setSopModalVisible(true);
+                      }}
+                   >
                       <Text style={styles.applyBtnText}>Apply for Mentorship</Text>
                    </Pressable>
                 </View>
@@ -131,6 +158,36 @@ export default function MentorshipScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <Modal visible={sopModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Apply for Mentorship</Text>
+            <Text style={styles.modalSub}>Applying to {selectedTherapistName}</Text>
+            <Text style={styles.modalLabel}>Statement of Purpose</Text>
+            <Text style={styles.modalHint}>Explain why this therapist should mentor you. Include your background, goals, and what you hope to learn.</Text>
+            <TextInput
+              style={styles.sopInput}
+              placeholder="Write your statement of purpose..."
+              placeholderTextColor={COLORS.textMuted}
+              multiline
+              numberOfLines={6}
+              value={sopText}
+              onChangeText={setSopText}
+              textAlignVertical="top"
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => { setSopModalVisible(false); setSopText(''); }}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.submitSopBtn, !sopText.trim() && { opacity: 0.5 }]} onPress={handleApply} disabled={submitting || !sopText.trim()}>
+                {submitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.submitSopText}>Submit Application</Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <BottomNav />
     </SafeAreaView>
   );
@@ -313,4 +370,16 @@ const styles = StyleSheet.create({
     fontWeight: FONTS.weights.bold,
     fontSize: FONTS.sizes.sm,
   },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { backgroundColor: COLORS.surfaceContainerLowest || '#fff', borderRadius: 20, padding: 24, width: '100%', maxWidth: 400 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.onSurface, marginBottom: 4 },
+  modalSub: { fontSize: 14, color: COLORS.onSurfaceVariant, marginBottom: 16 },
+  modalLabel: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface, marginBottom: 4 },
+  modalHint: { fontSize: 12, color: COLORS.onSurfaceVariant, marginBottom: 12, lineHeight: 18 },
+  sopInput: { backgroundColor: COLORS.background || '#f5f5f5', borderWidth: 1, borderColor: COLORS.outlineVariant || '#ccc', borderRadius: 16, padding: 16, fontSize: 14, color: COLORS.onSurface, minHeight: 140, textAlignVertical: 'top', marginBottom: 16 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+  modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
+  modalCancelText: { color: COLORS.onSurfaceVariant, fontWeight: '600' },
+  submitSopBtn: { backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 40 },
+  submitSopText: { color: COLORS.onPrimary, fontWeight: '700' },
 });

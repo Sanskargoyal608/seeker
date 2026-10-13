@@ -12,6 +12,7 @@ import {
   RefreshControl,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -140,6 +141,14 @@ export default function DashboardScreen() {
   );
 
   const onLogout = () => {
+    if (Platform.OS === 'web') {
+      // Alert.alert is not supported on web — confirm via window.confirm instead
+      if (window.confirm('Are you sure you want to log out?')) {
+        setLoggingOut(true);
+        handleLogout();
+      }
+      return;
+    }
     Alert.alert('Log out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -241,14 +250,20 @@ export default function DashboardScreen() {
     setRespondingToEscalation(true);
     try {
       const { session_id } = await respondToEscalationRequest(escalationAlert.id, action);
+      
+      // Close the modal before navigating to prevent ghost overlays blocking touch events
+      setEscalationAlert(null);
+      setRespondingToEscalation(false);
+      
       if (action === 'ACCEPT' && session_id) {
-        router.push(`/(app)/chat/${session_id}`);
+        setTimeout(() => {
+          router.push(`/(app)/chat/${session_id}`);
+        }, 150);
       } else {
         Alert.alert('Success', `Escalation request ${action.toLowerCase()}ed.`);
       }
     } catch (err) {
       Alert.alert('Error', `Failed to ${action.toLowerCase()} escalation.`);
-    } finally {
       setRespondingToEscalation(false);
       setEscalationAlert(null);
     }
@@ -491,12 +506,14 @@ export default function DashboardScreen() {
                   onPress={() => {
                     if (['MATCHED', 'ACTIVE', 'PAYMENT_PENDING', 'PAID', 'ENDED'].includes(session.status)) {
                       router.push(`/(app)/chat/${session.id}`);
+                    } else if (session.status === 'TRIAGE') {
+                      router.push('/(app)/triage');
                     }
                   }}
                 >
                   <View style={styles.sessionHeader}>
                     <Text style={styles.sessionStatus}>Status: {session.status}</Text>
-                    {['MATCHED', 'ACTIVE', 'PAYMENT_PENDING', 'PAID'].includes(session.status) && (
+                    {['MATCHED', 'ACTIVE', 'PAYMENT_PENDING', 'PAID', 'TRIAGE'].includes(session.status) && (
                       <Text style={{ color: COLORS.primary, fontSize: FONTS.sizes.sm, fontWeight: 'bold' }}>Enter Chat &rarr;</Text>
                     )}
                   </View>

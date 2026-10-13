@@ -97,10 +97,6 @@ export default function ClientDetailScreen() {
               <Ionicons name="chatbubbles-outline" size={18} color={COLORS.primary} />
               <Text style={styles.actionBtnOutlineText}>Message</Text>
             </Pressable>
-            <Pressable style={styles.actionBtnOutline}>
-              <Ionicons name="videocam-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.actionBtnOutlineText}>Video Call</Text>
-            </Pressable>
           </View>
         </View>
 
@@ -122,28 +118,7 @@ export default function ClientDetailScreen() {
           </View>
         </View>
 
-        {/* Notes */}
-        <View style={styles.section}>
-          <View style={styles.notesHeader}>
-             <Text style={styles.sectionTitle}>Intake & Clinical Notes</Text>
-             <Pressable onPress={handleSaveNotes} disabled={saving} style={[styles.saveBtn, saving && {opacity: 0.7}]}>
-                {saving ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Save Changes</Text>
-                )}
-             </Pressable>
-          </View>
-          <TextInput
-            style={styles.notesInput}
-            multiline
-            placeholder="Add clinical observations, diagnoses, and treatment plans here..."
-            placeholderTextColor="#94A3B8"
-            value={notes}
-            onChangeText={setNotes}
-            textAlignVertical="top"
-          />
-        </View>
+        {/* Notes functionality has been removed */}
       </ScrollView>
     </SafeAreaView>
   );

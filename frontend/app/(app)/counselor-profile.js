@@ -9,15 +9,22 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import api from '../../api/axios';
 import BottomNav from '../../components/BottomNav';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function CounselorProfileScreen() {
   const user = useSelector(selectUser);
   const dispatch = useDispatch();
   const router = useRouter();
+  const { handleLogout } = useAuth();
+  
   const [rate, setRate] = useState(parseFloat(user?.counselor_profile?.per_minute_rate) || 2.50);
   const [recentSessions, setRecentSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [savingRate, setSavingRate] = useState(false);
+
+  const [earnings, setEarnings] = useState([]);
+  const [payouts, setPayouts] = useState([]);
+  const [loadingFinances, setLoadingFinances] = useState(true);
 
   const fetchDashboard = async () => {
     try {
@@ -28,14 +35,34 @@ export default function CounselorProfileScreen() {
     }
   };
 
+  const fetchFinances = async () => {
+    try {
+      const [earnRes, payRes] = await Promise.all([
+        api.get('/api/core/therapist/earnings/'),
+        api.get('/api/core/therapist/payouts/')
+      ]);
+      setEarnings(earnRes.data || []);
+      setPayouts(payRes.data || []);
+    } catch (error) {
+      console.log('Finances fetch error:', error);
+    } finally {
+      setLoadingFinances(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchDashboard();
+      fetchFinances();
       if (user?.counselor_profile?.per_minute_rate) {
         setRate(parseFloat(user.counselor_profile.per_minute_rate));
       }
     }, [user])
   );
+
+  const totalEarnings = earnings.reduce((sum, e) => sum + parseFloat(e.net_amount), 0);
+  const totalPayouts = payouts.reduce((sum, p) => sum + parseFloat(p.total_amount), 0);
+  const availableBalance = totalEarnings - totalPayouts;
 
   const saveRate = async (newRate) => {
     setSavingRate(true);
@@ -55,8 +82,24 @@ export default function CounselorProfileScreen() {
     }
   };
 
-  const handleWithdraw = () => {
-    Alert.alert("Withdraw Funds", "Withdrawal request initiated. Funds will be deposited in 3-5 business days.");
+  const handleWithdraw = async () => {
+    const available = totalEarnings - totalPayouts;
+    if (available <= 0) {
+      Alert.alert('No Funds', 'You have no available balance to withdraw.');
+      return;
+    }
+    Alert.alert('Withdraw Funds', `Withdraw ₹${available.toFixed(2)}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Withdraw', onPress: async () => {
+        try {
+          await api.post('/api/core/therapist/payouts/', { total_amount: available });
+          Alert.alert('Success', 'Withdrawal request submitted!');
+          fetchFinances();
+        } catch(e) {
+          Alert.alert('Error', 'Failed to process withdrawal.');
+        }
+      }}
+    ]);
   };
 
   const deactivateAccount = () => {
@@ -82,8 +125,10 @@ export default function CounselorProfileScreen() {
             <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
             <Text style={styles.cardTitle}>Total Balance</Text>
           </View>
-          <Text style={styles.balanceAmount}>$1,248.50</Text>
-          <Text style={styles.payoutText}>Next payout: Nov 15, 2023</Text>
+          <Text style={styles.balanceAmount}>
+            ${loadingFinances ? '...' : availableBalance.toFixed(2)}
+          </Text>
+          <Text style={styles.payoutText}>Next payout: Automatic upon request</Text>
           
           <Pressable style={styles.primaryBtn} onPress={handleWithdraw}>
             <Text style={styles.primaryBtnText}>Withdraw Funds</Text>
@@ -135,17 +180,21 @@ export default function CounselorProfileScreen() {
 
            <Text style={styles.sectionHeader}>Professional Bio</Text>
            <Text style={styles.bioText}>
-              Licensed therapist specializing in cognitive behavioral therapy with over 10 years of experience helping individuals navigate stress and professional burnout.
+              {user?.counselor_profile?.bio || 'No bio added yet. Edit your profile to add one.'}
            </Text>
 
            <Text style={styles.sectionHeader}>Matched Specialties</Text>
            <View style={styles.chipContainer}>
-              {['Stress Management', 'Anxiety', 'Career Burnout', 'Relationships'].map((spec) => (
-                <View key={spec} style={styles.chip}>
-                  <Text style={styles.chipText}>{spec}</Text>
-                  <Ionicons name="close" size={14} color={COLORS.onSurfaceVariant} />
-                </View>
-              ))}
+              {((user?.counselor_profile?.specialization ? [user.counselor_profile.specialization] : []).concat(user?.counselor_profile?.modalities || [])).length > 0 ? (
+                (user?.counselor_profile?.specialization ? [user.counselor_profile.specialization] : []).concat(user?.counselor_profile?.modalities || []).map((spec) => (
+                  <View key={spec} style={styles.chip}>
+                    <Text style={styles.chipText}>{spec}</Text>
+                    <Ionicons name="close" size={14} color={COLORS.onSurfaceVariant} />
+                  </View>
+                ))
+              ) : (
+                <Text style={{ color: COLORS.onSurfaceVariant }}>No specialties added yet.</Text>
+              )}
               <Pressable style={styles.addChip}>
                  <Text style={styles.addChipText}>+ Add New</Text>
               </Pressable>
@@ -155,8 +204,8 @@ export default function CounselorProfileScreen() {
            <View style={styles.eduRow}>
               <Ionicons name="school-outline" size={20} color={COLORS.primary} />
               <View style={styles.eduInfo}>
-                 <Text style={styles.eduTitle}>PhD in Clinical Psychology</Text>
-                 <Text style={styles.eduSub}>Stanford University, 2012</Text>
+                 <Text style={styles.eduTitle}>{user?.counselor_profile?.university ? `Degree from ${user.counselor_profile.university}` : 'Education not specified'}</Text>
+                 <Text style={styles.eduSub}>{user?.counselor_profile?.graduation_year ? `Graduated ${user.counselor_profile.graduation_year}` : ''}</Text>
               </View>
            </View>
            
@@ -198,9 +247,9 @@ export default function CounselorProfileScreen() {
         </View>
 
         {/* Danger Zone */}
-        <Pressable style={styles.deactivateBtn} onPress={deactivateAccount}>
-           <Ionicons name="trash-outline" size={20} color={COLORS.error} />
-           <Text style={styles.deactivateText}>Deactivate Account</Text>
+        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
+           <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
+           <Text style={styles.deactivateText}>Log Out</Text>
         </Pressable>
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -376,6 +425,16 @@ const styles = StyleSheet.create({
   eduSub: {
     fontSize: FONTS.sizes.xs,
     color: COLORS.onSurfaceVariant,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.errorContainer,
+    marginHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    marginTop: SPACING.xl,
   },
   complianceBtn: {
     flexDirection: 'row',

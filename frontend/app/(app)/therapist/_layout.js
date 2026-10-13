@@ -5,8 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../../../store/authSlice';
 
+import { useResponsive } from '../../../hooks/useResponsive';
+
 export default function TherapistLayout() {
   const user = useSelector(selectUser);
+  const { isDesktop } = useResponsive();
 
   if (user?.role !== 'THERAPIST') {
     return null; // Or redirect
@@ -17,6 +20,7 @@ export default function TherapistLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
+          display: isDesktop ? 'none' : 'flex',
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: 'rgba(0,0,0,0.05)',

@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   FlatList,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -27,11 +28,50 @@ export default function TriageScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [conversationPhase, setConversationPhase] = useState('OPENING');
+  const [turnCount, setTurnCount] = useState(1);
+  const [suggestedChips, setSuggestedChips] = useState([]);
+  const [routingDecision, setRoutingDecision] = useState(null);
+  const [recommendedTherapists, setRecommendedTherapists] = useState([]);
+  const [resultingSessionId, setResultingSessionId] = useState(null);
+  const [intakeDossier, setIntakeDossier] = useState(null);
+  const [isCrisis, setIsCrisis] = useState(false);
   const flatListRef = useRef();
+
+  const PHASES = ['OPENING', 'EXPLORATION', 'DEEPENING', 'CLOSING'];
+  const PHASE_LABELS = { OPENING: 'Getting Started', EXPLORATION: 'Understanding You', DEEPENING: 'Clinical Intake', CLOSING: 'Intake Complete' };
+  const phaseIndex = PHASES.indexOf(conversationPhase);
 
   useEffect(() => {
     initTriage();
   }, []);
+
+  const updateTriageState = (data) => {
+    if (!data) return;
+    setSessionId(data.id);
+    setConversationPhase(data.conversation_phase || 'OPENING');
+    setTurnCount(data.turn_count || 1);
+    setSuggestedChips(data.suggested_chips || []);
+    setRoutingDecision(data.routing_decision || null);
+    setRecommendedTherapists(data.recommended_therapists || []);
+    setResultingSessionId(data.resulting_session || null);
+    setIntakeDossier(data.intake_dossier || null);
+
+    const formattedMessages = (data.messages || []).map((msg, index) => ({
+      id: index.toString(),
+      text: msg.content,
+      sender: msg.role === 'model' ? 'system' : 'user',
+    }));
+    setMessages(formattedMessages);
+
+    if (data.crisis_flags && data.crisis_flags.length > 0) {
+      setIsCrisis(true);
+    }
+
+    if (data.status === 'WAITING' || data.status === 'ROUTING' || data.is_complete) {
+      setCompleted(true);
+    }
+  };
 
   const initTriage = async () => {
     try {
@@ -41,19 +81,7 @@ export default function TriageScreen() {
       if (!data) {
         data = await startTriage();
       }
-      
-      setSessionId(data.id);
-      
-      const formattedMessages = data.messages.map((msg, index) => ({
-        id: index.toString(),
-        text: msg.content,
-        sender: msg.role === 'model' ? 'system' : 'user',
-      }));
-      setMessages(formattedMessages);
-      
-      if (data.status === 'WAITING' || data.status === 'ROUTING' || data.is_complete) {
-        setCompleted(true);
-      }
+      updateTriageState(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to start chat. Please try again.');
       router.back();
@@ -62,36 +90,28 @@ export default function TriageScreen() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || sending || completed) return;
+  const handleSendText = async (textToSend) => {
+    const text = (textToSend || input).trim();
+    if (!text || sending || completed) return;
     
-    const userText = input.trim();
     setInput('');
     Keyboard.dismiss();
     
-    const userMsg = { id: Date.now().toString(), text: userText, sender: 'user' };
+    const userMsg = { id: Date.now().toString(), text, sender: 'user' };
     setMessages(prev => [...prev, userMsg]);
     setSending(true);
 
     try {
-      const data = await respondTriage(sessionId, userText);
-      
-      const formattedMessages = data.messages.map((msg, index) => ({
-        id: index.toString(),
-        text: msg.content,
-        sender: msg.role === 'model' ? 'system' : 'user',
-      }));
-      setMessages(formattedMessages);
-      
-      if (data.status === 'WAITING' || data.status === 'ROUTING' || data.is_complete) {
-        setCompleted(true);
-      }
+      const data = await respondTriage(sessionId, text);
+      updateTriageState(data);
     } catch (error) {
       Alert.alert('Error', 'Failed to send message.');
     } finally {
       setSending(false);
     }
   };
+
+  const handleSend = () => handleSendText(input);
 
   const renderMessage = ({ item }) => {
     const isUser = item.sender === 'user';
@@ -154,16 +174,24 @@ export default function TriageScreen() {
 
       <KeyboardAvoidingView 
         style={styles.flex} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 60}
       >
         {/* Progress Stepper */}
         <View style={styles.stepperContainer}>
-          <View style={[styles.stepLine, styles.stepActive]} />
-          <View style={[styles.stepLine, styles.stepInactive]} />
-          <View style={[styles.stepLine, styles.stepInactive]} />
-          <View style={[styles.stepLine, styles.stepInactive]} />
-          <Text style={styles.stepText}>Step 1 of 4</Text>
+          {PHASES.map((phase, idx) => (
+            <View key={phase} style={[styles.stepLine, idx <= phaseIndex ? styles.stepActive : styles.stepInactive]} />
+          ))}
+          <Text style={styles.stepText}>Turn {turnCount || 1} of 5 • {PHASE_LABELS[conversationPhase] || 'Clinical Intake'}</Text>
         </View>
+
+        {/* Crisis Helpline Banner */}
+        {isCrisis && (
+          <View style={styles.crisisBanner}>
+            <Ionicons name="warning" size={16} color="#fff" />
+            <Text style={styles.crisisBannerText}>If you're in immediate danger, call 988 (Suicide & Crisis Lifeline) or 112</Text>
+          </View>
+        )}
 
         <FlatList
           ref={flatListRef}
@@ -172,19 +200,134 @@ export default function TriageScreen() {
           renderItem={renderMessage}
           contentContainerStyle={styles.chatList}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          ListFooterComponent={sending ? (
+            <View style={styles.sysMsgContainer}>
+              <View style={styles.sysAvatar}>
+                <MaterialIcons name="smart-toy" size={18} color={COLORS.onSecondaryContainer} />
+              </View>
+              <View style={styles.sysMsgBody}>
+                <Text style={styles.sysName}>Buddy AI</Text>
+                <View style={styles.sysBubble}>
+                  <View style={styles.typingContainer}>
+                    <View style={[styles.typingDot, { opacity: 0.4 }]} />
+                    <View style={[styles.typingDot, { opacity: 0.7 }]} />
+                    <View style={[styles.typingDot, { opacity: 1.0 }]} />
+                  </View>
+                </View>
+              </View>
+            </View>
+          ) : null}
         />
 
         {completed ? (
           <View style={styles.completedBox}>
-            <Text style={styles.completedText}>
-              Thank you for sharing. We are now routing your case to the best available counselor.
-            </Text>
-            <Pressable style={styles.returnBtn} onPress={() => router.replace('/(app)/dashboard')}>
-              <Text style={styles.returnBtnText}>Return to Dashboard</Text>
-            </Pressable>
+            {routingDecision === 'LICENSED_THERAPIST' && recommendedTherapists && recommendedTherapists.length > 0 ? (
+              <View style={styles.therapistRecommendationContainer}>
+                <View style={styles.tierBadgeTherapist}>
+                  <Ionicons name="medkit" size={14} color="#7C2D12" />
+                  <Text style={styles.tierBadgeTextTherapist}>Clinical Specialist Match</Text>
+                </View>
+                <Text style={styles.recommendationTitle}>Recommended Psychologists</Text>
+                <Text style={styles.recommendationSubtitle}>
+                  Based on your intake assessment, we matched psychologists with specialized expertise for your needs:
+                </Text>
+
+                <ScrollView style={styles.therapistListScroll} showsVerticalScrollIndicator={false}>
+                  {recommendedTherapists.map((t, idx) => (
+                    <View key={t.id || idx} style={styles.therapistCard}>
+                      <View style={styles.therapistCardHeader}>
+                        <View style={styles.therapistAvatar}>
+                          <Text style={styles.therapistAvatarText}>
+                            {(t.name || 'Dr').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.therapistInfo}>
+                          <Text style={styles.therapistName}>{t.name}</Text>
+                          <Text style={styles.therapistRate}>${t.per_session_rate} / session</Text>
+                          {t.match_reason ? (
+                            <Text style={styles.therapistMatchReason}>{t.match_reason}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+
+                      {t.modalities && t.modalities.length > 0 ? (
+                        <View style={styles.modalitiesRow}>
+                          {t.modalities.map((m, mIdx) => (
+                            <View key={mIdx} style={styles.modalityTag}>
+                              <Text style={styles.modalityTagText}>{m}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
+
+                      <View style={styles.therapistCardActions}>
+                        <Pressable 
+                          style={styles.chooseTherapistBtn}
+                          onPress={() => {
+                            if (resultingSessionId) {
+                              router.replace(`/(app)/chat/${resultingSessionId}`);
+                            } else {
+                              router.replace(`/(app)/book/${t.id}`);
+                            }
+                          }}
+                        >
+                          <Text style={styles.chooseTherapistBtnText}>Start with {t.name.split(' ')[0]}</Text>
+                          <Ionicons name="arrow-forward" size={14} color="#fff" />
+                        </Pressable>
+                        <Pressable 
+                          style={styles.viewProfileBtn}
+                          onPress={() => router.push(`/(app)/public-profile?id=${t.id}`)}
+                        >
+                          <Text style={styles.viewProfileBtnText}>Profile</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+
+                <Pressable style={styles.returnBtn} onPress={() => router.replace('/(app)/dashboard')}>
+                  <Text style={styles.returnBtnText}>Return to Dashboard</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.counselorQueueContainer}>
+                <View style={styles.tierBadgeCounselor}>
+                  <Ionicons name="time-outline" size={16} color="#065F46" />
+                  <Text style={styles.tierBadgeTextCounselor}>Request Submitted</Text>
+                </View>
+                <Text style={styles.counselorQueueTitle}>Intake Completed</Text>
+                <Text style={styles.completedText}>
+                  We will connect you as soon as a counselor accepts your request. Your intake summary has been securely compiled so your counselor will have full context when starting the session.
+                </Text>
+                <View style={styles.counselorQueueActions}>
+                  <Pressable style={styles.primaryActionBtn} onPress={() => router.replace('/(app)/dashboard')}>
+                    <Ionicons name="home" size={16} color="#fff" style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryActionBtnText}>Return to Dashboard</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.inputSection}>
+            {/* Quick Response Suggestion Chips */}
+            {suggestedChips && suggestedChips.length > 0 && !sending && (
+              <View style={styles.chipsScrollContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsList}>
+                  {suggestedChips.map((chip, idx) => (
+                    <Pressable
+                      key={idx}
+                      style={({ pressed }) => [styles.chipButton, pressed && { opacity: 0.7 }]}
+                      onPress={() => handleSendText(chip)}
+                    >
+                      <Ionicons name="sparkles-outline" size={13} color={COLORS.primary} style={{ marginRight: 5 }} />
+                      <Text style={styles.chipText}>{chip}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -208,7 +351,7 @@ export default function TriageScreen() {
                 <Ionicons name="shield-checkmark" size={14} color={COLORS.onSurfaceVariant} />
                 <Text style={styles.secureHintText}>Private & Secure</Text>
               </View>
-              <Text style={styles.disclaimerText}>Buddy AI is here to listen, not to diagnose medical emergencies.</Text>
+              <Text style={styles.disclaimerText}>AI Intake • Clinical evaluation required</Text>
             </View>
           </View>
         )}
@@ -441,12 +584,214 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginLeft: 16,
   },
+  // Chips styles
+  chipsScrollContainer: {
+    marginBottom: 10,
+  },
+  chipsList: {
+    gap: 8,
+    paddingHorizontal: 4,
+  },
+  chipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: 'rgba(54, 101, 110, 0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: RADIUS.full,
+    ...Platform.select({
+      web: { cursor: 'pointer' },
+    }),
+  },
+  chipText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
   completedBox: {
     margin: SPACING.marginMobile,
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: RADIUS.xl,
     alignItems: 'center',
+    maxHeight: '90%',
+  },
+  therapistRecommendationContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  tierBadgeTherapist: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    gap: 6,
+    marginBottom: 10,
+  },
+  tierBadgeTextTherapist: {
+    fontFamily: FONTS.family.body,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  recommendationTitle: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.bodyLg,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  recommendationSubtitle: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  therapistListScroll: {
+    width: '100%',
+    maxHeight: 280,
+    marginBottom: 16,
+  },
+  therapistCard: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderRadius: RADIUS.lg,
+    padding: 14,
+    marginBottom: 10,
+  },
+  therapistCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  therapistAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primaryFixed,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  therapistAvatarText: {
+    fontFamily: FONTS.family.headline,
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  therapistInfo: {
+    flex: 1,
+  },
+  therapistName: {
+    fontFamily: FONTS.family.headline,
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  therapistRate: {
+    fontFamily: FONTS.family.body,
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  therapistMatchReason: {
+    fontFamily: FONTS.family.body,
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  modalitiesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  modalityTag: {
+    backgroundColor: COLORS.surfaceContainerHigh,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.xs,
+  },
+  modalityTagText: {
+    fontFamily: FONTS.family.body,
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.onSurfaceVariant,
+  },
+  therapistCardActions: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  chooseTherapistBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.md,
+    gap: 6,
+  },
+  chooseTherapistBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.onPrimary,
+  },
+  viewProfileBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  viewProfileBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.onSurfaceVariant,
+  },
+  counselorQueueContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  tierBadgeCounselor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    gap: 6,
+    marginBottom: 12,
+  },
+  tierBadgeTextCounselor: {
+    fontFamily: FONTS.family.body,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  counselorQueueTitle: {
+    fontFamily: FONTS.family.headline,
+    fontSize: FONTS.sizes.bodyLg,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   completedText: {
     fontFamily: FONTS.family.body,
@@ -454,18 +799,70 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     textAlign: 'center',
     marginBottom: SPACING.lg,
-    lineHeight: 24,
+    lineHeight: 22,
+  },
+  counselorQueueActions: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 10,
+  },
+  primaryActionBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS.full,
+  },
+  primaryActionBtnText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.labelSm,
+    fontWeight: '700',
+    color: COLORS.onPrimary,
   },
   returnBtn: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm + 2,
     borderRadius: RADIUS.full,
   },
   returnBtnText: {
     fontFamily: FONTS.family.body,
     fontSize: FONTS.sizes.labelSm,
     fontWeight: '600',
-    color: COLORS.onPrimary,
+    color: COLORS.onSurfaceVariant,
+  },
+  crisisBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DC2626',
+    marginHorizontal: SPACING.marginMobile,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: RADIUS.md,
+    gap: 8,
+  },
+  crisisBannerText: {
+    fontFamily: FONTS.family.body,
+    fontSize: FONTS.sizes.caption,
+    fontWeight: '600',
+    color: '#fff',
+    flex: 1,
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.onSecondaryContainer,
   },
 });

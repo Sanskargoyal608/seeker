@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/axios';
 import BottomNav from './BottomNav';
+import { PageContainer } from './PageContainer';
 
 export default function CounselorDashboard() {
   const router = useExpoRouter();
@@ -25,6 +26,7 @@ export default function CounselorDashboard() {
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState(null);
   const [isAvailable, setIsAvailable] = useState(true);
+  const queueListRef = useRef(null);
 
   const fetchQueueAndDashboard = async () => {
     try {
@@ -44,17 +46,31 @@ export default function CounselorDashboard() {
   useFocusEffect(
     useCallback(() => {
       fetchQueueAndDashboard();
+      apiClient.get('/api/core/counselor/availability/')
+        .then(res => setIsAvailable(res.data.status === 'AVAILABLE'))
+        .catch(e => console.log('Availability fetch error:', e));
       const interval = setInterval(fetchQueueAndDashboard, 10000);
       return () => clearInterval(interval);
     }, [])
   );
 
+  // Auto-scroll logic for Live Queue
+  useEffect(() => {
+    if (sessions.length > 1) {
+      let index = 0;
+      const scrollInterval = setInterval(() => {
+        index = (index + 1) % sessions.length;
+        queueListRef.current?.scrollToIndex({ index, animated: true });
+      }, 5000);
+      return () => clearInterval(scrollInterval);
+    }
+  }, [sessions.length]);
+
   const handleAccept = async (sessionId) => {
     setAcceptingId(sessionId);
     try {
-      const { data } = await apiClient.patch(`/api/core/sessions/${sessionId}/accept/`);
-      Alert.alert('Success', 'Session accepted!');
-      router.replace(`/(app)/chat/${sessionId}`);
+      await apiClient.patch(`/api/core/sessions/${sessionId}/accept/`);
+      router.push(`/(app)/chat/${sessionId}`);
     } catch (error) {
       console.log('Accept error:', error.response?.data);
       Alert.alert('Error', error.response?.data?.message || 'Failed to accept session.');
@@ -64,11 +80,16 @@ export default function CounselorDashboard() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle}>User #{item.id}</Text>
-        <Text style={styles.cardSub}>Category: Anxiety • Wait Time: 4m</Text>
+  const handleDecline = (sessionId) => {
+    // Hide it locally for this counselor
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+  };
+
+  const renderQueueItem = ({ item }) => (
+    <View style={styles.queueCard}>
+      <View style={styles.queueCardInfo}>
+        <Text style={styles.queueCardTitle}>{item.user_name || `User #${item.id}`}</Text>
+        <Text style={styles.queueCardSub}>Wait Time: {item.duration_minutes || '0'}m</Text>
         <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
            {item.is_crisis_flagged ? (
              <View style={styles.urgentChip}><Text style={styles.urgentText}>High Urgency</Text></View>
@@ -77,134 +98,139 @@ export default function CounselorDashboard() {
            )}
         </View>
       </View>
-      <Pressable
-        style={({ pressed }) => [
-          styles.acceptBtn,
-          pressed && { opacity: 0.8 },
-          acceptingId === item.id && styles.acceptBtnDisabled,
-        ]}
-        onPress={() => handleAccept(item.id)}
-        disabled={acceptingId !== null}
-      >
-        {acceptingId === item.id ? (
-          <ActivityIndicator color={COLORS.white} size="small" />
-        ) : (
-          <Text style={styles.acceptBtnText}>Accept</Text>
-        )}
-      </Pressable>
+      <View style={styles.queueActionRow}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.declineBtn,
+            pressed && { opacity: 0.8 },
+          ]}
+          onPress={() => handleDecline(item.id)}
+          disabled={acceptingId !== null}
+        >
+          <Text style={styles.declineBtnText}>Decline</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.acceptBtn,
+            pressed && { opacity: 0.8 },
+            acceptingId === item.id && styles.acceptBtnDisabled,
+          ]}
+          onPress={() => handleAccept(item.id)}
+          disabled={acceptingId !== null}
+        >
+          {acceptingId === item.id ? (
+            <ActivityIndicator color={COLORS.white} size="small" />
+          ) : (
+            <Text style={styles.acceptBtnText}>Accept</Text>
+          )}
+        </Pressable>
+      </View>
     </View>
   );
 
-  if (loading && sessions.length === 0) {
-    return (
-      <View style={[styles.safe, styles.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <PageContainer>
       {/* Header */}
       <View style={styles.header}>
         <View style={{ width: 40 }} />
-        <Text style={styles.title}>Live Queue</Text>
+        <Text style={styles.title}>Home</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Status Toggle Bar */}
-      <View style={styles.statusBar}>
-         <View>
-            <Text style={styles.statusTitle}>Current Status</Text>
-            <Text style={[styles.statusText, { color: isAvailable ? COLORS.statusAvailable : COLORS.statusBusy }]}>
-               {isAvailable ? 'Available for Sessions' : 'Busy / Offline'}
-            </Text>
-         </View>
-         <Switch
-           value={isAvailable}
-           onValueChange={setIsAvailable}
-           trackColor={{ false: COLORS.surfaceVariant, true: COLORS.statusAvailable }}
-           thumbColor="#FFFFFF"
-         />
-      </View>
-
-      {/* Summary */}
-      <View style={styles.summaryBar}>
-         <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Completed Today</Text>
-            <Text style={styles.summaryValue}>12</Text>
-         </View>
-         <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Avg. Duration</Text>
-            <Text style={styles.summaryValue}>24m</Text>
-         </View>
-      </View>
-
       <FlatList
-        data={sessions}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-             <Ionicons name="chatbubbles-outline" size={48} color={COLORS.outlineVariant} />
-             <Text style={styles.emptyTitle}>Queue is Empty</Text>
-             <Text style={styles.emptySub}>No users are currently waiting for a session.</Text>
-          </View>
-        }
-        ListFooterComponent={
-          <View style={{ marginTop: SPACING.xl, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl }}>
-             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-               <Text style={styles.title}>Recent Sessions</Text>
-               <Pressable onPress={() => Alert.alert('View All', 'Coming soon')}>
-                 <Text style={{ color: COLORS.primary, fontFamily: FONTS.medium }}>View All</Text>
-               </Pressable>
-             </View>
-             {recentSessions.length > 0 ? (
-               <View style={styles.recentSessionList}>
-                 {recentSessions.map(session => (
-                   <Pressable 
-                     key={session.id} 
-                     style={styles.recentSessionCard}
-                     onPress={() => router.push(`/(app)/chat/${session.id}`)}
-                   >
-                      <View style={styles.sessionIconBox}>
-                         <Ionicons name="chatbubble-ellipses-outline" size={24} color={COLORS.primary} />
-                      </View>
-                      <View style={styles.sessionInfo}>
-                         <Text style={styles.sessionTitle}>Session #{session.id}</Text>
-                         <Text style={styles.sessionSub}>Status: {session.status.toLowerCase().replace('_', ' ')}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color={COLORS.onSurfaceVariant} />
-                   </Pressable>
-                 ))}
+        data={[{key: 'content'}]}
+        renderItem={() => (
+          <View>
+            {/* Status Toggle Bar */}
+            <View style={styles.statusBar}>
+               <View>
+                  <Text style={styles.statusTitle}>Current Status</Text>
+                  <Text style={[styles.statusText, { color: isAvailable ? COLORS.statusAvailable : COLORS.statusBusy }]}>
+                     {isAvailable ? 'Available for Sessions' : 'Busy / Offline'}
+                  </Text>
                </View>
-             ) : (
-               <View style={styles.emptyRecentBox}>
-                 <Text style={{ color: COLORS.textMuted }}>No recent sessions found.</Text>
-               </View>
-             )}
+               <Switch
+                 value={isAvailable}
+                 onValueChange={(val) => { setIsAvailable(val); apiClient.patch('/api/core/counselor/availability/', { status: val ? 'AVAILABLE' : 'AWAY' }).catch(e => console.log(e)); }}
+                 trackColor={{ false: COLORS.surfaceVariant, true: COLORS.statusAvailable }}
+                 thumbColor="#FFFFFF"
+               />
+            </View>
+
+            {/* Live Queue Horizontal Widget */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Live Queue</Text>
+              {sessions.length > 0 ? (
+                <FlatList
+                  ref={queueListRef}
+                  data={sessions}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={renderQueueItem}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={280 + SPACING.md} 
+                  decelerationRate="fast"
+                  contentContainerStyle={{ paddingRight: SPACING.lg }}
+                />
+              ) : (
+                <View style={styles.emptyWrap}>
+                  <Ionicons name="people-outline" size={32} color={COLORS.outlineVariant} />
+                  <Text style={styles.emptySub}>No users are currently waiting.</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Recent Chats Vertical List */}
+            <View style={styles.sectionContainer}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+                <Text style={styles.sectionTitle}>Recent Chats</Text>
+                <Pressable onPress={() => router.push('/(app)/counselor-chats')}>
+                  <Text style={{ color: COLORS.primary, fontFamily: FONTS.family.body, fontWeight: FONTS.weights.medium }}>View All</Text>
+                </Pressable>
+              </View>
+
+              {recentSessions.length > 0 ? (
+                <View style={styles.recentSessionList}>
+                  {recentSessions.slice(0, 6).map(session => (
+                    <Pressable 
+                      key={session.id} 
+                      style={styles.recentSessionCard}
+                      onPress={() => router.push(`/(app)/chat/${session.id}`)}
+                    >
+                       <View style={styles.sessionIconBox}>
+                          <Ionicons name="person" size={24} color={COLORS.surfaceContainerLowest} />
+                       </View>
+                       <View style={styles.sessionInfo}>
+                          <Text style={styles.sessionTitle}>{session.user_name || `User #${session.user || session.id}`}</Text>
+                          <Text style={styles.sessionSub}>Status: {session.status.replace('_', ' ')} • {session.last_message_date ? new Date(session.last_message_date).toLocaleDateString() : 'Just now'}</Text>
+                       </View>
+                       <Ionicons name="chevron-forward" size={20} color={COLORS.onSurfaceVariant} />
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.emptySub}>No recent chats found.</Text>
+                </View>
+              )}
+            </View>
           </View>
-        }
+        )}
         refreshing={loading}
         onRefresh={fetchQueueAndDashboard}
+        showsVerticalScrollIndicator={false}
       />
-
-      {/* Removed Practitioner Backchannel mockup */}
+      </PageContainer>
       <BottomNav />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  safe: { flex: 1, backgroundColor: COLORS.background },
+  center: { justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -215,183 +241,157 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.surfaceVariant,
   },
-  backBtn: {
-    padding: SPACING.xs,
-  },
   title: {
-    fontSize: FONTS.sizes.lg,
+    fontFamily: FONTS.family.headline,
+    fontSize: 20,
     fontWeight: FONTS.weights.bold,
     color: COLORS.onSurface,
-  },
-  listContainer: {
-    padding: SPACING.lg,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surfaceContainerLowest,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceVariant,
-    alignItems: 'center',
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: FONTS.sizes.md,
-    fontWeight: FONTS.weights.bold,
-    color: COLORS.onSurface,
-  },
-  cardSub: {
-    fontSize: FONTS.sizes.xs,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  urgentChip: {
-    backgroundColor: COLORS.errorContainer,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.full,
-  },
-  urgentText: {
-    color: COLORS.error,
-    fontSize: 10,
-    fontWeight: FONTS.weights.bold,
-  },
-  normalChip: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.full,
-  },
-  normalText: {
-    color: '#D97706',
-    fontSize: 10,
-    fontWeight: FONTS.weights.bold,
-  },
-  acceptBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
-    marginLeft: SPACING.md,
-  },
-  acceptBtnDisabled: {
-    opacity: 0.5,
-  },
-  acceptBtnText: {
-    color: COLORS.onPrimary,
-    fontWeight: FONTS.weights.bold,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingTop: SPACING.xl,
-  },
-  emptyText: {
-    color: COLORS.onSurfaceVariant,
   },
   statusBar: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: SPACING.lg,
     backgroundColor: COLORS.surfaceContainerLowest,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceVariant,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceVariant,
   },
   statusTitle: {
-    fontSize: FONTS.sizes.sm,
+    fontFamily: FONTS.family.body,
+    fontSize: 16,
     fontWeight: FONTS.weights.bold,
     color: COLORS.onSurface,
   },
   statusText: {
-    fontSize: FONTS.sizes.xs,
-    fontWeight: FONTS.weights.bold,
+    fontFamily: FONTS.family.body,
+    fontSize: 14,
     marginTop: 2,
   },
-  summaryBar: {
-    flexDirection: 'row',
-    padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
+  sectionContainer: {
+    marginTop: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
   },
-  summaryItem: {
-    flex: 1,
+  sectionTitle: {
+    fontFamily: FONTS.family.headline,
+    fontSize: 18,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.onSurface,
+    marginBottom: SPACING.sm,
+  },
+  queueCard: {
+    width: 280,
     backgroundColor: COLORS.surfaceContainerLowest,
     padding: SPACING.md,
     borderRadius: RADIUS.md,
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.surfaceVariant,
+    ...SHADOWS.sm,
   },
-  summaryLabel: {
-    fontSize: FONTS.sizes.xs,
-    color: COLORS.onSurfaceVariant,
+  queueCardInfo: {
+    marginBottom: SPACING.md,
   },
-  summaryValue: {
-    fontSize: 24,
+  queueCardTitle: {
+    fontFamily: FONTS.family.body,
+    fontSize: 16,
     fontWeight: FONTS.weights.bold,
-    color: COLORS.primary,
-    marginTop: 4,
+    color: COLORS.onSurface,
   },
-  backchannelBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primaryFixed,
-    padding: SPACING.md,
-    position: 'absolute',
-    bottom: 80,
-    left: SPACING.lg,
-    right: SPACING.lg,
-    borderRadius: RADIUS.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  backchannelTitle: {
-    fontSize: FONTS.sizes.sm,
-    fontWeight: FONTS.weights.bold,
-    color: COLORS.onPrimaryFixed,
-  },
-  backchannelSub: {
-    fontSize: FONTS.sizes.xs,
-    color: COLORS.onPrimaryFixed,
+  queueCardSub: {
+    fontFamily: FONTS.family.body,
+    fontSize: 14,
+    color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  urgentChip: {
+    backgroundColor: COLORS.errorContainer,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  urgentText: {
+    color: COLORS.onErrorContainer,
+    fontSize: 12,
+    fontWeight: FONTS.weights.bold,
+  },
+  normalChip: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  normalText: {
+    color: COLORS.onPrimaryContainer,
+    fontSize: 12,
+    fontWeight: FONTS.weights.medium,
+  },
+  queueActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  acceptBtn: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    borderRadius: RADIUS.sm,
+    alignItems: 'center',
+    marginLeft: SPACING.xs,
+  },
+  acceptBtnDisabled: {
+    opacity: 0.6,
+  },
+  acceptBtnText: {
+    color: COLORS.white,
+    fontWeight: FONTS.weights.bold,
+  },
+  declineBtn: {
+    flex: 1,
+    backgroundColor: COLORS.surfaceVariant,
+    paddingVertical: 10,
+    borderRadius: RADIUS.sm,
+    alignItems: 'center',
+    marginRight: SPACING.xs,
+  },
+  declineBtnText: {
+    color: COLORS.onSurfaceVariant,
+    fontWeight: FONTS.weights.bold,
   },
   emptyWrap: {
     alignItems: 'center',
-    paddingTop: SPACING.xl * 2,
-  },
-  emptyTitle: {
-    fontSize: FONTS.sizes.md,
-    fontWeight: FONTS.weights.bold,
-    color: COLORS.onSurface,
-    marginTop: SPACING.sm,
+    justifyContent: 'center',
+    paddingVertical: SPACING.xl,
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceVariant,
   },
   emptySub: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
+    fontFamily: FONTS.family.body,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+  },
+  recentSessionList: {
+    marginTop: SPACING.xs,
   },
   recentSessionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.md,
     backgroundColor: COLORS.surfaceContainerLowest,
+    padding: SPACING.md,
     borderRadius: RADIUS.md,
     marginBottom: SPACING.sm,
-    marginHorizontal: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.surfaceVariant,
   },
   sessionIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.primaryFixed,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
@@ -400,13 +400,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sessionTitle: {
-    fontSize: FONTS.sizes.sm,
+    fontFamily: FONTS.family.body,
+    fontSize: 16,
     fontWeight: FONTS.weights.bold,
     color: COLORS.onSurface,
   },
   sessionSub: {
-    fontSize: FONTS.sizes.xs,
-    color: COLORS.onSurfaceVariant,
+    fontFamily: FONTS.family.body,
+    fontSize: 14,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
 });
