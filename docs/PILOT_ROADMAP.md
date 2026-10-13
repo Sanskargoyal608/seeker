@@ -29,14 +29,14 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [x] Pin dependencies with a lock file; choose Django 5.x or 6.0; declare `PyJWT`, `requests`, `pytest-asyncio`; drop unused packages.
 - [x] Add a test settings path that does not need the Docker Postgres.
 - [x] Fix or delete the three stale `core` test files (`test_triage.py`, `test_triage_service.py`, `test_consumers.py`).
-- [x] Add GitHub Actions running the test suite on every push. *(Workflow written; first run happens when the branch is pushed.)*
+- [x] Add GitHub Actions running the test suite on every push. *(First run passed on 2026-10-13.)*
 - [ ] Rotate the Google API key in the `fetch_*` scripts (owner action, in the Google Cloud console).
 - [x] Exclude `firebase-credentials.json` and logs from the Docker build.
 - [x] Root README; bring `.env.local.example` in line with the variables the code reads.
 
 **Done when:** a fresh clone builds, migrates and passes the test suite in CI.
 
-**Status (2026-10-13):** 108 tests pass locally against Postgres 16 and Redis 7 on Django 5.2.18; the Docker image builds. Open: first CI run (needs a push) and the API key rotation.
+**Status (2026-10-13):** 108 tests pass locally against Postgres 16 and Redis 7 on Django 5.2.18; the Docker image builds. CI is green on `phase0/stabilise`. Open: the API key rotation.
 
 ## Phase 1 — Close the security holes
 
