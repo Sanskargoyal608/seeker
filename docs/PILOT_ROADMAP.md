@@ -23,17 +23,20 @@ Each phase is a hard gate: do not start the next until the "done when" line is m
 
 Nothing else is safe to build until the working tree is committed and tests can run.
 
-- [ ] Split and commit the uncommitted work as separate commits: SDK 54 → 57 upgrade, web conversion, new features, backend changes.
-- [ ] Commit `core/migrations/0011`–`0014` together with the model changes.
-- [ ] Untrack `celerybeat-schedule`, `.coverage`, `staticfiles/`, `frontend/dist/` and the stray `frontend/%ProgramData%` file; extend `.gitignore`.
-- [ ] Pin dependencies with a lock file; choose Django 5.x or 6.0; declare `PyJWT`, `requests`, `pytest-asyncio`; drop unused packages.
-- [ ] Add a test settings path that does not need the Docker Postgres.
-- [ ] Fix or delete the three stale `core` test files (`test_triage.py`, `test_triage_service.py`, `test_consumers.py`).
-- [ ] Add GitHub Actions running the test suite on every push.
-- [ ] Rotate the Google API key in the `fetch_*` scripts; exclude `firebase-credentials.json` and logs from the Docker build.
-- [ ] Root README; bring `.env.local.example` in line with the variables the code reads.
+- [x] Split and commit the uncommitted work as separate commits: SDK 54 → 57 upgrade, web conversion, new features, backend changes.
+- [x] Commit `core/migrations/0011`–`0014` together with the model changes.
+- [x] Untrack `celerybeat-schedule`, `.coverage`, `staticfiles/`, `frontend/dist/` and the stray `frontend/%ProgramData%` file; extend `.gitignore`.
+- [x] Pin dependencies with a lock file; choose Django 5.x or 6.0; declare `PyJWT`, `requests`, `pytest-asyncio`; drop unused packages.
+- [x] Add a test settings path that does not need the Docker Postgres.
+- [x] Fix or delete the three stale `core` test files (`test_triage.py`, `test_triage_service.py`, `test_consumers.py`).
+- [x] Add GitHub Actions running the test suite on every push. *(Workflow written; first run happens when the branch is pushed.)*
+- [ ] Rotate the Google API key in the `fetch_*` scripts (owner action, in the Google Cloud console).
+- [x] Exclude `firebase-credentials.json` and logs from the Docker build.
+- [x] Root README; bring `.env.local.example` in line with the variables the code reads.
 
 **Done when:** a fresh clone builds, migrates and passes the test suite in CI.
+
+**Status (2026-10-13):** 108 tests pass locally against Postgres 16 and Redis 7 on Django 5.2.18; the Docker image builds. Open: first CI run (needs a push) and the API key rotation.
 
 ## Phase 1 — Close the security holes
 
