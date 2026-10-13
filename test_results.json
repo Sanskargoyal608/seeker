@@ -1,0 +1,3511 @@
+[
+  {
+    "id": 1,
+    "name": "Depressed College Student",
+    "expected_condition": "Depression",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I've been feeling really low lately",
+        "ai": "I'm sorry to hear that you're feeling this way. Can you tell me more about what has been contributing to these feelings?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It's been about 3 months now",
+        "ai": "Thank you for sharing that. On a scale from 1 to 10, how urgent would you say these feelings are for you right now?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I used to love painting but I just can't bring myself to do it anymore",
+        "ai": "It sounds like you're experiencing a loss of interest in activities you once enjoyed, which can be really tough. Have you also noticed any changes in your sleep patterns or energy levels during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I sleep like 12 hours and still feel exhausted",
+        "ai": "It seems like you're experiencing significant fatigue despite getting a lot of sleep. Thank you for sharing that. I appreciate your openness. Based on what you've shared, I will be routing you to a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Feeling low and exhausted",
+    "duration": "3 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "excessive sleep but feels exhausted",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 2,
+    "name": "Working Mom with Hidden Depression",
+    "expected_condition": "Depression",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind or what brought you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I just feel like I'm going through the motions every day",
+        "ai": "It sounds like you might be feeling a bit disconnected or unfulfilled in your day-to-day life. Can you tell me more about that feeling?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Maybe a year? I can't really remember when I last felt happy",
+        "ai": "I'm sorry to hear that. It sounds like this has been a challenging experience for quite some time. Would you say that this feeling of going through the motions has been constant, or does it come and go?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I cry in the shower so my kids don't see",
+        "ai": "It sounds like you're carrying a lot of emotional weight while trying to be strong for your kids. That must be really tough. Can I ask if you've noticed any changes in your sleep, like trouble falling asleep or sleeping too much?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I've gained weight because I just eat to feel something",
+        "ai": "It seems like your eating habits have changed as a way to cope with your feelings. That can be really difficult to manage. Thank you for sharing that with me. Based on what you've told me, I believe it would be helpful for you to connect with a professional who can provide support tailored to your needs. I appreciate your openness today, and I'm here to help you with the next steps.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Feeling disconnected and unfulfilled",
+    "duration": "approximately one year",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "depression",
+      "emotional eating"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "skipped",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 3,
+    "name": "Teen with Suicidal Thoughts",
+    "expected_condition": "Depression/Crisis",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind lately?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "Sometimes I think everyone would be better off without me",
+        "ai": "It sounds like you're feeling really overwhelmed right now. Can you tell me more about what's leading you to feel this way?",
+        "phase": "EXPLORATION"
+      }
+    ],
+    "final_phase": "EXPLORATION",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "overwhelmed feelings of worthlessness",
+    "duration": "unknown",
+    "urgency": "critical",
+    "suspected_conditions": [
+      "depression"
+    ],
+    "support_preference": "unknown",
+    "sleep_quality": "unknown",
+    "crisis_flags": [
+      "suicidal ideation"
+    ],
+    "problems": []
+  },
+  {
+    "id": 4,
+    "name": "Anxious Professional",
+    "expected_condition": "Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind or what you're feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "My heart races every morning before work",
+        "ai": "It sounds like you're experiencing some anxiety before your workday begins. Can you tell me more about how long this has been happening?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It started about 6 months ago when I got promoted",
+        "ai": "Thank you for sharing that. It must be a lot to handle. On a scale of 1 to 10, how urgent would you say this feeling is for you right now, especially in terms of how it affects your daily life?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I can't stop thinking about all the things that could go wrong",
+        "ai": "I\u2019m sorry to hear that you're feeling this way. It sounds really challenging. Have you found it hard to relax or calm your mind because of these worries?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I get headaches and my stomach is always upset",
+        "ai": "That sounds really uncomfortable. It's understandable that physical symptoms can accompany stress. Thank you for sharing that with me. I want to make sure you get the right support. Based on what you've shared, I'm going to connect you with a professional who can help you further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "anxiety before work",
+    "duration": "6 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 5,
+    "name": "Student with Exam Anxiety",
+    "expected_condition": "Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I\u2019m glad you reached out. Can you share what\u2019s been on your mind or what\u2019s bothering you today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I freeze during exams even though I study hard",
+        "ai": "It sounds like you might be feeling quite anxious or stressed during exams, despite your preparation. Can you describe how that makes you feel emotionally when it happens?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Every semester, so about 2 years now",
+        "ai": "Thank you for sharing that. It sounds like this has been a challenging experience for you over the past two years. On a scale of 1 to 10, how urgent is this feeling of freezing during exams for you? Is it impacting other areas of your life?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "My mind just goes blank and I start sweating",
+        "ai": "I'm sorry to hear that you're experiencing such intense feelings during exams. It sounds really uncomfortable. Have you noticed any other physical symptoms when you're feeling this way, such as a rapid heartbeat or difficulty breathing?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I've tried breathing exercises but they don't help much",
+        "ai": "I appreciate you sharing that. It seems like you\u2019ve been actively trying to manage your anxiety with some techniques. Can you tell me how your overall sleep quality has been during this time? Are you getting enough rest?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "I just want someone to help me manage this",
+        "ai": "Thank you for expressing that. It sounds like you\u2019re seeking support to help manage this issue effectively. I will connect you with a professional who can provide the assistance you need. Thank you for sharing your experiences with me today.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Exam anxiety",
+    "duration": "2 years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 6,
+    "name": "Shy Introvert",
+    "expected_condition": "Social Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I understand you're looking for someone to talk to. Can you share what's been on your mind or what brought you here today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I avoid going to parties or meeting new people",
+        "ai": "It sounds like social situations are challenging for you. Can you tell me more about how that makes you feel?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Since high school, so maybe 5-6 years",
+        "ai": "Thank you for sharing that. It sounds like this has been an ongoing issue for quite some time. How urgent would you say this concern is for you right now? Is it something that feels overwhelming or distressing?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I feel like everyone is judging me when I talk",
+        "ai": "I'm sorry to hear that you're feeling judged when you talk to others. Can I ask if this feeling affects your ability to relax or be yourself in social situations?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I cancelled 3 plans this week because I was too scared",
+        "ai": "It sounds like the fear of social interactions has led you to cancel plans, which must be really tough. Thank you for sharing that with me. Based on what you've told me, I'll be routing you to a professional who can help you further.",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Professional I guess",
+        "ai": "Thank you for your openness. I will connect you with a professional who can provide the support you need. Take care.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "avoidance of social situations",
+    "duration": "5-6 years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "social anxiety disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 7,
+    "name": "New Employee with Social Fear",
+    "expected_condition": "Social Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I\u2019m here to listen. Can you share what\u2019s been on your mind or what\u2019s prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I started a new job and I eat lunch alone in my car every day",
+        "ai": "It sounds like starting a new job has brought some feelings for you, especially with eating lunch alone. Can you tell me more about how that makes you feel?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "The job is 2 months old but I've always been like this",
+        "ai": "Thank you for sharing that. It seems like this feeling of eating alone has been a longer-term experience for you. On a scale of urgency, how would you rate your feelings about this situation? Is it something that feels quite pressing for you?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I rehearse every conversation in my head before I have it",
+        "ai": "It sounds like you're feeling some anxiety about social interactions, especially if you're rehearsing conversations beforehand. Have you been feeling nervous or on edge about interacting with others?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "My hands shake when I have to present in meetings",
+        "ai": "It seems like you're experiencing physical symptoms of anxiety, like shaking hands during presentations. Thank you for sharing that with me. Based on what you\u2019ve told me, I'll be connecting you to a professional who can help you further with these feelings. ",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "anxiety during social interactions",
+    "duration": "long-term",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 8,
+    "name": "Panic Attack Sufferer",
+    "expected_condition": "Panic Disorder",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I had a panic attack in the grocery store last week",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "user": "They started about 4 months ago",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 3,
+        "user": "My chest gets tight and I feel like I'm dying",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 4,
+        "user": "Now I'm scared to go anywhere because it might happen again",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 5,
+        "user": "Definitely a professional",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      }
+    ],
+    "final_phase": "OPENING",
+    "final_is_complete": false,
+    "final_routing": null,
+    "chief_complaint": null,
+    "duration": null,
+    "urgency": null,
+    "suspected_conditions": [],
+    "support_preference": null,
+    "sleep_quality": null,
+    "crisis_flags": [],
+    "problems": [
+      "INCOMPLETE: Triage did not complete after all messages",
+      "STUCK_OPENING: Never left OPENING phase",
+      "MISSING_COMPLAINT: No chief complaint extracted"
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Accident Survivor",
+    "expected_condition": "PTSD",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 4,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 5,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I was in a car accident 6 months ago and I can't drive anymore",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "user": "Every time I hear a loud noise I jump",
+        "ai": "I'm here for you. Could you tell me a bit more about what's been on your mind?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I have nightmares about it almost every night",
+        "ai": "It sounds really tough to deal with those nightmares. How have you been feeling emotionally since the accident?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 4,
+        "user": "I avoid the road where it happened, I take a 30 minute detour",
+        "ai": "I can understand why you would want to avoid that road. How long have you been feeling this way since the accident?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 5,
+        "user": "Someone who deals with trauma",
+        "ai": "It sounds like you might benefit from talking to someone who specializes in trauma. Have you noticed any changes in your sleep or appetite since the accident?",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": false,
+    "final_routing": null,
+    "chief_complaint": "nightmares and heightened startle response after car accident",
+    "duration": null,
+    "urgency": "low",
+    "suspected_conditions": [],
+    "support_preference": "unknown",
+    "sleep_quality": null,
+    "crisis_flags": [],
+    "problems": [
+      "INCOMPLETE: Triage did not complete after all messages"
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Domestic Violence Survivor",
+    "expected_condition": "PTSD/Trauma",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 3,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 4,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share a bit about what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I left a bad relationship 3 months ago",
+        "ai": "I'm sorry to hear that you've been through a tough time. How have you been feeling since leaving that relationship?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "user": "I still flinch when someone raises their voice",
+        "ai": "It sounds like that experience has had a lasting impact on you. Can you describe how this reaction affects your daily life or interactions with others?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 3,
+        "user": "I can't sleep without the lights on",
+        "ai": "That sounds really challenging. How long have you been experiencing difficulty sleeping with the lights on?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 4,
+        "user": "I keep checking if the door is locked over and over",
+        "ai": "It seems like you might be experiencing some anxiety related to safety. Can I ask how often you find yourself checking the door or feeling the need to ensure it's locked?",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": false,
+    "final_routing": null,
+    "chief_complaint": "emotional distress from past relationship",
+    "duration": "3 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "anxiety",
+      "post-traumatic stress"
+    ],
+    "support_preference": "unknown",
+    "sleep_quality": null,
+    "crisis_flags": [],
+    "problems": [
+      "INCOMPLETE: Triage did not complete after all messages"
+    ]
+  },
+  {
+    "id": 11,
+    "name": "OCD Hand Washer",
+    "expected_condition": "OCD",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share a bit about what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I wash my hands until they bleed sometimes",
+        "ai": "It sounds like you're experiencing some distressing thoughts or behaviors. Can you tell me more about what leads you to wash your hands like that?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It's been getting worse for about a year",
+        "ai": "I appreciate you sharing that with me. How often do you find yourself washing your hands to the point of bleeding? Is it something that happens daily or multiple times a day?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I know it's irrational but if I don't wash them I feel like something terrible will happen",
+        "ai": "It sounds like you\u2019re feeling a lot of pressure regarding the need to wash your hands. Can you tell me if you have other thoughts that feel intrusive or difficult to manage?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I spend about 2 hours a day on washing rituals",
+        "ai": "Thank you for sharing that. It seems like these rituals are taking a significant amount of your time. How does this impact your daily life or activities?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "I need real help with this",
+        "ai": "Thank you for being open about your struggles. Based on what you've shared, it sounds like you could benefit from professional support. I will route you to a licensed therapist who can help you more effectively.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Compulsive hand washing rituals",
+    "duration": "about a year",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Obsessive-Compulsive Disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 12,
+    "name": "Adult with Undiagnosed ADHD",
+    "expected_condition": "ADHD",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what brought you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I can never finish anything I start",
+        "ai": "It sounds like you're feeling frustrated about not being able to complete tasks. Can you tell me more about how this affects your daily life or your emotional state?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Honestly my whole life but it's gotten worse since working from home",
+        "ai": "I understand that working from home can create additional challenges. How long have you been feeling this way, and would you say it's become more urgent for you recently?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I have 47 browser tabs open right now and I forgot why I opened half of them",
+        "ai": "That sounds overwhelming! It seems like you're experiencing some difficulty with focus and organization. Have you noticed any changes in your energy levels or how you're sleeping lately?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I lose my keys every single day, my phone too",
+        "ai": "It sounds like you're dealing with a lot of distractions and perhaps some challenges with memory or organization. Thank you for sharing this with me. Based on what you've mentioned, I will connect you with a professional who can help you further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Difficulty finishing tasks and losing items daily",
+    "duration": "unknown",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "attention difficulties"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 13,
+    "name": "College Girl with Bulimia",
+    "expected_condition": "Eating Disorder",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what brought you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I have a complicated relationship with food",
+        "ai": "Thank you for sharing that. Can you tell me more about how this relationship with food affects you emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Since freshman year, about 2 years",
+        "ai": "I appreciate you sharing that. It sounds like this has been an ongoing issue for you. Could you describe the urgency of this concern for you right now? Is it something that feels overwhelming or urgent?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I eat a lot and then feel so guilty I make myself throw up",
+        "ai": "I'm really sorry to hear that you're feeling this way. It's important to talk about these feelings. Can I ask, do you often feel that you've lost control over how much you eat?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I weigh myself 5 times a day",
+        "ai": "Thank you for sharing that detail. It sounds like this is a significant concern for you. I want to make sure you get the right support. I'm going to connect you with a professional who can help you with this. Thank you for being open about your experiences.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "complicated relationship with food and purging behaviors",
+    "duration": "2 years",
+    "urgency": "high",
+    "suspected_conditions": [
+      "Eating Disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 14,
+    "name": "Man with Binge Eating",
+    "expected_condition": "Eating Disorder",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "Thank you for reaching out. Can you share a bit more about what's on your mind or why you're looking for someone to talk to today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I eat when I'm stressed and I can't stop",
+        "ai": "It sounds like stress eating is a concern for you. Can you tell me more about how you're feeling emotionally right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Probably 3-4 years now",
+        "ai": "Thank you for sharing that. It seems like this has been an ongoing issue for several years. How urgent do you feel this situation is for you right now? Is it something that feels critical, or more manageable?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Last night I ate an entire pizza and a tub of ice cream alone",
+        "ai": "It sounds like you had a really intense experience with eating last night. Have you noticed any changes in your mood or feelings associated with your eating habits, like feeling guilty or anxious after eating?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel disgusted with myself after but I do it again the next day",
+        "ai": "I appreciate your honesty in sharing that. It seems like you're experiencing a cycle of stress eating followed by feelings of disgust. Based on what you've shared, I will connect you with a professional who can provide support tailored to your needs. Thank you for being open with me today.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "stress eating and feelings of disgust after eating",
+    "duration": "3-4 years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Binge Eating Disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 15,
+    "name": "Functional Alcoholic",
+    "expected_condition": "Substance Use",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I drink every night to relax",
+        "ai": "It sounds like you're using alcohol as a way to unwind. Can you tell me how that makes you feel or if there are any other feelings you're experiencing?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It started small a couple years ago but now it's a bottle of wine a night",
+        "ai": "Thank you for sharing that with me. It seems like this has been increasing over time. How long have you been drinking a bottle of wine each night?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "My wife says I have a problem but I think I'm fine",
+        "ai": "It sounds like there's some concern from your wife about your drinking. Have you ever felt bad or guilty about your drinking habits?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I get irritable if I don't have a drink by 7pm",
+        "ai": "I appreciate you sharing that. It seems like there's some level of dependency on alcohol if you're feeling irritable without it. Can you share how your drinking has affected your daily life or relationships?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "I don't know, whatever",
+        "ai": "That's okay. Thank you for sharing what you have so far. Based on what you've told me, I will be connecting you to a professional who can help you further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": false,
+    "final_routing": null,
+    "chief_complaint": "Increased alcohol consumption",
+    "duration": "a couple of years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Substance Use / Addiction"
+    ],
+    "support_preference": "unknown",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "INCOMPLETE: Triage did not complete after all messages"
+    ]
+  },
+  {
+    "id": 16,
+    "name": "Person with Mood Swings",
+    "expected_condition": "Bipolar",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share a bit about what's been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "My mood swings are insane, one week I'm on top of the world and the next I can't get out of bed",
+        "ai": "It sounds really challenging to experience such intense mood swings. How long have you been feeling this way?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Years honestly, but it's getting more intense",
+        "ai": "Thank you for sharing that. I can imagine how difficult it must be when the intensity increases. On a scale of urgency, how concerning is this for you right now? Is it something that feels critical, or is it more of a persistent issue?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Last month I stayed up 3 nights straight working on a business idea that I now realize was crazy",
+        "ai": "It sounds like you've experienced periods of high energy and focus, which can be overwhelming. Have you noticed any changes in your sleep patterns or energy levels during these mood swings?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "Then I crashed and slept for 2 days straight and called in sick",
+        "ai": "That sounds very taxing on your body and mind. I'm sorry to hear you've been through that. How would you describe your emotional state during these fluctuations? Are there specific feelings that stand out?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Definitely a professional",
+        "ai": "Thank you for your openness. Based on what you've shared about your intense mood swings and the associated challenges, I will be routing you to a professional who can provide the support you need. I appreciate you taking the time to share your experiences with me.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "intense mood swings",
+    "duration": "years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "mood disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "poor",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 17,
+    "name": "Burnt Out Teacher",
+    "expected_condition": "Burnout",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind lately or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I used to love teaching but now I dread going to school",
+        "ai": "It sounds like you're feeling a strong sense of dread about teaching, which might be really difficult for you. Can you tell me more about what has changed for you in this situation?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "This school year, so about 8 months",
+        "ai": "Thank you for sharing that. It sounds like this feeling of dread has been going on for about 8 months. On a scale from 1 to 10, how urgent would you say your feelings about teaching are right now?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I feel emotionally drained, like I have nothing left to give",
+        "ai": "I'm really sorry to hear that you're feeling emotionally drained. It sounds quite overwhelming. Have you noticed any changes in your appetite or energy levels during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I snap at my students which I never used to do",
+        "ai": "It seems like you're experiencing a significant change in your interactions with your students, which can be very challenging. How would you describe your sleep quality lately?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Maybe just someone to talk to",
+        "ai": "I understand that you're looking for someone to talk to about what you're experiencing. Thank you for sharing your feelings with me. Based on what you've expressed, I will connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "emotional exhaustion and dread about teaching",
+    "duration": "8 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "stress",
+      "burnout"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 18,
+    "name": "Startup Founder Burnout",
+    "expected_condition": "Burnout",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what's prompting you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I work 16 hours a day and I'm exhausted",
+        "ai": "It sounds like you're feeling very overwhelmed and tired from working so much. Can you tell me more about how this is affecting you emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "About a year since we launched",
+        "ai": "So, you've been working these long hours for about a year now. How urgent do you feel this situation is for you? Is it impacting your daily life significantly?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I can't remember the last time I did something fun",
+        "ai": "It sounds like you've been feeling a loss of enjoyment in your life recently. Can I ask if you've noticed any changes in your sleep or energy levels as well?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel guilty if I take a break",
+        "ai": "Feeling guilty about taking a break can be really tough. Thank you for sharing that. It sounds like you're under a lot of pressure. I'm going to summarize what you've shared and connect you with a professional who can help you further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "exhaustion due to long work hours",
+    "duration": "approximately one year",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "burnout",
+      "stress"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 19,
+    "name": "Grieving Father",
+    "expected_condition": "Grief",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's on your mind today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I lost my son 4 months ago",
+        "ai": "I'm so sorry to hear about your loss. That must be incredibly difficult for you. How are you feeling about it now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I still set a plate for him at dinner",
+        "ai": "That sounds like a meaningful way to remember him. How long have you been doing that?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "People say it gets easier but it doesn't",
+        "ai": "It's completely understandable to feel that way. Grief can be a long and challenging process. Have you noticed any changes in your appetite or energy levels since your loss?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I can't go into his room, I keep the door closed",
+        "ai": "It sounds like being in his room is very difficult for you. Thank you for sharing that with me. How have you been sleeping lately?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Someone who understands loss",
+        "ai": "I appreciate your honesty. It\u2019s important to connect with someone who understands what you\u2019re going through. Thank you for sharing your thoughts and feelings with me. I will now connect you to a professional who can help you with this.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "grief and loss",
+    "duration": "4 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "prolonged grief disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 20,
+    "name": "Pet Loss Grief",
+    "expected_condition": "Grief",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind or why you\u2019re reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I lost my dog last week and I can't stop crying",
+        "ai": "I'm really sorry to hear about your dog. Losing a pet can be incredibly painful. Can you tell me more about how you're feeling right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "People think I'm overreacting but he was my best friend for 12 years",
+        "ai": "It sounds like your dog meant a lot to you, and it's completely understandable to feel this way after such a significant loss. How long have you been feeling this intense sadness since your loss?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I keep looking at the door expecting him to come in",
+        "ai": "That sounds really tough. It's common to have those moments of expecting someone or something familiar to return. Have you noticed any changes in your sleep or appetite during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel silly talking about this",
+        "ai": "It's not silly at all. Your feelings are valid, and it's important to acknowledge them. I appreciate you sharing this with me. Can you let me know how long you've been feeling this way since your dog's passing?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Someone to just listen",
+        "ai": "I understand. Thank you for sharing your feelings with me. Based on what you've told me about your deep sadness and the impact of losing your dog, I will connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "grief over pet loss",
+    "duration": "1 week",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "grief"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 21,
+    "name": "Couple in Conflict",
+    "expected_condition": "Relationship Issues",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "My partner and I fight every day",
+        "ai": "I'm sorry to hear that. It sounds really tough to be in that situation. Can you tell me more about how this makes you feel?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It's been bad for about 6 months",
+        "ai": "Thank you for sharing that. It sounds like this has been a challenging situation for quite some time. On a scale from 1 to 10, how urgent would you say this issue feels for you right now?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "We can't communicate without it turning into a screaming match",
+        "ai": "That sounds incredibly frustrating and exhausting. When you find it hard to communicate, how does it affect your mood and energy levels throughout the day?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I still love them but I don't know how to fix this",
+        "ai": "It's understandable to feel lost when you still care about someone but are facing difficult challenges. Thank you for sharing your feelings. Based on what you've told me, I will be routing you to a professional who can help you navigate these issues. Your experience matters, and support is available for you.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Relationship conflicts and communication issues",
+    "duration": "6 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "relationship distress"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 22,
+    "name": "Going Through Divorce",
+    "expected_condition": "Relationship/Grief",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "Thank you for reaching out. Can you share what\u2019s been on your mind or what\u2019s prompting you to seek someone to talk to today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "My wife told me she wants a divorce last week",
+        "ai": "I'm really sorry to hear that. It sounds like a very difficult situation. How are you feeling about it?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I haven't eaten or slept properly since",
+        "ai": "That sounds really tough. It seems like this situation is affecting both your appetite and sleep. How long have you been experiencing these changes?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I feel like my whole world is falling apart",
+        "ai": "I'm truly sorry to hear that you're feeling this way. It sounds incredibly overwhelming. Have you noticed any loss of interest or pleasure in things you usually enjoy?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I have two kids and I'm terrified of losing them",
+        "ai": "It's completely understandable to feel that way, especially when children are involved. This situation must be adding a lot of stress for you. Can you tell me how you're managing your daily responsibilities with everything that's going on?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "I need professional help",
+        "ai": "Thank you for sharing your thoughts and feelings with me. Based on what you've described, I will be routing you to a professional who can provide the support you need. Take care of yourself.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "wife wants a divorce",
+    "duration": "1 week",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "anxiety",
+      "depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "poor",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 23,
+    "name": "Lonely Senior Citizen",
+    "expected_condition": "Loneliness",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind or what's prompting you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I'm 68 and I don't have anyone to talk to",
+        "ai": "It sounds like you're feeling quite lonely. Can you tell me more about what you're experiencing or what specifically is concerning you right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Since my wife passed 2 years ago",
+        "ai": "I'm really sorry to hear about your loss. Losing a loved one can be incredibly difficult. How have you been coping since then? How long have you been feeling this way?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "My children are busy with their own lives",
+        "ai": "It must be tough feeling like you're alone while your children are occupied with their own lives. Can you share how this has affected your day-to-day feelings or activities?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I just sit at home all day watching TV",
+        "ai": "It sounds like you might be feeling quite inactive or stuck. How has this routine been impacting your mood or overall well-being?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Just someone to chat with",
+        "ai": "I understand that you're looking for connection and someone to talk to. Thank you for sharing your feelings with me. Based on what you've shared, I will connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "loneliness and desire for conversation",
+    "duration": "2 years",
+    "urgency": "low",
+    "suspected_conditions": [
+      "grief",
+      "loneliness"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Relocated Professional",
+    "expected_condition": "Loneliness",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here for you. Can you share what's been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I moved to a new city for work and I don't know anyone",
+        "ai": "It sounds like you're feeling a bit isolated after moving. Can you tell me how that has been affecting you emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "3 months ago",
+        "ai": "Thank you for sharing that. So it's been about three months since your move. How have you been feeling during this time? Would you say there's been any urgency or intensity to these feelings?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I eat all my meals alone and spend weekends by myself",
+        "ai": "I'm sorry to hear that. It sounds quite lonely. Have you noticed any changes in your appetite or energy levels since you've been spending more time alone?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I'm not really sad, just really lonely",
+        "ai": "It's understandable to feel lonely, especially after a big change like moving. Thank you for sharing that with me. Based on what you\u2019ve shared, I will connect you with a professional who can provide support. You deserve to feel connected and supported.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "loneliness after moving to a new city",
+    "duration": "3 months",
+    "urgency": "low",
+    "suspected_conditions": [],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 25,
+    "name": "Career Confused Graduate",
+    "expected_condition": "Career Stress",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind lately or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I graduated 6 months ago and I have no idea what to do with my life",
+        "ai": "It sounds like you're feeling uncertain about your future after graduating. That's a common feeling. Can you describe how this uncertainty is affecting your emotional state right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Everyone around me has jobs and I'm stuck",
+        "ai": "I can understand how that might feel overwhelming and isolating. How long have you been feeling this way about your situation?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "My parents are disappointed in me",
+        "ai": "I'm sorry to hear that. It sounds like you're feeling a lot of pressure from your parents' expectations. Can you tell me how this is affecting your mood or motivation?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel lost and purposeless",
+        "ai": "Feeling lost and purposeless can be really tough. Thank you for sharing that with me. I want to make sure you get the right support. Based on what you've shared, I will connect you with a professional who can help. ",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "uncertainty about future after graduation",
+    "duration": "unknown",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 26,
+    "name": "Overwhelmed Engineering Student",
+    "expected_condition": "Academic Stress",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind lately or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I have 5 exams next week and I haven't started studying",
+        "ai": "It sounds like you're feeling overwhelmed with your upcoming exams. Can you tell me how you're feeling about this situation right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Every semester is like this",
+        "ai": "It seems like this has been a recurring issue for you. How long have you been feeling this way about your exams or studying in general?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I procrastinate and then panic at the last minute",
+        "ai": "That sounds really stressful. When you find yourself procrastinating, how does that affect your mood or energy levels as the exams approach?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel like I'm not smart enough for this course",
+        "ai": "It sounds like you're experiencing some self-doubt regarding your abilities in the course. Can you share if this feeling has been consistent for you, or is it more intense around exam times?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Just someone to help me sort my head out",
+        "ai": "Thank you for sharing your feelings. It sounds like you're looking for support to help you navigate through this challenging time. Based on what you've told me, I'm going to connect you with a professional who can help you sort things out. Thank you for your honesty today.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Overwhelm due to exams",
+    "duration": "ongoing",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 27,
+    "name": "Teen Self Harmer",
+    "expected_condition": "Self-Harm/Crisis",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I cut myself sometimes when things get too much",
+        "ai": "It sounds like you're experiencing a lot of overwhelming feelings. I'm here to help you through this. Can you tell me how often you've felt this way or if there are specific triggers that lead to those moments?",
+        "phase": "EXPLORATION"
+      }
+    ],
+    "final_phase": "EXPLORATION",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "self-harm behavior",
+    "duration": "unknown",
+    "urgency": "critical",
+    "suspected_conditions": [],
+    "support_preference": "unknown",
+    "sleep_quality": "unknown",
+    "crisis_flags": [
+      "self-harm"
+    ],
+    "problems": []
+  },
+  {
+    "id": 28,
+    "name": "One Word Answers",
+    "expected_condition": "Unknown",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "Sad",
+        "ai": "I'm sorry to hear that you're feeling sad. Can you tell me more about what's contributing to that sadness?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Long time",
+        "ai": "I'm sorry to hear that you've been feeling this way for a long time. How long would you say you've been experiencing this sadness?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "No",
+        "ai": "That's okay. Let's move on. Have you noticed any changes in your appetite or energy levels recently?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "No",
+        "ai": "Thank you for sharing that. It\u2019s important to express how you\u2019re feeling. I appreciate your openness. Based on what you've shared, I will connect you with a professional who can help you further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "sadness",
+    "duration": "long time",
+    "urgency": "low",
+    "suspected_conditions": [
+      "Major Depressive Disorder"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 29,
+    "name": "Completely Evasive",
+    "expected_condition": "Unknown",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's on your mind or what brought you here today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I don't want to talk about it",
+        "ai": "That's completely okay. It's important to feel comfortable. If you're not ready to share, we can move on to something else. How have you been feeling emotionally lately?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I don't know",
+        "ai": "That's alright. Sometimes it can be hard to pinpoint our feelings. Can you tell me how long you've been feeling this way?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I'm not sure",
+        "ai": "I understand. It's okay to feel unsure. Let's try a different approach. Have you noticed any changes in your appetite or energy levels recently?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "Can we just skip this",
+        "ai": "Of course, we can skip that. Thank you for sharing what you have. Based on our conversation, I'll be routing you to a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "resistant",
+    "duration": "unknown",
+    "urgency": "low",
+    "suspected_conditions": [],
+    "support_preference": "professional",
+    "sleep_quality": null,
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 30,
+    "name": "Hostile/Angry User",
+    "expected_condition": "Unknown",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 4,
+        "phase": "DEEPENING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm glad you reached out. Can you share a bit more about what's been on your mind or what you're feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "This is stupid, talking to a bot",
+        "ai": "I understand that it might feel strange. It's okay to feel that way. Can you tell me what brought you here today, or what you're feeling right now?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "user": "I said I don't want to answer your dumb questions",
+        "ai": "I respect your feelings and understand that you may not want to share. That's completely okay. If you're comfortable, can you tell me what you're hoping to get out of this conversation?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Just connect me to a real person already",
+        "ai": "I can help with that. I just need to gather a bit of information first to connect you to the right person. Can you tell me what specifically is bothering you today?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 4,
+        "user": "Whatever just do something",
+        "ai": "I appreciate your patience. Can you let me know how long you've been feeling this way?",
+        "phase": "DEEPENING"
+      }
+    ],
+    "final_phase": "DEEPENING",
+    "final_is_complete": false,
+    "final_routing": null,
+    "chief_complaint": "resistant",
+    "duration": null,
+    "urgency": "low",
+    "suspected_conditions": [],
+    "support_preference": "unknown",
+    "sleep_quality": null,
+    "crisis_flags": [],
+    "problems": [
+      "INCOMPLETE: Triage did not complete after all messages"
+    ]
+  },
+  {
+    "id": 31,
+    "name": "Tests the AI",
+    "expected_condition": "None",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 3,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 4,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share a bit about what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "Are you a real person?",
+        "ai": "I'm actually an AI designed to help you express what's going on for you. Can you tell me what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 2,
+        "user": "What's the meaning of life?",
+        "ai": "That's a big question! Let's focus on what you're feeling right now. Can you share what has been bothering you or what brought you here today?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 3,
+        "user": "Can you tell me a joke?",
+        "ai": "I appreciate your light-heartedness! However, I'm here to understand your feelings and concerns. Can you share what's been on your mind lately?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 4,
+        "user": "OK fine I'm actually just stressed about work",
+        "ai": "I'm sorry to hear that work has been stressful for you. Can you tell me if this stress is affecting your sleep or energy levels?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "A couple weeks",
+        "ai": "Thank you for sharing that. It sounds like this stress has been ongoing for a little while. Is there anything specific at work that has been triggering this stress for you?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 6,
+        "user": "Just peer support",
+        "ai": "Thank you for sharing your preference for peer support. Based on what you've told me, I'm going to connect you with a professional who can help you further. Thank you for opening up today.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "PEER_SUPPORT",
+    "chief_complaint": "work stress",
+    "duration": "a couple of weeks",
+    "urgency": "low",
+    "suspected_conditions": [],
+    "support_preference": "peer",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 32,
+    "name": "Depression + Anxiety Combo",
+    "expected_condition": "Depression,Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I\u2019m here to listen. Can you share what\u2019s been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I'm sad all the time but also constantly worried",
+        "ai": "I'm sorry to hear that you're feeling this way. Can you tell me more about what makes you feel sad and worried?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Honestly I don't remember not feeling this way, maybe 2 years",
+        "ai": "Thank you for sharing that with me. It sounds like these feelings have been quite persistent. On a scale of urgency, how much is this affecting your daily life or your ability to function?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I can't sleep because my mind races but then I'm too tired during the day",
+        "ai": "It sounds really tough to deal with racing thoughts at night and then feeling tired during the day. Have you noticed any changes in your appetite or how much you're eating lately?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I've lost like 15 pounds because I forget to eat",
+        "ai": "Losing weight and forgetting to eat can be really concerning. Thank you for sharing that. How have your social interactions been lately? Have you been able to connect with friends or family?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Definitely professional",
+        "ai": "Thank you for sharing all of this with me. It sounds like you're experiencing significant emotional distress, and it's important to connect with a professional who can help you. I will be routing you to a licensed therapist based on your needs.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Persistent sadness and worry",
+    "duration": "2 years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety",
+      "Depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "poor",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 33,
+    "name": "Vague Symptoms",
+    "expected_condition": "Unknown",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I\u2019m here to listen. Can you share what\u2019s been on your mind or what you\u2019re feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I just don't feel like myself",
+        "ai": "I'm sorry to hear that. Can you tell me a bit more about what you mean by not feeling like yourself?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I'm not sure when it started",
+        "ai": "That's okay. Sometimes it can be hard to pinpoint when things began. Have you noticed any specific changes in your mood or energy levels recently?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Nothing specific, I just feel off",
+        "ai": "I understand. Feeling off can be quite uncomfortable. Have you experienced any changes in your sleep or appetite during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "Maybe it's everything at once",
+        "ai": "It sounds like you might be feeling overwhelmed. I appreciate you sharing that with me. Can you share if this has affected your daily activities or how you interact with others?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "I don't know what kind of help I need",
+        "ai": "That's completely understandable. Sometimes figuring out what kind of help is needed can be part of the challenge. Thank you for sharing your feelings with me. Based on what you've shared, I will connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "not feeling like oneself",
+    "duration": "unknown",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "anxiety",
+      "depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 34,
+    "name": "Oversharing Rambler",
+    "expected_condition": "Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I\u2019m here to listen. Can you share what\u2019s been on your mind or why you feel the need to talk today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "OK so basically my mom called me this morning and she was yelling about how I never visit and then my boss sent me this passive aggressive email and my roommate left dishes in the sink AGAIN and I just started crying in the bathroom at work",
+        "ai": "It sounds like you've been overwhelmed with a lot of stress from different areas of your life. Can you tell me more about how you felt during that moment in the bathroom at work?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "This has been building up for months, maybe since January when my ex and I broke up and I had to move to this terrible apartment",
+        "ai": "I'm sorry to hear that you've been dealing with this for so long. How would you describe your emotional state over these past few months? Have you been feeling down or overwhelmed?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I feel like I'm going to explode, my chest is always tight and I grind my teeth at night",
+        "ai": "It sounds really tough to be feeling that way. Have you noticed any changes in your sleep or appetite since you've been feeling this way?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I tried meditation apps but I can't sit still long enough",
+        "ai": "It seems like finding effective coping mechanisms has been challenging for you. Thank you for sharing your experience with me. Based on what you've shared, I'm going to connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Overwhelming stress and emotional distress",
+    "duration": "months since January",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 35,
+    "name": "Chronic Insomniac",
+    "expected_condition": "Insomnia/Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I\u2019m here to listen. Can you share what\u2019s been on your mind or what you\u2019re feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I haven't slept properly in months",
+        "ai": "I'm sorry to hear that. Lack of sleep can be really tough. How has this affected your daily life or emotions?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "At least 4 months, it keeps getting worse",
+        "ai": "It sounds like this has been really challenging for you. On a scale of 1 to 10, how urgent would you say this sleep issue feels for you right now, in terms of its impact on your daily life?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I lie awake for hours staring at the ceiling, my brain won't shut off",
+        "ai": "That sounds really frustrating, especially when you're trying to get some rest. Along with trouble sleeping, have you noticed any changes in your appetite or energy levels recently?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I'm so tired during the day that I almost fell asleep driving",
+        "ai": "That sounds very concerning, especially with your safety at risk. It's clear that the lack of sleep is affecting you significantly. Thank you for sharing that with me. Based on what you've told me, I'm going to connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Insomnia and extreme fatigue",
+    "duration": "4 months",
+    "urgency": "high",
+    "suspected_conditions": [
+      "Insomnia"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "poor",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 36,
+    "name": "Controlling Parents",
+    "expected_condition": "Family Conflict",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's on your mind or what you're feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "My parents control every aspect of my life and I'm 24",
+        "ai": "It sounds like you're feeling a lack of independence in your life. Can you tell me more about how this situation affects your emotional state or daily life?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "My entire life but I've only recently realized it's not normal",
+        "ai": "It must be frustrating to come to that realization. How long have you been feeling this way, and how urgent do you feel the need to change this situation?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "They check my phone, track my location, and choose my friends",
+        "ai": "It sounds like you're experiencing a significant lack of privacy and autonomy. How does this make you feel emotionally? Are you feeling anxious, sad, or overwhelmed by this situation?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel suffocated but I'm scared to stand up to them",
+        "ai": "Feeling suffocated can be really challenging, especially when fear is involved. It's important to navigate these feelings carefully. Thank you for sharing this with me. Based on what you've described, I'm going to connect you with a professional who can help you explore these feelings further and discuss your situation. ",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Feeling suffocated by parental control",
+    "duration": "unknown",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 37,
+    "name": "Body Image Issues",
+    "expected_condition": "Body Dysmorphia",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you tell me what's on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I hate the way I look",
+        "ai": "It sounds like you're feeling really uncomfortable with your appearance. Can you share more about how this makes you feel emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Since I was a teenager, so about 8 years",
+        "ai": "Thank you for sharing that. It seems like these feelings have been present for quite some time. On a scale of urgency, how would you describe your feelings about this? Would you say they're causing you significant distress or impacting your daily life?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I avoid mirrors and I never take photos",
+        "ai": "I can understand how challenging that must be for you. Avoiding mirrors and photos suggests that these feelings are quite intense. Have you noticed any changes in your appetite or how you feel physically since these feelings started?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I've cancelled dates because I thought I looked too ugly",
+        "ai": "It sounds like these feelings about your appearance are affecting your social life significantly. Thank you for sharing that. I appreciate your openness. Based on what you've shared, I'll be routing you to a professional who can help. They can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Negative body image and avoidance of social situations",
+    "duration": "8 years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Body Dysmorphic Disorder",
+      "Social Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 38,
+    "name": "Anger Management",
+    "expected_condition": "Anger Issues",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I lose my temper over tiny things",
+        "ai": "It sounds like you're feeling frustrated or overwhelmed. Can you tell me more about what triggers those feelings of losing your temper?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It's been getting worse the past year",
+        "ai": "I'm sorry to hear that. It sounds like this has been a challenging time for you. On a scale from 1 to 10, how urgent would you say it is for you to address this issue right now?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I punched a wall last week and scared my girlfriend",
+        "ai": "It sounds like you're experiencing a lot of anger and perhaps feeling overwhelmed. Have you noticed any changes in your sleep or energy levels recently?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I don't know why I get so angry, it just happens",
+        "ai": "I understand that it can be difficult to pinpoint those feelings. Thank you for sharing that with me. Based on what you've told me, I will be connecting you with a professional who can help you explore these emotions further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Anger management issues",
+    "duration": "Past year",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anger issues"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "skipped",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 39,
+    "name": "New Mom Postpartum",
+    "expected_condition": "Postpartum Depression",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or why you're reaching out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I had my baby 3 months ago and I feel nothing",
+        "ai": "It sounds like you're going through a really tough time after your baby's birth. Can you tell me more about how you've been feeling since then?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I thought I'd be happy but I just feel empty",
+        "ai": "I'm really sorry to hear that you're feeling this way. It\u2019s completely understandable to have mixed emotions after such a big life change. How long have you been feeling this emptiness?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Sometimes I wish I could just disappear",
+        "ai": "I'm really sorry to hear that you're feeling this way. It's important to talk about these feelings. Can you tell me if you've had any thoughts about hurting yourself or that you would be better off dead?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel like a terrible mother for feeling this way",
+        "ai": "It's important to remember that many new parents experience overwhelming feelings, and it doesn't make you a bad mother. Thank you for sharing that with me. I want to ensure you get the right support. Can you tell me if you've had these feelings for a while?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Professional who understands new moms",
+        "ai": "Thank you for sharing your feelings and preferences with me. Based on what you've described, I will connect you with a professional who understands the challenges new mothers face. You're not alone in this, and it's important to talk to someone who can help. Take care.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "feeling empty after childbirth",
+    "duration": "3 months",
+    "urgency": "high",
+    "suspected_conditions": [
+      "Postpartum Depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [
+      "thoughts of disappearing",
+      "feelings of being a terrible mother"
+    ],
+    "problems": []
+  },
+  {
+    "id": 40,
+    "name": "Severe Agoraphobia",
+    "expected_condition": "Agoraphobia",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s on your mind or why you feel the need to talk today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I haven't left my house in 3 weeks",
+        "ai": "It sounds like you've been going through a tough time. Can you tell me more about how that has made you feel emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It's been getting worse for about a year",
+        "ai": "I appreciate you sharing that with me. Can you tell me how severe your feelings have been over the past year? For example, do you often feel sad, anxious, or overwhelmed?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "The outside world feels terrifying and I feel safe only at home",
+        "ai": "It sounds like you\u2019re experiencing a lot of fear about going outside. Have you felt restless or found it hard to relax during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I order everything online and work remotely so no one even notices",
+        "ai": "It seems like you\u2019ve adapted your lifestyle to stay at home. How have your sleeping patterns been during this time? Are you sleeping well?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Professional definitely",
+        "ai": "Thank you for sharing your experiences with me. Based on what you've told me, I'm going to connect you with a professional who can provide the support you need. I appreciate your openness today.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Fear of the outside world, difficulty leaving the house",
+    "duration": "about a year",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 41,
+    "name": "Coming Out Struggle",
+    "expected_condition": "Identity/Stress",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm glad you reached out. Can you share a bit about what's been on your mind or what brought you here today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I'm struggling with my identity and I don't know who to talk to",
+        "ai": "It sounds like you're feeling uncertain about your identity, which can be really challenging. Can you tell me more about how this struggle is affecting you emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I've known for years but I'm scared of what my family will think",
+        "ai": "It's completely understandable to feel scared about how your family might react. This sounds like a significant source of stress for you. How long have you been feeling this way?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I feel like I'm living a double life",
+        "ai": "Living a double life can be incredibly exhausting and isolating. How has this impacted your mood or your ability to relax?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "It's exhausting pretending to be someone I'm not",
+        "ai": "It sounds like this situation is taking a toll on you emotionally and physically. Thank you for sharing that with me. Based on what you've described, I will connect you with a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Struggling with identity and family acceptance",
+    "duration": "Years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Identity crisis",
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 42,
+    "name": "Debt Anxiety",
+    "expected_condition": "Financial Stress/Anxiety",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind or what\u2019s prompting you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I have so much debt I can't breathe",
+        "ai": "That sounds really overwhelming. Dealing with debt can create a lot of stress. Can you tell me more about how this is affecting you emotionally right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "It's been piling up for about 2 years",
+        "ai": "Thank you for sharing that. Two years is a significant amount of time to be dealing with this. On a scale from 1 to 10, how urgent would you say your situation feels right now?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I check my bank account 20 times a day and feel sick every time",
+        "ai": "I'm really sorry to hear that. It sounds like this is causing you a lot of anxiety. Have you been feeling restless or finding it hard to relax during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I lie awake thinking about money every night",
+        "ai": "That sounds really distressing. It seems like the worry about money is affecting your sleep. Thank you for sharing this with me. Based on what you've shared, I will connect you with a professional who can help you navigate these feelings and concerns.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Debt and associated anxiety",
+    "duration": "2 years",
+    "urgency": "high",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "poor",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 43,
+    "name": "Gen Z Slang User",
+    "expected_condition": "Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind lately or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "ngl i've been lowkey anxious af lately \ud83d\ude2d",
+        "ai": "I'm sorry to hear that you're feeling anxious. Can you tell me more about what has been making you feel this way?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "idk like a couple months maybe? it's giving burnout fr",
+        "ai": "It sounds like you've been feeling anxious for a couple of months and it\u2019s related to burnout. How urgent would you say this feeling is for you right now? Is it something that's affecting your daily life significantly?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "my brain literally won't shut up like the thoughts are on loop",
+        "ai": "That sounds really overwhelming. Have you felt like you can't stop or control your worrying lately?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "tried meditating but it's not it tbh",
+        "ai": "It sounds like meditation hasn\u2019t been effective for you. Have you noticed any changes in your sleep or appetite during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "someone who gets young people ig",
+        "ai": "I understand that you're looking for someone who can relate to younger people's experiences. Thank you for sharing your feelings. Based on what you've told me, I'll be routing you to a professional who can help you with your anxiety and feelings of burnout.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "anxiety and burnout",
+    "duration": "couple of months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety",
+      "Burnout"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 44,
+    "name": "Very Formal User",
+    "expected_condition": "Depression",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I understand that you're looking for someone to talk to. Can you share a bit more about what's been on your mind or what you're feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "Good evening. I would like to discuss some persistent emotional difficulties I have been experiencing.",
+        "ai": "Good evening! I'm here to listen. Can you tell me more about these emotional difficulties you've been experiencing?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Approximately seven months. I have been maintaining a journal and the pattern is quite consistent.",
+        "ai": "Thank you for sharing that with me. It sounds like you've been experiencing these emotional difficulties for about seven months. Can you describe how urgent these feelings are for you right now? Do they feel overwhelming or manageable?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I experience a profound lack of motivation and a persistent feeling of emptiness that does not correlate with any specific external event.",
+        "ai": "I'm sorry to hear that you're feeling this way. It sounds really challenging. Have you noticed any changes in your appetite or sleep patterns during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "My sleep has deteriorated significantly. I retire at 22:00 but do not achieve sleep until approximately 02:00.",
+        "ai": "Thank you for sharing that detail about your sleep. It sounds like you are experiencing significant sleep latency, which can be really tough. I appreciate your openness. Based on what you've shared, I will be routing you to a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "persistent emotional difficulties",
+    "duration": "seven months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Depression",
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "poor sleep latency",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 45,
+    "name": "Chronic Pain Mental Impact",
+    "expected_condition": "Depression/Anxiety",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what brought you here today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I have chronic back pain and it's making me depressed",
+        "ai": "I'm sorry to hear that you're dealing with chronic pain and its impact on your mood. Can you tell me how long you've been experiencing this back pain?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "The pain has been there for years but the depression started about 6 months ago",
+        "ai": "Thank you for sharing that. It sounds like the pain has been a long-term issue for you, and the depression is a more recent development. On a scale of 1 to 10, how urgent would you say your feelings of depression are right now?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I can't do the things I used to love because of the pain",
+        "ai": "That sounds really difficult. It\u2019s understandable that not being able to engage in activities you love would contribute to feeling down. Have you noticed any changes in your appetite or energy levels since the depression began?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I feel useless and like a burden to my family",
+        "ai": "I'm really sorry to hear that you're feeling this way. It\u2019s tough to carry those feelings. Thank you for being open about it. I want to ensure you get the support you need. Based on what you've shared, I'll be routing you to a professional who can help you further.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "chronic back pain and depression",
+    "duration": "back pain for years, depression for 6 months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 46,
+    "name": "Reluctant but Needs Help",
+    "expected_condition": "Depression",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what brings you here today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "My friend told me to try this",
+        "ai": "I appreciate you reaching out. Can you tell me more about how you're feeling or what specific concerns you have right now?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "I guess I've been feeling down",
+        "ai": "I'm sorry to hear that you're feeling down. How long have you been experiencing these feelings?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Few months maybe",
+        "ai": "Thank you for sharing that. During these past few months, have you noticed any changes in your appetite or energy levels?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I don't really want to get into details",
+        "ai": "That's completely understandable. We can keep it general. Have you noticed any changes in your sleep quality during this time?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Sure, therapist I guess",
+        "ai": "Thank you for sharing your thoughts. It sounds like connecting with a therapist would be helpful for you. I will route you to a professional who can provide the support you need.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "feeling down",
+    "duration": "few months",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Depression"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 47,
+    "name": "Topic Switcher",
+    "expected_condition": "Unknown",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share a bit about what's been on your mind or what you're feeling today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I'm stressed about work",
+        "ai": "I'm sorry to hear that work is causing you stress. Can you tell me more about what specifically is stressing you out?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Actually it's more about my relationship",
+        "ai": "I understand that relationships can be challenging. How long have you been feeling stressed about your relationship?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "Well, it might be about my family too",
+        "ai": "Family dynamics can also be quite complex. How would you describe your emotional state right now? Are you feeling more anxious, sad, or overwhelmed?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "Honestly I think everything is connected",
+        "ai": "It sounds like you're feeling a lot of interconnected stress from multiple areas of your life. I appreciate you sharing that with me. Based on what you've told me, I'm going to connect you with a professional who can help.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "stress related to work, relationship, and family",
+    "duration": "unknown",
+    "urgency": "medium",
+    "suspected_conditions": [],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": [
+      "WRONG_ROUTING: Expected PEER_SUPPORT, Got LICENSED_THERAPIST"
+    ]
+  },
+  {
+    "id": 48,
+    "name": "Just Venting",
+    "expected_condition": "Mild Stress",
+    "expected_routing": "PEER_SUPPORT",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind lately?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I just had the worst day ever",
+        "ai": "I'm sorry to hear that. What made your day so difficult?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Today, I just need to get it off my chest",
+        "ai": "I understand. It can really help to express what you're feeling. Can you tell me more about what happened today?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "My boss yelled at me in front of everyone and I wanted to cry",
+        "ai": "That sounds really upsetting. It's understandable to feel that way after being publicly criticized. How did that make you feel overall?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I'm fine usually, today was just awful",
+        "ai": "It's okay to have off days. It sounds like today was particularly challenging for you. Have you experienced anything like this before?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 5,
+        "user": "Just someone to listen right now",
+        "ai": "I\u2019m here for you. It's important to have someone to listen. Can you share more about what you're feeling right now?",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": false,
+    "final_routing": null,
+    "chief_complaint": "difficult day",
+    "duration": "unknown",
+    "urgency": "low",
+    "suspected_conditions": [],
+    "support_preference": "null",
+    "sleep_quality": "null",
+    "crisis_flags": [],
+    "problems": [
+      "INCOMPLETE: Triage did not complete after all messages"
+    ]
+  },
+  {
+    "id": 49,
+    "name": "Perfectionist Burnout",
+    "expected_condition": "Anxiety/Burnout",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what's been on your mind or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I can't submit anything unless it's perfect and it's destroying me",
+        "ai": "It sounds like you're feeling a lot of pressure to achieve perfection, and that's really weighing on you. Can you tell me more about how this is affecting you emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "Since college, so about 5 years, but it's worse now at work",
+        "ai": "Thank you for sharing that. It sounds like this pressure has been building for quite some time, but has intensified recently at work. How would you describe the urgency of this issue for you right now? Is it something that feels critical to address?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "I rewrite emails 10 times before sending them",
+        "ai": "That sounds really exhausting, having to rewrite emails so many times. It seems like this might be related to anxiety about how others perceive your work. Can you tell me if this has affected your sleep or your energy levels?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I know it's irrational but I physically can't stop",
+        "ai": "I appreciate your honesty in sharing that. It sounds like you're feeling trapped by these compulsions, which can be really challenging. Based on what you've shared, I will connect you with a professional who can help you work through these feelings and experiences. Thank you for opening up to me today.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Perfectionism and compulsive rewriting of emails",
+    "duration": "5 years",
+    "urgency": "medium",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  },
+  {
+    "id": 50,
+    "name": "Workplace Bullying Victim",
+    "expected_condition": "Anxiety/Depression",
+    "expected_routing": "LICENSED_THERAPIST",
+    "phase_transitions": [
+      {
+        "turn": 0,
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "phase": "CLOSING"
+      }
+    ],
+    "ai_responses": [
+      {
+        "turn": 0,
+        "ai": "I'm here to listen. Can you share what\u2019s been on your mind lately or what prompted you to reach out today?",
+        "phase": "OPENING"
+      },
+      {
+        "turn": 1,
+        "user": "I'm being bullied at work by my manager",
+        "ai": "I'm really sorry to hear that you're experiencing bullying at work. It sounds very challenging. Can you tell me more about how this situation is affecting you emotionally?",
+        "phase": "EXPLORATION"
+      },
+      {
+        "turn": 2,
+        "user": "For the past year, it started when a new manager joined",
+        "ai": "It sounds like this has been going on for quite some time. That must be really tough to endure for a whole year. How urgent do you feel this situation is for you right now? Is it something that feels critical to address immediately?",
+        "phase": "DEEPENING"
+      },
+      {
+        "turn": 3,
+        "user": "They belittle me in meetings and assign me impossible deadlines on purpose",
+        "ai": "That sounds incredibly frustrating and demoralizing. It's understandable to feel overwhelmed in such a toxic environment. How has this treatment affected your overall mood or energy levels lately?",
+        "phase": "CLOSING"
+      },
+      {
+        "turn": 4,
+        "user": "I've started having panic attacks before work",
+        "ai": "I'm really sorry to hear that you're experiencing panic attacks. That must be very distressing. It sounds like this situation is having a significant impact on your mental health. Thank you for sharing this with me. Based on what you've told me, I'm going to connect you with a professional who can help you navigate this situation more effectively.",
+        "phase": "CLOSING"
+      }
+    ],
+    "final_phase": "CLOSING",
+    "final_is_complete": true,
+    "final_routing": "LICENSED_THERAPIST",
+    "chief_complaint": "Bullying at work",
+    "duration": "1 year",
+    "urgency": "high",
+    "suspected_conditions": [
+      "Anxiety"
+    ],
+    "support_preference": "professional",
+    "sleep_quality": "unknown",
+    "crisis_flags": [],
+    "problems": []
+  }
+]
