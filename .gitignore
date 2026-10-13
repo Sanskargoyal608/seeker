@@ -16,3 +16,13 @@ fetch_ps.ps1
 fetch_stitch.js
 fetch_stitch.py
 django_logs.txt
+
+# Runtime state and build output
+celerybeat-schedule*
+.coverage
+htmlcov/
+staticfiles/
+frontend/dist/
+frontend/%ProgramData%/
+.next/
+*.log
