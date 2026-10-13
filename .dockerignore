@@ -20,24 +20,32 @@ env/
 staticfiles/
 mediafiles/
 
-# Environment files (never in image)
+# Environment files and credentials (never in image)
 .env
 .env.local
 .env.local.example
+firebase-credentials.json
+fetch_ps.ps1
+fetch_stitch.js
+fetch_stitch.py
 
-# Node / Next.js (not needed in Python image)
-node_modules/
-.next/
-mobile/node_modules/
+# Mobile and web apps (not needed in Python image)
+frontend/
+web/
+**/node_modules/
+**/.next/
+**/.expo/
 
-# Expo / React Native
-.expo/
-mobile/.expo/
-
-# Test artifacts
+# Test artifacts, logs and runtime state
 .pytest_cache/
 htmlcov/
 .coverage
+*.log
+django_logs.txt
+celerybeat-schedule*
+test_results*.json
+screen_0236.json
+stitch_screens_analysis.txt
 
 # IDE
 .vscode/
@@ -52,6 +60,8 @@ Dockerfile
 docker-compose.yml
 docker-compose.override.yml
 
-# Docs
+# Docs (research/ is loaded by the triage service at runtime, so keep it)
 *.md
 *.docx
+!research/*.md
+.github/

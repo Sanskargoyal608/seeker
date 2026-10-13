@@ -1,28 +1,37 @@
-Django>=5.0
-djangorestframework>=3.14
-djangorestframework-simplejwt>=5.3
-django-cors-headers>=4.0
-django-filter>=24.1
-django-redis>=5.4
-psycopg2-binary>=2.9
-redis>=5.0
-celery>=5.3
-django-celery-beat>=2.5
-channels>=4.0
-channels-redis>=4.1
-daphne>=4.0
-drf-spectacular>=0.27
-factory-boy>=3.3
-pytest>=7.4
-pytest-django>=4.7
-minio>=7.2
-python-jose>=3.3
-typesense>=1.6
-razorpay>=1.3
-firebase-admin>=6.4
-python-decouple>=3.8
-brevo-python>=2.3
-whitenoise>=6.0
-cryptography>=42.0
-python-dotenv>=1.0
-google-generativeai>=0.8
+# Direct dependencies, pinned. Transitive versions are fixed by requirements.lock:
+#   pip install -r requirements.txt -c requirements.lock
+# To upgrade: change a pin here, reinstall in a clean venv, then `pip freeze > requirements.lock`.
+
+# Web framework and API
+Django==5.2.18
+djangorestframework==3.18.3
+djangorestframework-simplejwt==5.5.1
+PyJWT==2.15.1
+django-cors-headers==4.9.0
+drf-spectacular==0.30.0
+whitenoise==6.12.0
+python-dotenv==1.2.4
+
+# Database, cache, realtime, background work
+psycopg2-binary==2.9.13
+redis==8.1.0
+django-redis==7.0.0
+channels==4.3.2
+channels-redis==4.3.0
+daphne==4.2.3
+celery==5.6.3
+django-celery-beat==2.9.0
+
+# External services
+minio==7.2.20
+typesense==2.1.0
+firebase-admin==7.7.0
+requests==2.34.2
+cryptography==50.0.2
+
+# Tests
+pytest==9.1.1
+pytest-django==4.14.0
+pytest-asyncio==1.4.0
+pytest-cov==7.1.0
+factory-boy==3.3.3
