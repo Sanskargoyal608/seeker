@@ -170,8 +170,8 @@ SPECTACULAR_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', 60))),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 7))),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', 1440))), # 24 hours
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 30))),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
@@ -204,12 +204,16 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULE = {
     'send-session-reminders-every-15-mins': {
         'task': 'notifications.tasks.send_scheduled_session_reminders',
-        'schedule': 900.0, # 15 minutes in seconds
+        'schedule': 900.0,
     },
     'check-queue-timeout-every-minute': {
         'task': 'core.tasks.queue_timeout_task',
         'schedule': 60.0,
-    }
+    },
+    'auto-withdraw-stale-sessions-every-5-mins': {
+        'task': 'core.tasks.auto_withdraw_stale_sessions',
+        'schedule': 300.0,
+    },
 }
 
 # Firebase Cloud Messaging
@@ -220,7 +224,6 @@ firebase_credentials_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
 if firebase_credentials_path and os.path.exists(os.path.join(BASE_DIR, firebase_credentials_path)):
     try:
         cred = credentials.Certificate(os.path.join(BASE_DIR, firebase_credentials_path))
-        # Ensure we only initialize the default app once
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
     except Exception as e:
