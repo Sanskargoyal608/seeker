@@ -16,7 +16,13 @@
       "package": "com.seeker.app"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "Seeker",
+      "shortName": "Seeker",
+      "backgroundColor": "#fbf9f8",
+      "themeColor": "#104356"
     },
     "plugins": [
       "expo-router",

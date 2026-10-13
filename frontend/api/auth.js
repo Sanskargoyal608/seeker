@@ -12,7 +12,7 @@ const BASE = '/api/accounts';
  * POST /api/accounts/auth/forgot-password/
  */
 export const requestPasswordReset = async (email) => {
-  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/forgot-password/`, { email });
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/forgot-password/request/`, { email });
   return data;
 };
 
@@ -21,7 +21,7 @@ export const requestPasswordReset = async (email) => {
  * POST /api/accounts/auth/reset-password/
  */
 export const resetPassword = async (email, otp_code, new_password) => {
-  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/reset-password/`, {
+  const { data } = await axios.post(`${API_BASE_URL}${BASE}/auth/forgot-password/reset/`, {
     email,
     otp_code,
     new_password,

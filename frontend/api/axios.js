@@ -11,7 +11,7 @@
  *   Localhost on the device refers to the device itself, not your PC.
  */
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { storage as SecureStore } from '../utils/storage';
 import Constants from 'expo-constants';
 
 export const API_BASE_URL =
@@ -19,7 +19,7 @@ export const API_BASE_URL =
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
