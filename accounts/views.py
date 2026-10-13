@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+﻿from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -536,3 +536,45 @@ class ProfileUpdateView(APIView):
         # Return the full updated profile using UserDetailSerializer
         response_serializer = UserDetailSerializer(updated_user)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class DocumentUploadView(APIView):
+    """
+    Upload a credential document to MinIO for a counselor/therapist profile.
+    Expects multipart/form-data with 'file' and 'field_name' fields.
+    field_name can be: degree_file, graduation_certificate, background_check_file, license_file
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        file_obj = request.FILES.get('file')
+        field_name = request.data.get('field_name', '')
+        
+        if not file_obj:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        allowed_fields = ['degree_file', 'graduation_certificate', 'background_check_file', 'license_file']
+        if field_name not in allowed_fields:
+            return Response({'error': f'field_name must be one of: {", ".join(allowed_fields)}'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            upload_service = FileUploadService()
+            minio_path = upload_service.upload_file(file_obj, 'credentials', file_obj.name)
+            
+            # Update the counselor or therapist profile
+            user = request.user
+            if hasattr(user, 'counselor_profile'):
+                profile = user.counselor_profile
+                setattr(profile, field_name, minio_path)
+                profile.save()
+            elif hasattr(user, 'therapist_profile'):
+                profile = user.therapist_profile
+                setattr(profile, field_name, minio_path)
+                profile.save()
+            else:
+                return Response({'error': 'No counselor or therapist profile found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            response_serializer = UserDetailSerializer(user)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

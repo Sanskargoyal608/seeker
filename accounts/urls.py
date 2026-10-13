@@ -25,4 +25,5 @@ urlpatterns = [
 
     # Profile endpoints
     path('profile/update/', views.ProfileUpdateView.as_view(), name='profile-update'),
+    path('profile/upload-document/', views.DocumentUploadView.as_view(), name='document-upload'),
 ]
