@@ -30,6 +30,14 @@ Kept here so nothing gets lost. Tick them off as you go. Written 2026-10-23.
 - [ ] Open a pull request for each branch if you want a record (the GitHub CLI isn't installed here, so use the links GitHub prints). Branches: `phase2/crisis` is **not merged into main yet**.
 - [ ] Decide when to merge `phase2/crisis` into `main`.
 
+## Added during Phase 3
+
+- [ ] **Firebase file:** put your `google-services.json` in `frontend/` (it is secret-ish: do not commit it; I will add it to `.gitignore` when I wire push). Also keep `firebase-credentials.json` (the server key) in the repo root, as now.
+- [ ] **Review the triage accuracy results** (65 simulated people, `triage_persona_report.json` after running `RUN_PERSONA_EVAL=1 pytest core/tests/test_triage_personas.py -s`): 75% routed as you labelled them. All 10 mistakes sent someone to a peer counselor who was labelled "needs a therapist" (e.g. agoraphobia, divorce + depression, complicated grief). A clinician should say whether those labels are right and what the safe default is.
+- [ ] **Decide the accuracy bar** for the pilot, and whether an uncertain case should go to a therapist by default.
+- [ ] After you apply Phase 3: run `docker compose exec django python manage.py migrate` again (new migrations: core 0016, 0017). The legacy EscalationEvent table is deleted.
+- [ ] **Escalated patients are not charged extra:** I did not add any payment rule for the therapist session that follows an escalation. Tell me if it should be treated differently from a normal therapist session.
+
 ## Decisions I still need from you
 
 - [ ] Who is on the on-call list and how fast must they respond?
