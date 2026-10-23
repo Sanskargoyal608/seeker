@@ -74,10 +74,12 @@ export default function PublicProfileScreen() {
           <Text style={styles.nameText}>{name}</Text>
           <Text style={styles.roleText}>{profile?.license_number ? 'Licensed Therapist' : 'Graduate Counselor'}</Text>
 
-          <View style={styles.infoRow}>
-             <Ionicons name="school-outline" size={16} color={COLORS.onSurfaceVariant} />
-             <Text style={styles.infoText}>{profile?.university || 'University of Pennsylvania'}, Class of {profile?.graduation_year || '2023'}</Text>
-          </View>
+          {profile?.university ? (
+            <View style={styles.infoRow}>
+               <Ionicons name="school-outline" size={16} color={COLORS.onSurfaceVariant} />
+               <Text style={styles.infoText}>{profile.university}{profile.graduation_year ? `, Class of ${profile.graduation_year}` : ''}</Text>
+            </View>
+          ) : null}
           <View style={styles.infoRow}>
              <Ionicons name="language-outline" size={16} color={COLORS.onSurfaceVariant} />
              <Text style={styles.infoText}>{(profile?.languages?.length ? profile.languages : ['English']).join(', ')}</Text>
@@ -108,17 +110,18 @@ export default function PublicProfileScreen() {
           </Pressable>
         </View>
 
-        {/* Verification */}
-        <View style={styles.verifyCard}>
-           <View style={styles.verifyRow}>
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.statusAvailable} />
-              <View style={styles.verifyTextWrap}>
-                 <Text style={styles.verifyTitle}>Verified Identity</Text>
-                 <Text style={styles.verifySub}>Background checked</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.outlineVariant} />
-           </View>
-        </View>
+        {/* Verification: public profiles are only served for providers whose credentials an admin approved */}
+        {profile?.id ? (
+          <View style={styles.verifyCard}>
+             <View style={styles.verifyRow}>
+                <Ionicons name="checkmark-circle" size={20} color={COLORS.statusAvailable} />
+                <View style={styles.verifyTextWrap}>
+                   <Text style={styles.verifyTitle}>Credentials verified</Text>
+                   <Text style={styles.verifySub}>Reviewed and approved by our team</Text>
+                </View>
+             </View>
+          </View>
+        ) : null}
 
         {/* Languages & Approaches */}
         <View style={styles.sectionCard}>

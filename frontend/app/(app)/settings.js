@@ -17,7 +17,6 @@ export default function SettingsScreen() {
   const { handleLogout } = useAuth();
 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(true);
   const [pushNotif, setPushNotif] = useState(true);
   const [emailNotif, setEmailNotif] = useState(false);
   const [sessionNotif, setSessionNotif] = useState(true);
@@ -268,7 +267,7 @@ export default function SettingsScreen() {
                     </View>
                     <View>
                        <Text style={styles.settingTitle}>Change Password</Text>
-                       <Text style={styles.settingSub}>Last updated 3 months ago</Text>
+                       <Text style={styles.settingSub}>Reset it with a code sent to your email</Text>
                     </View>
                  </View>
                   {loadingPassword ? (
@@ -278,23 +277,6 @@ export default function SettingsScreen() {
                   )}
               </Pressable>
 
-              <View style={[styles.settingRow, styles.settingRowBorder]}>
-                 <View style={styles.settingRowLeft}>
-                    <View style={styles.settingIconWrap}>
-                       <Ionicons name="shield-checkmark" size={20} color={COLORS.primary} />
-                    </View>
-                    <View>
-                       <Text style={styles.settingTitle}>Two-Factor Authentication</Text>
-                       <Text style={styles.settingSub}>Enhanced protection for your sessions</Text>
-                    </View>
-                 </View>
-                 <Switch 
-                    value={twoFactor} 
-                    onValueChange={setTwoFactor} 
-                    trackColor={{ false: COLORS.outlineVariant, true: COLORS.primary }}
-                    thumbColor={COLORS.white}
-                 />
-              </View>
 
            </View>
         </View>

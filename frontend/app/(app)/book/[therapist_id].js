@@ -137,10 +137,6 @@ export default function BookTherapistScreen() {
               <Text style={styles.providerSpec}>
                 {therapistProfile?.modalities?.join(', ') || 'Mental Health Professional'}
               </Text>
-              <View style={styles.acceptingBadge}>
-                <View style={styles.statusDot} />
-                <Text style={styles.acceptingText}>Accepting New Clients</Text>
-              </View>
             </View>
           </View>
 

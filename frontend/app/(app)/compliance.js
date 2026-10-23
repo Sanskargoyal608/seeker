@@ -54,7 +54,7 @@ export default function ComplianceScreen() {
 
   const calculateProgress = () => {
     let completed = 0;
-    if (user?.is_verified) completed += 34; // Identity
+    if (counselorProfile.is_verified) completed += 34; // Identity (admin-approved)
     if (counselorProfile.degree_file || counselorProfile.graduation_certificate) completed += 33; // Academic
     if (counselorProfile.background_check_file) completed += 33; // Background Check
     return completed;
@@ -83,9 +83,13 @@ export default function ComplianceScreen() {
               <Text style={styles.cardTitle}>Identity Verification</Text>
               <Text style={styles.cardSub}>Government ID / Passport</Text>
             </View>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.statusAvailable} />
+            {counselorProfile.is_verified
+              ? <Ionicons name="checkmark-circle" size={24} color={COLORS.statusAvailable} />
+              : <Ionicons name="time-outline" size={24} color={COLORS.onSurfaceVariant} />}
           </View>
-          <Text style={styles.statusTextSuccess}>Verified</Text>
+          <Text style={counselorProfile.is_verified ? styles.statusTextSuccess : styles.statusTextPending}>
+            {counselorProfile.is_verified ? 'Verified' : 'Pending review'}
+          </Text>
         </View>
 
         {/* Academic Credentials */}

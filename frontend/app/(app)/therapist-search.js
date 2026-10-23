@@ -48,8 +48,6 @@ export default function TherapistSearchScreen() {
   };
 
   const renderTherapist = ({ item }) => {
-    const isAvailable = true; // Replace with real logic if needed
-
     return (
       <Pressable 
         style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.98 }] }]}
@@ -60,30 +58,18 @@ export default function TherapistSearchScreen() {
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{item.name?.[0] || 'T'}</Text>
             </View>
-            <View style={[styles.statusIndicator, { backgroundColor: isAvailable ? COLORS.statusAvailable : COLORS.statusBusy }]} />
           </View>
           
           <View style={styles.cardInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.therapistName} numberOfLines={1}>{item.name}</Text>
-              {item.title === 'Graduate Counselor' ? (
-                 <View style={styles.tagBadge}>
-                   <MaterialIcons name="history" size={12} color={COLORS.onSurfaceVariant} />
-                   <Text style={styles.tagBadgeText}>Insightful</Text>
-                 </View>
-              ) : (
-                 <View style={[styles.tagBadge, { backgroundColor: COLORS.secondaryContainer }]}>
-                   <MaterialIcons name="star" size={12} color={COLORS.onSecondaryContainer} />
-                   <Text style={[styles.tagBadgeText, { color: COLORS.onSecondaryContainer }]}>Compassionate</Text>
-                 </View>
-              )}
             </View>
             <Text style={styles.therapistTitle}>{item.title || 'Counselor'}</Text>
           </View>
         </View>
 
         <Text style={styles.bioText} numberOfLines={2}>
-          {item.bio || 'Experienced practitioner offering personalized support and compassionate care for your mental wellness journey.'}
+          {item.bio || 'This provider has not added a bio yet.'}
         </Text>
 
         <View style={styles.cardFooter}>
@@ -92,16 +78,6 @@ export default function TherapistSearchScreen() {
               <Text style={styles.priceText}>${item.per_session_rate}</Text>
               <Text style={styles.priceSubText}>/session</Text>
             </View>
-          </View>
-          <View style={styles.availabilityRow}>
-             {isAvailable ? (
-               <>
-                 <Ionicons name="flash" size={16} color={COLORS.statusAvailable} />
-                 <Text style={[styles.availabilityText, { color: COLORS.statusAvailable }]}>Available Now</Text>
-               </>
-             ) : (
-               <Text style={styles.availabilityText}>In Session (10m)</Text>
-             )}
           </View>
         </View>
       </Pressable>
