@@ -26,3 +26,4 @@ frontend/dist/
 frontend/%ProgramData%/
 .next/
 *.log
+triage_persona_report.json

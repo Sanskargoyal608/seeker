@@ -1,0 +1,546 @@
+[
+ {
+  "id": 1,
+  "name": "Classic Depression",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I've been feeling really low and empty for months"
+  ]
+ },
+ {
+  "id": 2,
+  "name": "Severe Anxiety",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "My heart races constantly and I feel like something terrible is about to happen"
+  ]
+ },
+ {
+  "id": 3,
+  "name": "PTSD Nightmares",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I was in a serious car accident and now I can't drive or even be a passenger"
+  ]
+ },
+ {
+  "id": 4,
+  "name": "Suicidal Teen (Crisis)",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "Sometimes I think everyone would be better off without me"
+  ]
+ },
+ {
+  "id": 5,
+  "name": "OCD Rituals",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I wash my hands until they bleed and I spend 2 hours a day on rituals"
+  ]
+ },
+ {
+  "id": 6,
+  "name": "Eating Disorder Bulimia",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I have a complicated relationship with food, I binge and then make myself throw up"
+  ]
+ },
+ {
+  "id": 7,
+  "name": "Bipolar Mood Swings",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "My mood swings are insane, one week I feel invincible and the next I can't get out of bed"
+  ]
+ },
+ {
+  "id": 8,
+  "name": "Self Harm Teen",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I cut myself sometimes when things get too much, it's the only thing that makes the pain stop"
+  ]
+ },
+ {
+  "id": 9,
+  "name": "Panic Disorder",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I had a panic attack in the grocery store, my chest got so tight I thought I was dying"
+  ]
+ },
+ {
+  "id": 10,
+  "name": "Substance Abuse",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I drink a bottle of wine every night and I get irritable if I don't have a drink by 7pm"
+  ]
+ },
+ {
+  "id": 11,
+  "name": "Postpartum Depression",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I had my baby 3 months ago and I feel absolutely nothing, I thought I'd be happy",
+   "Since the birth, so 3 months",
+   "Sometimes I wish I could just disappear, I feel like a terrible mother",
+   "Someone who understands new moms"
+  ]
+ },
+ {
+  "id": 12,
+  "name": "Social Anxiety Severe",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I eat lunch alone in my car because I can't face my coworkers, my hands shake in meetings"
+  ]
+ },
+ {
+  "id": 13,
+  "name": "Exam Stress Student",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I have 5 exams next week and I haven't started studying, I feel overwhelmed"
+  ]
+ },
+ {
+  "id": 14,
+  "name": "Burnt Out Teacher",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I used to love teaching but now I dread going to school every morning"
+  ]
+ },
+ {
+  "id": 15,
+  "name": "Startup Burnout",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I work 16 hours a day and I'm completely exhausted"
+  ]
+ },
+ {
+  "id": 16,
+  "name": "Pet Loss Grief",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I lost my dog last week and I can't stop crying, he was my best friend for 12 years"
+  ]
+ },
+ {
+  "id": 17,
+  "name": "Couple Conflict",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "My partner and I fight every single day and I don't know what to do"
+  ]
+ },
+ {
+  "id": 18,
+  "name": "Lonely Senior",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm 68 and I don't have anyone to talk to since my wife passed"
+  ]
+ },
+ {
+  "id": 19,
+  "name": "Relocated Lonely",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I moved to a new city for work and I don't know a single person here",
+   "3 months ago",
+   "I eat all my meals alone and spend every weekend by myself, not sad just lonely",
+   "Someone around my age would be nice"
+  ]
+ },
+ {
+  "id": 20,
+  "name": "Career Confused Grad",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I graduated 6 months ago and I have absolutely no idea what to do with my life"
+  ]
+ },
+ {
+  "id": 21,
+  "name": "Coming Out Struggle",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm struggling with my identity and I don't know who to talk to about it"
+  ]
+ },
+ {
+  "id": 22,
+  "name": "Financial Stress",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I have so much debt I can't breathe, I check my bank account 20 times a day"
+  ]
+ },
+ {
+  "id": 23,
+  "name": "Controlling Parents",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "My parents control every aspect of my life and I'm 24 years old"
+  ]
+ },
+ {
+  "id": 24,
+  "name": "Just Venting Bad Day",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I just had the worst day ever at work"
+  ]
+ },
+ {
+  "id": 25,
+  "name": "Topic Switcher",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm stressed about work but actually it's more about my relationship"
+  ]
+ },
+ {
+  "id": 26,
+  "name": "Dumps Everything Depression",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I've been feeling incredibly depressed for the past 6 months. I can't sleep properly, I've lost about 15 pounds because I forget to eat, I have zero energy, I don't enjoy anything I used to love, and I cry almost every day. I feel worthless and like a burden to everyone around me. I don't have suicidal thoughts but I just feel completely hollow inside. I need help.",
+   "That covers everything I wanted to say"
+  ]
+ },
+ {
+  "id": 27,
+  "name": "Dumps Everything Anxiety",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "OK so here's the deal. For the past 4 months my anxiety has been through the roof. I wake up with my heart pounding, I can't concentrate at work because I'm constantly worried about things going wrong, my chest is always tight, I grind my teeth at night so badly I cracked a tooth, I've had 3 panic attacks in grocery stores, and I've started avoiding social situations entirely because I'm scared it'll happen in public. I tried meditation apps but I can't sit still. I really need professional help."
+  ]
+ },
+ {
+  "id": 28,
+  "name": "Dumps Everything Life Stress",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "So basically my mom called me this morning yelling about how I never visit, then my boss sent me a passive aggressive email about a deadline, my roommate left dishes in the sink AGAIN, and my car got a flat tire on the way home. I just started crying in the parking lot. This has been building up for a few weeks since my breakup in January. I'm not depressed or anything I'm just overwhelmed by life right now and I need someone to vent to."
+  ]
+ },
+ {
+  "id": 29,
+  "name": "Long Message Mixed Signals",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I don't even know where to start. Some days I feel completely fine and other days I can barely function. Last week I stayed in bed for 3 days straight and called in sick to work. But then this week I deep cleaned my entire apartment at 3am because I couldn't sleep. My friends have noticed I'm acting differently. I've been drinking more than usual to cope - maybe 3-4 drinks a night which I know isn't great. My appetite is all over the place too. Sometimes I eat nothing all day and other times I binge eat an entire pizza. This has been going on for maybe 3-4 months now and I'm scared something is really wrong with me."
+  ]
+ },
+ {
+  "id": 30,
+  "name": "Paragraph About Work Burnout",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm a software developer and I've been working 14 hour days for the past year building this startup with my co-founder. We launched 6 months ago and the pressure hasn't let up at all. I haven't taken a single day off. I used to love coding but now I dread opening my laptop. I feel guilty whenever I try to relax because there's always more work to do. My girlfriend says I'm never present even when I'm home. I know I'm burning out but I don't know how to stop. My sleep is fine when I actually get to bed, I eat okay, I'm not sad or anxious really, just completely exhausted and disconnected from everything that isn't work."
+  ]
+ },
+ {
+  "id": 31,
+  "name": "One Word Answers",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "Sad",
+   "Long time",
+   "No",
+   "No",
+   "Whatever"
+  ]
+ },
+ {
+  "id": 32,
+  "name": "Completely Evasive",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I don't want to talk about it"
+  ]
+ },
+ {
+  "id": 33,
+  "name": "Hostile User",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "This is stupid talking to a bot about my feelings",
+   "I said I don't want to answer your dumb questions",
+   "Just connect me to a real person already",
+   "Whatever just do something"
+  ]
+ },
+ {
+  "id": 34,
+  "name": "Tests The AI",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "Are you a real person or just a chatbot?",
+   "What's the meaning of life?",
+   "OK fine I'm actually just stressed about work deadlines"
+  ]
+ },
+ {
+  "id": 35,
+  "name": "Vague Symptoms",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I just don't feel like myself lately"
+  ]
+ },
+ {
+  "id": 36,
+  "name": "Indirect Metaphorical",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I feel like I'm drowning and nobody can see it"
+  ]
+ },
+ {
+  "id": 37,
+  "name": "Gen Z Slang",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "ngl i've been lowkey anxious af lately, my brain literally won't shut up"
+  ]
+ },
+ {
+  "id": 38,
+  "name": "Very Formal",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "Good evening. I would like to discuss some persistent emotional difficulties I have been experiencing.",
+   "Approximately seven months. I have been maintaining a journal and the pattern is quite consistent.",
+   "I experience a profound lack of motivation and a persistent feeling of emptiness. My sleep has deteriorated significantly.",
+   "I would prefer a licensed therapist with experience in mood disorders please."
+  ]
+ },
+ {
+  "id": 39,
+  "name": "Emoji User",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "feeling so stressed rn 😩😩😩 work is killing me"
+  ]
+ },
+ {
+  "id": 40,
+  "name": "Non-Native English",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I am feeling very bad from many months, my head is always paining and I am not sleeping"
+  ]
+ },
+ {
+  "id": 41,
+  "name": "Chronic Pain Impact",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I have chronic back pain and it's making me really depressed, I can't do anything I used to love"
+  ]
+ },
+ {
+  "id": 42,
+  "name": "Anger Management",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I lose my temper over tiny things and it's getting worse"
+  ]
+ },
+ {
+  "id": 43,
+  "name": "Agoraphobia",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I haven't left my house in 3 weeks, the outside world terrifies me"
+  ]
+ },
+ {
+  "id": 44,
+  "name": "Body Dysmorphia",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I hate the way I look, I avoid mirrors and never take photos of myself"
+  ]
+ },
+ {
+  "id": 45,
+  "name": "Perfectionist Burnout",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I can't submit anything unless it's absolutely perfect and it's destroying my productivity"
+  ]
+ },
+ {
+  "id": 46,
+  "name": "Workplace Bullying",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I'm being systematically bullied at work by my manager, they belittle me in meetings"
+  ]
+ },
+ {
+  "id": 47,
+  "name": "Depression + Anxiety",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I'm sad all the time but also constantly worried about everything"
+  ]
+ },
+ {
+  "id": 48,
+  "name": "Grief Complicated",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I lost my son 4 months ago and I still set a plate for him at dinner"
+  ]
+ },
+ {
+  "id": 49,
+  "name": "Divorce + Depression",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "My wife told me she wants a divorce last week and I haven't eaten or slept since"
+  ]
+ },
+ {
+  "id": 50,
+  "name": "ADHD + Burnout",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I can never finish anything I start, I have 47 browser tabs open and forgot why I opened half of them",
+   "My whole life but it's gotten way worse since working from home this past year",
+   "I lose my keys every day, I'm constantly late, and now I'm so burnt out I can't function at all",
+   "Someone who can actually evaluate if something is wrong with me"
+  ]
+ },
+ {
+  "id": 51,
+  "name": "Detailed Grieving Mother",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I lost my daughter in a car accident 6 months ago. She was only 22. Every morning I wake up and for a split second I forget, and then it hits me all over again like a truck. I keep her room exactly the way she left it. Her toothbrush is still in the bathroom. I know people think I should be moving on by now but I physically cannot. I've lost about 20 pounds because food makes me nauseous. I sleep maybe 2-3 hours a night because when I close my eyes I see the accident. My husband thinks I need to see someone and honestly I think he's right because I'm not functioning anymore."
+  ]
+ },
+ {
+  "id": 52,
+  "name": "Detailed Student Meltdown",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm a 3rd year engineering student and I'm completely falling apart. I have midterms starting Monday, I haven't studied for any of them, and I spent the entire weekend lying in bed scrolling my phone because I couldn't bring myself to open a textbook. I know I'm capable because I've done well before, but this semester something just broke. My roommates are all studying and I feel like such a failure. I eat fine, I sleep fine, I'm not depressed or anything — I'm just completely paralyzed by the amount of work in front of me. My parents would be devastated if I failed."
+  ]
+ },
+ {
+  "id": 53,
+  "name": "Detailed Working Mom",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I'm a 34 year old mom of two kids under 5 and I work full time as a nurse. I feel like I'm slowly disappearing. I wake up at 5am, get the kids ready, work a 12 hour shift on my feet, come home, cook dinner, do bedtime routine, and then I sit on the couch staring at the wall until midnight because I'm too tired to sleep but too wired to relax. I've been crying in the shower every morning so my kids don't see. I've gained about 30 pounds because I comfort eat after the kids go to bed. My husband travels for work so I'm mostly doing this alone. I used to be so full of life and now I feel like an empty shell just going through the motions. This has been going on for about a year now and I think I might be depressed but I feel guilty even saying that because so many people have it worse."
+  ]
+ },
+ {
+  "id": 54,
+  "name": "Detailed Relationship Breakdown",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "My boyfriend and I have been together for 4 years and things have been really rocky for the past 6 months. We argue about everything — money, chores, where to eat, literally anything. Last night we had a huge fight and he said he's not sure he loves me anymore. I haven't slept all night. I keep replaying everything in my head wondering what I did wrong. I don't have anyone to talk to about this because all our friends are mutual and I don't want to make it awkward. I'm not depressed, I eat fine, I sleep fine usually — I'm just heartbroken and confused and I need perspective from someone who isn't involved in the situation.",
+   "Just someone to listen and maybe help me think clearly"
+  ]
+ },
+ {
+  "id": 55,
+  "name": "Detailed Burnout Executive",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm the VP of Engineering at a Series B startup and I've been running on fumes for about 18 months now. I manage a team of 40 engineers, I'm in meetings from 8am to 6pm, and then I do actual work from 7pm to midnight. I haven't taken a vacation in 2 years. Last week I had a board meeting and I couldn't remember basic numbers that I've known by heart for years. My wife says I'm a ghost in my own home. I don't think I'm anxious or depressed — I'm just completely and utterly burned out. My sleep is actually fine when I get to bed, and I eat well. I exercise 3 times a week. I just have nothing left to give and I don't know how to step back without everything falling apart."
+  ]
+ },
+ {
+  "id": 56,
+  "name": "Teenager Venting About Parents",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm 16 and my parents are literally ruining my life. They won't let me go out with my friends, they check my phone every night, they read my messages, and they grounded me for getting a B+ on my math test. All my friends get to do whatever they want and I'm stuck in this prison. I hate it here. I'm not sad or anything, I'm just so frustrated I could scream. I wish I could just move out but I'm 16 so obviously I can't. I eat fine, sleep fine, grades are fine — I just want someone to talk to who actually listens to me."
+  ]
+ },
+ {
+  "id": 57,
+  "name": "Long Message About Insomnia",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I haven't slept properly in about 5 months and it's starting to affect everything in my life. I lie in bed for hours with my brain just churning through every embarrassing thing I've ever done, every conversation I could have handled better, every worst case scenario for tomorrow. When I finally fall asleep around 3-4am, I have to be up at 6:30 for work. I'm so tired during the day that I almost fell asleep driving last week and nearly rear-ended someone. I drink like 6 cups of coffee just to function. My concentration at work is shot. I've tried melatonin, chamomile tea, no screens before bed, white noise machines — nothing works. My appetite has been declining too, I skip meals because I'm too tired to cook."
+  ]
+ },
+ {
+  "id": 58,
+  "name": "Reluctant But Detailed",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "My friend basically forced me to try this and I think it's kind of weird talking to an AI but whatever here goes. I've been feeling really off for a few months. Like I used to be the fun one in my friend group and now I just sit there not saying anything. I cancelled my birthday party because I couldn't face seeing people. I've been sleeping like 14 hours on weekends and still feeling exhausted. I stopped going to the gym which I used to love. I think something might actually be wrong but I've never talked to anyone about it before."
+  ]
+ },
+ {
+  "id": 59,
+  "name": "Oversharer Rapid Fire",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "OH MY GOD okay so TODAY was insane. First my alarm didn't go off so I was late to work AGAIN (this is the 5th time this month because I literally cannot fall asleep before 2am), then my boss pulled me aside and basically threatened to put me on a performance improvement plan because my work quality has been 'declining' (his exact words), then I had a panic attack in the bathroom and had to splash cold water on my face for 10 minutes before I could go back to my desk. And then to top it all off my mom called crying because my dad is drinking again and she wants me to come home this weekend to 'fix it' which is something she's been doing since I was like 12 years old and I just CAN'T be the family therapist anymore. I feel like I'm carrying the weight of the entire world on my shoulders and I'm only 27. My chest has been tight for weeks, I grind my teeth so badly I cracked a molar, I've lost 10 pounds because I keep forgetting to eat, and I don't remember the last time I felt anything other than overwhelmed or numb. Is that enough for you? Because there's more."
+  ]
+ },
+ {
+  "id": 60,
+  "name": "Short But Clear Clinical",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "Depressed. 6 months. Can't sleep. Lost appetite. Feel worthless."
+  ]
+ },
+ {
+  "id": 61,
+  "name": "Short But Clear Life Stress",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "Stressed about exams. Otherwise fine."
+  ]
+ },
+ {
+  "id": 62,
+  "name": "Contradictory User",
+  "expected": "PEER_SUPPORT",
+  "user_messages": [
+   "I'm fine actually, I don't know why I'm here"
+  ]
+ },
+ {
+  "id": 63,
+  "name": "DV Survivor Detailed",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I left an abusive relationship 3 months ago. He never hit me but he controlled everything — who I could talk to, what I could wear, he'd go through my phone every night and interrogate me about every text. When I finally left, I thought I'd feel free but instead I feel terrified all the time. I flinch when anyone raises their voice. I check if the door is locked maybe 20 times before bed. I have nightmares about him finding me. I moved to a new apartment but I still feel like he's watching me. I haven't told anyone what I went through because I'm embarrassed. My sleep is terrible and I've lost weight because my stomach is in knots constantly.",
+   "I need someone who understands what I went through"
+  ]
+ },
+ {
+  "id": 64,
+  "name": "Minimizer",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "It's not a big deal really, I just haven't been sleeping well"
+  ]
+ },
+ {
+  "id": 65,
+  "name": "Angry But Hurting",
+  "expected": "LICENSED_THERAPIST",
+  "user_messages": [
+   "I'm so angry all the time and I don't even know why, everything pisses me off"
+  ]
+ }
+]
