@@ -144,7 +144,7 @@ export default function CounselorProfileScreen() {
         <View style={styles.card}>
            <View style={styles.rowBetween}>
               <Text style={styles.cardTitle}>Public Profile</Text>
-              <Pressable style={styles.editBtn} onPress={() => router.push(`/(app)/public-profile?slug=${user?.counselor_profile?.slug || ''}`)}>
+              <Pressable style={styles.editBtn} onPress={() => router.push('/(app)/public-profile')}>
                  <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
                  <Text style={styles.editBtnText}>View</Text>
               </Pressable>

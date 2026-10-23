@@ -1061,11 +1061,24 @@ class SessionIntakeView(APIView):
             session.counselor == getattr(request.user, 'counselor_profile', None) or
             session.counselor == getattr(request.user, 'graduatecounselor', None)
         )
-        if not (is_assigned_therapist or is_assigned_counselor or request.user.is_staff):
+        # A therapist asked to take over a session may read its briefing before they
+        # accept, and keep reading it afterwards.
+        is_escalation_target = False
+        therapist_profile = getattr(request.user, 'therapist_profile', None)
+        if therapist_profile is not None:
+            from .models import EscalationRequest
+            is_escalation_target = EscalationRequest.objects.filter(
+                session=session, therapist=therapist_profile,
+                status__in=[EscalationRequest.PENDING, EscalationRequest.ACCEPTED],
+            ).exists()
+        if not (is_assigned_therapist or is_assigned_counselor or is_escalation_target or request.user.is_staff):
             return Response({'error': 'Unauthorized to view clinical intake'}, status=status.HTTP_403_FORBIDDEN)
-            
+
+        # The therapist's session after an escalation carries the original briefing.
+        briefing_session = session.escalated_from or session
+
         # Check triage dossier first
-        triage_source = getattr(session, 'triage_source', None)
+        triage_source = getattr(briefing_session, 'triage_source', None)
         if triage_source and triage_source.intake_dossier:
             return Response({
                 'session_id': session.id,
@@ -1077,7 +1090,7 @@ class SessionIntakeView(APIView):
             }, status=status.HTTP_200_OK)
 
         # Fallback to legacy IntakeResponse if exists
-        intake = IntakeResponse.objects.filter(user=session.user).order_by('-submitted_at').first()
+        intake = IntakeResponse.objects.filter(user=briefing_session.user).order_by('-submitted_at').first()
         if intake:
             return Response({
                 'session_id': session.id,

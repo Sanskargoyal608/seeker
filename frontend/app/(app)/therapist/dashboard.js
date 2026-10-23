@@ -18,6 +18,7 @@ import { selectUser } from '../../../store/authSlice';
 import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../../../api/axios';
+import BriefingModal from '../../../components/BriefingModal';
 
 export default function TherapistDashboard() {
   const router = useExpoRouter();
@@ -27,6 +28,7 @@ export default function TherapistDashboard() {
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState(null);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [briefingFor, setBriefingFor] = useState(null); // session id whose briefing is open
 
   const fetchQueue = async () => {
     try {
@@ -61,10 +63,22 @@ export default function TherapistDashboard() {
         Alert.alert('Success', 'Escalation accepted!');
       }
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to accept escalation.');
+      Alert.alert('Error', error.response?.data?.error || 'Failed to accept escalation.');
       fetchQueue();
     } finally {
       setAcceptingId(null);
+    }
+  };
+
+  // A seeker asked this therapist for a chat directly. Accepting starts it.
+  const acceptRequest = async (sessionId) => {
+    try {
+      await apiClient.patch(`/api/core/sessions/${sessionId}/accept/`);
+      router.push(`/(app)/chat/${sessionId}`);
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.error || 'Could not accept this request.');
+    } finally {
+      fetchQueue();
     }
   };
 
@@ -79,6 +93,9 @@ export default function TherapistDashboard() {
       </View>
       
       <Text style={styles.cardSub} numberOfLines={2}>Reason: {item.reason || 'Not specified'}</Text>
+      <Pressable onPress={() => setBriefingFor(item.session)} style={{ marginBottom: SPACING.sm }}>
+        <Text style={{ color: COLORS.primary, fontWeight: '600' }}>Read briefing</Text>
+      </Pressable>
       
       {item.status === 'PENDING' ? (
         <Pressable
@@ -188,20 +205,30 @@ export default function TherapistDashboard() {
               <Pressable 
                 key={session.id} 
                 style={styles.compactCard} 
-                onPress={() => router.push(`/(app)/chat/${session.id}`)}
+                onPress={() => (session.status === 'WAITING' ? acceptRequest(session.id) : router.push(`/(app)/chat/${session.id}`))}
               >
                 <View style={styles.compactCardLeft}>
                   <Text style={styles.compactCardTitle}>Session #{session.id}</Text>
                   <Text style={styles.compactCardSub}>{session.user_details?.email || 'Active Session'}</Text>
                 </View>
                 <View style={styles.compactCardRight}>
-                  <Text style={styles.compactCardAction}>Resume Chat</Text>
+                  {session.status === 'WAITING' ? (
+                    <Pressable onPress={() => acceptRequest(session.id)}>
+                      <Text style={styles.compactCardAction}>Accept request</Text>
+                    </Pressable>
+                  ) : (
+                    <Text style={styles.compactCardAction}>Resume Chat</Text>
+                  )}
+                  <Pressable onPress={() => setBriefingFor(session.id)}>
+                    <Text style={[styles.compactCardAction, { marginTop: 4 }]}>Briefing</Text>
+                  </Pressable>
                 </View>
               </Pressable>
             ))}
           </View>
         )}
       </ScrollView>
+      <BriefingModal sessionId={briefingFor} onClose={() => setBriefingFor(null)} />
     </SafeAreaView>
   );
 }

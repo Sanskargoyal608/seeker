@@ -20,9 +20,9 @@ export default function ProfileScreen() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const { data } = await apiClient.get('/api/core/sessions/');
+        const { data } = await apiClient.get('/api/core/sessions/my/');
         // Filter out completed or past sessions for history
-        const pastSessions = data.filter(s => s.status === 'COMPLETED').slice(0, 3);
+        const pastSessions = data.filter(s => s.status === 'ENDED').slice(0, 3);
         setHistory(pastSessions);
       } catch (err) {
         console.log(err);
@@ -114,14 +114,13 @@ export default function ProfileScreen() {
                                style={{ marginTop: 4 }} 
                                onPress={async () => {
                                  try {
-                                   const { data } = await apiClient.get(`/api/core/sessions/${s.id}/feedback/`);
-                                   if (data && data.length > 0) {
-                                     const fb = data[0];
-                                     Alert.alert('Session Feedback', 
-                                       `Rating: ${fb.rating}/5\nIssues Addressed: ${fb.issues_addressed ? 'Yes' : 'No'}\nRecommend: ${fb.recommend_counselor ? 'Yes' : 'No'}\nComments: ${fb.comments || 'None'}`);
-                                   } else {
-                                     Alert.alert('Feedback', 'No feedback submitted for this session.');
-                                   }
+                                   const { data: fb } = await apiClient.get(`/api/sessions/${s.id}/feedback/`);
+                                   const line = (label, text) => (text && text !== 'N/A' ? `${label}: ${text}\n` : '');
+                                   Alert.alert('Your feedback',
+                                     line('Before / after', fb.q1_before_session) +
+                                     line('What helped', fb.q3_what_helped) +
+                                     line('What could improve', fb.q4_what_improve) +
+                                     line('Concerns', fb.concerns) || 'You left no written answers.');
                                  } catch (err) {
                                    if (err.response?.status === 404) {
                                      Alert.alert('Feedback', 'No feedback submitted for this session.');

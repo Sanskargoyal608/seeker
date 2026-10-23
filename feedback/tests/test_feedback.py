@@ -138,3 +138,21 @@ def test_get_feedback_not_found(auth_client):
     url = reverse('session-feedback', kwargs={'session_id': session.id})
     response = client.get(url)
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+def test_feedback_needs_an_ended_session_and_keeps_concerns(auth_client):
+    user = UserFactory(role=User.GENERAL_USER)
+    counselor = GraduateCounselorFactory(user=UserFactory(role=User.COUNSELOR))
+    live = Session.objects.create(user=user, counselor=counselor, status=Session.ACTIVE)
+    client = auth_client(user)
+
+    early = client.post(reverse('session-feedback', kwargs={'session_id': live.id}), {'q1_before_session': 'x'})
+    assert early.status_code == status.HTTP_400_BAD_REQUEST
+
+    Session.objects.filter(pk=live.pk).update(status=Session.ENDED)
+    ok = client.post(reverse('session-feedback', kwargs={'session_id': live.id}), {
+        'q1_before_session': 'anxious, then calmer', 'q3_what_helped': 'breathing',
+        'q4_what_improve': 'start sooner', 'concerns': 'none really'})
+    assert ok.status_code == status.HTTP_201_CREATED
+    assert ok.data['concerns'] == 'none really'

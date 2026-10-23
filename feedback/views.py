@@ -24,7 +24,7 @@ class FeedbackView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         elif request.user.role == request.user.THERAPIST and session.therapist != request.user.therapist_profile:
             return Response(status=status.HTTP_403_FORBIDDEN)
-            
+
         try:
             feedback = SessionFeedback.objects.get(session=session)
             serializer = SessionFeedbackSerializer(feedback)
@@ -40,6 +40,10 @@ class FeedbackView(APIView):
         if session.user != request.user:
             return Response(status=status.HTTP_403_FORBIDDEN)
             
+        if session.status != Session.ENDED:
+            return Response({'error': 'Feedback can be given once the session has ended.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         if SessionFeedback.objects.filter(session=session).exists():
             return Response({'error': 'Feedback already submitted for this session.'}, status=status.HTTP_400_BAD_REQUEST)
             

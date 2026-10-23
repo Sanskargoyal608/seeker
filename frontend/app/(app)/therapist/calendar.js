@@ -5,6 +5,7 @@ import { COLORS, SPACING } from '../../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import apiClient from '../../../api/axios';
+import { startBooking } from '../../../api/core';
 
 // Helper to generate the next 14 days
 const generateDates = () => {
@@ -119,7 +120,15 @@ export default function TherapistCalendarScreen() {
                     <View style={styles.dotPrimary} />
                     {idx !== scheduled.length - 1 && <View style={styles.line} />}
                   </View>
-                  <Pressable style={styles.eventCard} onPress={() => router.push(`/(app)/chat/${s.id}`)}>
+                  <Pressable style={styles.eventCard} onPress={async () => {
+                    // s.id is the BOOKING id; the chat needs the SESSION id.
+                    try {
+                      const { session_id } = await startBooking(s.id);
+                      router.push(`/(app)/chat/${session_id}`);
+                    } catch (e) {
+                      Alert.alert('Not yet', e.response?.data?.error || 'Could not open the session.');
+                    }
+                  }}>
                     <View style={styles.eventCardLeft}>
                       <Text style={styles.clientName}>{s.patient_name}</Text>
                       <Text style={styles.eventStatus}>Confirmed</Text>

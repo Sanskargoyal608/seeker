@@ -7,44 +7,55 @@ import { selectUser } from '../../store/authSlice';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/axios';
-import apiClient from '../../api/axios';
 
+/**
+ * A provider's public profile.
+ *
+ * Opened as /public-profile?slug=<slug or numeric id>&type=therapist|counselor.
+ * `type` matters: a therapist and a counselor can share the same numeric id.
+ * Without `type` (a shared link) we try therapist, then counselor.
+ * With no `slug` at all it previews the signed-in provider's own profile.
+ * Nothing here is invented: if a field is missing it is simply not shown.
+ */
 export default function PublicProfileScreen() {
   const router = useRouter();
-  const { slug } = useLocalSearchParams();
+  const { slug, type } = useLocalSearchParams();
   const user = useSelector(selectUser);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const ownProfile = user?.therapist_profile || user?.counselor_profile || null;
+  const isOwnPreview = !slug;
 
   useEffect(() => {
-    // If it's my own profile preview
-    if (!slug || slug === user?.counselor_profile?.slug || slug === user?.therapist_profile?.slug) {
-      setProfile(user?.therapist_profile || user?.counselor_profile);
+    if (isOwnPreview) {
+      setProfile(ownProfile);
+      setNotFound(!ownProfile);
       setLoading(false);
       return;
     }
 
-    // Try fetching therapist
-    const fetchProfile = async () => {
-      try {
-        const { data } = await api.get(`/api/profiles/public/therapist/${slug}/`);
-        setProfile(data);
-      } catch (err) {
+    const kinds = type === 'counselor' ? ['counselor'] : type === 'therapist' ? ['therapist'] : ['therapist', 'counselor'];
+    let cancelled = false;
+    (async () => {
+      for (const kind of kinds) {
         try {
-          const { data } = await api.get(`/api/profiles/public/counselor/${slug}/`);
-          setProfile(data);
+          const { data } = await api.get(`/api/profiles/public/${kind}/${slug}/`);
+          if (!cancelled) setProfile(data);
+          if (!cancelled) setLoading(false);
+          return;
         } catch (e) {
-          console.log('Failed to fetch profile', e);
+          // try the next kind
         }
-      } finally {
+      }
+      if (!cancelled) {
+        setNotFound(true);
         setLoading(false);
       }
-    };
-    fetchProfile();
-  }, [slug]);
-
-  const name = profile?.user?.first_name ? `${profile.user.first_name} ${profile.user.last_name}` : (user?.first_name ? `${user.first_name} ${user.last_name}` : 'Unknown');
-  const rate = profile?.per_minute_rate || 1.50;
+    })();
+    return () => { cancelled = true; };
+  }, [slug, type]);
 
   if (loading) {
     return (
@@ -54,6 +65,38 @@ export default function PublicProfileScreen() {
     );
   }
 
+  if (notFound || !profile) {
+    return (
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center', padding: SPACING.lg }]}>
+        <Text style={styles.nameText}>Profile not found</Text>
+        <Text style={[styles.bodyText, { textAlign: 'center', marginVertical: SPACING.md }]}>
+          This provider is not available any more, or the link is wrong.
+        </Text>
+        <Pressable style={styles.chatBtn} onPress={() => router.back()}>
+          <Text style={styles.chatBtnText}>Go back</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  // Public API returns { name, role, ... }. The own-profile preview has the user's names.
+  const name = (profile.name || (isOwnPreview ? `${user?.first_name || ''} ${user?.last_name || ''}` : '')).trim() || 'Provider';
+  const isCounselor = profile.role ? profile.role === 'COUNSELOR' : !!user?.counselor_profile && isOwnPreview;
+  const languages = profile.languages || [];
+  const modalities = profile.modalities || [];
+  const rateText = isCounselor
+    ? (profile.per_minute_rate ? `₹${Number(profile.per_minute_rate).toFixed(0)} / minute` : null)
+    : (profile.per_session_rate ? `₹${Number(profile.per_session_rate).toFixed(0)} / session` : null);
+
+  const startChat = async () => {
+    try {
+      const { data } = await api.post('/api/core/sessions/request-therapist/', { therapist_id: profile.id });
+      router.push(`/(app)/chat/${data.id}`);
+    } catch (e) {
+      Alert.alert('Error', 'Could not start the chat. Please try again.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
@@ -61,7 +104,7 @@ export default function PublicProfileScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Public Profile View</Text>
+        <Text style={styles.headerTitle}>{isOwnPreview ? 'Public Profile Preview' : 'Profile'}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -72,46 +115,57 @@ export default function PublicProfileScreen() {
              <Text style={styles.avatarInitial}>{name.charAt(0).toUpperCase()}</Text>
           </View>
           <Text style={styles.nameText}>{name}</Text>
-          <Text style={styles.roleText}>{profile?.license_number ? 'Licensed Therapist' : 'Graduate Counselor'}</Text>
+          <Text style={styles.roleText}>{isCounselor ? 'Graduate Counselor' : 'Licensed Therapist'}</Text>
 
-          {profile?.university ? (
+          {profile.university ? (
             <View style={styles.infoRow}>
                <Ionicons name="school-outline" size={16} color={COLORS.onSurfaceVariant} />
                <Text style={styles.infoText}>{profile.university}{profile.graduation_year ? `, Class of ${profile.graduation_year}` : ''}</Text>
             </View>
           ) : null}
-          <View style={styles.infoRow}>
-             <Ionicons name="language-outline" size={16} color={COLORS.onSurfaceVariant} />
-             <Text style={styles.infoText}>{(profile?.languages?.length ? profile.languages : ['English']).join(', ')}</Text>
-          </View>
+          {languages.length > 0 ? (
+            <View style={styles.infoRow}>
+               <Ionicons name="language-outline" size={16} color={COLORS.onSurfaceVariant} />
+               <Text style={styles.infoText}>{languages.join(', ')}</Text>
+            </View>
+          ) : null}
 
-          <View style={styles.chipContainer}>
-             {(profile?.modalities?.length ? profile.modalities : ['Stress Management']).slice(0, 3).map(mod => (
-               <View key={mod} style={styles.chip}><Text style={styles.chipText}>{mod}</Text></View>
-             ))}
-          </View>
+          {modalities.length > 0 ? (
+            <View style={styles.chipContainer}>
+               {modalities.slice(0, 3).map(mod => (
+                 <View key={mod} style={styles.chip}><Text style={styles.chipText}>{mod}</Text></View>
+               ))}
+            </View>
+          ) : null}
 
-          <View style={styles.rateBox}>
-             <Text style={styles.rateLabel}>Session Rate</Text>
-             <Text style={styles.rateValue}>${Number(rate).toFixed(2)} / minute</Text>
-             <Text style={styles.rateDesc}>Professional guidance at an accessible rate.</Text>
-          </View>
+          {rateText ? (
+            <View style={styles.rateBox}>
+               <Text style={styles.rateLabel}>{isCounselor ? 'Chat Rate' : 'Session Rate'}</Text>
+               <Text style={styles.rateValue}>{rateText}</Text>
+            </View>
+          ) : null}
 
-          <Pressable style={styles.chatBtn} onPress={async () => {
-            try {
-              const { data } = await apiClient.post('/api/core/sessions/request-therapist/', { therapist_id: profile?.id });
-              router.push(`/(app)/chat/${data.id}`);
-            } catch(e) {
-              Alert.alert('Error', 'Could not start session. Please try again.');
-            }
-          }}>
-             <Ionicons name="chatbubble-ellipses-outline" size={20} color={COLORS.onPrimary} />
-             <Text style={styles.chatBtnText}>Start 5-Min Free Chat</Text>
-          </Pressable>
+          {/* Therapists can be messaged or booked from here. Counselors are reached
+              through the live queue (booking them is added separately). */}
+          {!isOwnPreview && !isCounselor ? (
+            <>
+              <Pressable style={styles.chatBtn} onPress={startChat}>
+                 <Ionicons name="chatbubble-ellipses-outline" size={20} color={COLORS.onPrimary} />
+                 <Text style={styles.chatBtnText}>Start a chat</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.chatBtn, { marginTop: SPACING.sm, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.primary }]}
+                onPress={() => router.push(`/(app)/book/${profile.id}?type=therapist`)}
+              >
+                 <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+                 <Text style={[styles.chatBtnText, { color: COLORS.primary }]}>Book a session</Text>
+              </Pressable>
+            </>
+          ) : null}
         </View>
 
         {/* Verification: public profiles are only served for providers whose credentials an admin approved */}
-        {profile?.id ? (
+        {!isOwnPreview ? (
           <View style={styles.verifyCard}>
              <View style={styles.verifyRow}>
                 <Ionicons name="checkmark-circle" size={20} color={COLORS.statusAvailable} />
@@ -123,50 +177,45 @@ export default function PublicProfileScreen() {
           </View>
         ) : null}
 
-        {/* Languages & Approaches */}
-        <View style={styles.sectionCard}>
-           <Text style={styles.sectionTitle}>Languages</Text>
-           <View style={styles.chipContainer}>
-             {(profile?.languages?.length ? profile.languages : ['English']).map((lang) => (
-               <View key={lang} style={styles.chip}>
-                 <Text style={styles.chipText}>{lang}</Text>
-               </View>
-             ))}
-           </View>
+        {(languages.length > 0 || modalities.length > 0) ? (
+          <View style={styles.sectionCard}>
+             {languages.length > 0 ? (
+               <>
+                 <Text style={styles.sectionTitle}>Languages</Text>
+                 <View style={styles.chipContainer}>
+                   {languages.map((lang) => (
+                     <View key={lang} style={styles.chip}><Text style={styles.chipText}>{lang}</Text></View>
+                   ))}
+                 </View>
+               </>
+             ) : null}
+             {modalities.length > 0 ? (
+               <>
+                 <Text style={[styles.sectionTitle, languages.length > 0 && { marginTop: SPACING.md }]}>Therapeutic Approaches</Text>
+                 <View style={styles.chipContainer}>
+                   {modalities.map((modality) => (
+                     <View key={modality} style={styles.chip}><Text style={styles.chipText}>{modality}</Text></View>
+                   ))}
+                 </View>
+               </>
+             ) : null}
+          </View>
+        ) : null}
 
-           <Text style={[styles.sectionTitle, { marginTop: SPACING.md }]}>Therapeutic Approaches</Text>
-           <View style={styles.chipContainer}>
-             {(profile?.modalities?.length ? profile.modalities : ['Cognitive Behavioral Therapy (CBT)', 'Person-Centered Therapy']).map((modality) => (
-               <View key={modality} style={styles.chip}>
-                 <Text style={styles.chipText}>{modality}</Text>
-               </View>
-             ))}
-           </View>
-        </View>
+        {profile.bio ? (
+          <View style={styles.sectionCard}>
+             <Text style={styles.sectionTitle}>About</Text>
+             <Text style={styles.bodyText}>{profile.bio}</Text>
+          </View>
+        ) : null}
 
-        {/* About / Bio */}
-        <View style={styles.sectionCard}>
-           <Text style={styles.sectionTitle}>About Me</Text>
-           <Text style={styles.bodyText}>
-              {profile?.bio || 'Passionate about helping individuals overcome life’s challenges, I provide a safe, non-judgmental space for clients to explore their feelings and develop healthy coping mechanisms.'}
-           </Text>
-        </View>
+        {isCounselor && profile.specialization ? (
+          <View style={styles.sectionCard}>
+             <Text style={styles.sectionTitle}>Focus</Text>
+             <Text style={styles.bodyText}>{profile.specialization}</Text>
+          </View>
+        ) : null}
 
-        {/* Education & Background */}
-        <View style={styles.sectionCard}>
-           <Text style={styles.sectionTitle}>Education & Background</Text>
-           
-           <View style={styles.historyRow}>
-              <View style={styles.iconBox}>
-                 <Ionicons name="school-outline" size={20} color={COLORS.primary} />
-              </View>
-              <View style={styles.historyTextWrap}>
-                 <Text style={styles.historyTitle}>{profile?.university ? `Degree from ${profile.university}` : 'Education details not available'}</Text>
-                 <Text style={styles.historySub}>{profile?.graduation_year ? `Graduated ${profile.graduation_year}` : ''}</Text>
-              </View>
-           </View>
-        </View>
-        
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>

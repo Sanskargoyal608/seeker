@@ -40,6 +40,8 @@ Kept here so nothing gets lost. Tick them off as you go. Written 2026-10-23.
 
 ## Decisions I still need from you
 
+- [ ] **Should counselors/therapists be able to read a seeker's feedback about their session?** Today they can (an existing test expects it). `Info.md` says feedback is visible to admins only. I left it as is.
+
 (Answered and removed: push type = native Firebase; escalation = new therapist session; `/book/<name>` = full booking on the page.)
 
 - [ ] Who is on the on-call list and how fast must they respond?

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { COLORS } from '../../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
@@ -12,7 +12,7 @@ export default function TherapistLayout() {
   const { isDesktop } = useResponsive();
 
   if (user?.role !== 'THERAPIST') {
-    return null; // Or redirect
+    return <Redirect href="/(app)/dashboard" />;
   }
 
   return (

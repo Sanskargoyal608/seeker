@@ -14,6 +14,7 @@ class SessionFeedback(models.Model):
     q2_after_session = models.TextField(blank=True)
     q3_what_helped = models.TextField(blank=True)
     q4_what_improve = models.TextField(blank=True)
+    concerns = models.TextField(blank=True)  # 'Anything that worried you?'
     is_flagged = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)

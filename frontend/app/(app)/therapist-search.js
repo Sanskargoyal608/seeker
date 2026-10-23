@@ -132,56 +132,38 @@ export default function TherapistSearchScreen() {
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
                 <View style={styles.filterChipsRow}>
-                  {modality ? (
-                    <Pressable style={styles.chipActive} onPress={() => setModality('')}>
-                      <Text style={styles.chipActiveText}>{modality}</Text>
-                      <Ionicons name="close" size={16} color={COLORS.onPrimaryContainer} />
-                    </Pressable>
-                  ) : (
-                    <TextInput
-                      style={styles.chipInput}
-                      placeholder="Specialty (e.g. Grief)"
-                      placeholderTextColor={COLORS.onSurfaceVariant}
-                      value={modality}
-                      onChangeText={setModality}
-                    />
-                  )}
+                  {/* The inputs stay as inputs while you type. (They used to turn into a
+                      chip after the first character, so only one letter could be typed.)
+                      "Clear all" above resets them. */}
+                  <TextInput
+                    style={styles.chipInput}
+                    placeholder="Specialty (e.g. Grief)"
+                    placeholderTextColor={COLORS.onSurfaceVariant}
+                    value={modality}
+                    onChangeText={setModality}
+                  />
 
-                  {language ? (
-                    <Pressable style={styles.chipActive} onPress={() => setLanguage('')}>
-                      <Text style={styles.chipActiveText}>{language}</Text>
-                      <Ionicons name="close" size={16} color={COLORS.onPrimaryContainer} />
-                    </Pressable>
-                  ) : (
-                    <TextInput
-                      style={styles.chipInput}
-                      placeholder="Language"
-                      placeholderTextColor={COLORS.onSurfaceVariant}
-                      value={language}
-                      onChangeText={setLanguage}
-                    />
-                  )}
-                  
+                  <TextInput
+                    style={styles.chipInput}
+                    placeholder="Language"
+                    placeholderTextColor={COLORS.onSurfaceVariant}
+                    value={language}
+                    onChangeText={setLanguage}
+                  />
+
                   <View style={styles.divider} />
-                  
-                  {maxPrice ? (
-                    <Pressable style={styles.chipActive} onPress={() => setMaxPrice('')}>
-                      <Text style={styles.chipActiveText}>&lt; ${maxPrice}</Text>
-                      <Ionicons name="close" size={16} color={COLORS.onPrimaryContainer} />
-                    </Pressable>
-                  ) : (
-                    <View style={styles.chipIconInputWrap}>
-                      <Ionicons name="cash-outline" size={16} color={COLORS.onSurfaceVariant} />
-                      <TextInput
-                        style={styles.chipIconInput}
-                        placeholder="Max Price"
-                        placeholderTextColor={COLORS.onSurfaceVariant}
-                        value={maxPrice}
-                        onChangeText={setMaxPrice}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                  )}
+
+                  <View style={styles.chipIconInputWrap}>
+                    <Ionicons name="cash-outline" size={16} color={COLORS.onSurfaceVariant} />
+                    <TextInput
+                      style={styles.chipIconInput}
+                      placeholder="Max price (₹)"
+                      placeholderTextColor={COLORS.onSurfaceVariant}
+                      value={maxPrice}
+                      onChangeText={(v) => setMaxPrice(v.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                    />
+                  </View>
                 </View>
               </ScrollView>
             </View>

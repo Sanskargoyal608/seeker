@@ -39,16 +39,12 @@ export default function BookTherapistScreen() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        // Only therapists can be booked for now. (A counselor and a therapist can
+        // share the same numeric id, so we never guess between the two.)
         const { data } = await apiClient.get(`/api/profiles/public/therapist/${therapist_id}/`);
         setTherapistProfile(data);
-      } catch(e) {
-        // Try counselor profile
-        try {
-          const { data } = await apiClient.get(`/api/profiles/public/counselor/${therapist_id}/`);
-          setTherapistProfile(data);
-        } catch(e2) {
-          console.log('Could not fetch provider profile');
-        }
+      } catch (e) {
+        console.log('Could not fetch provider profile');
       }
     };
     if (therapist_id) fetchProfile();
@@ -127,12 +123,12 @@ export default function BookTherapistScreen() {
           <View style={styles.providerCard}>
             <View style={styles.providerImgPlaceholder}>
               <Text style={styles.providerImgInitial}>
-                {therapistProfile?.first_name ? therapistProfile.first_name.charAt(0) : 'P'}
+                {therapistProfile?.name ? therapistProfile.name.charAt(0).toUpperCase() : 'P'}
               </Text>
             </View>
             <View style={styles.providerDetails}>
               <Text style={styles.providerName}>
-                {therapistProfile?.first_name ? `${therapistProfile.first_name} ${therapistProfile.last_name}` : 'Provider'}
+                {therapistProfile?.name || 'Provider'}
               </Text>
               <Text style={styles.providerSpec}>
                 {therapistProfile?.modalities?.join(', ') || 'Mental Health Professional'}
@@ -234,7 +230,7 @@ export default function BookTherapistScreen() {
           {step === 2 && (
             <View style={styles.stepContent}>
               <Text style={styles.sectionHeader}>Patient Intake</Text>
-              <Text style={styles.sectionSub}>Please provide a brief reason for booking. This helps Dr. Chen prepare for your session.</Text>
+              <Text style={styles.sectionSub}>Please provide a brief reason for booking. This helps your therapist prepare for your session.</Text>
               
               <View style={styles.intakeForm}>
                 <TextInput

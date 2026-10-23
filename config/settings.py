@@ -38,6 +38,8 @@ ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS') or (
 
 # Share of each session's price kept by the platform.
 PLATFORM_FEE_PERCENT = os.getenv('PLATFORM_FEE_PERCENT', '15')
+# How many minutes before the booked time a booked session may be opened.
+BOOKING_JOIN_EARLY_MINUTES = int(os.getenv('BOOKING_JOIN_EARLY_MINUTES', 10))
 # Free minutes at the start of a live chat before payment is asked for.
 FREE_CHAT_MINUTES = int(os.getenv('FREE_CHAT_MINUTES', 15))
 

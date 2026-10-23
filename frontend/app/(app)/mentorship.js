@@ -132,7 +132,7 @@ export default function MentorshipScreen() {
                 <View style={styles.actionRow}>
                    <Pressable 
                       style={styles.viewBtn} 
-                      onPress={() => router.push(`/(app)/public-profile?slug=${doc.slug || id}`)}
+                      onPress={() => router.push(`/(app)/public-profile?slug=${doc.slug || id}&type=therapist`)}
                    >
                       <Text style={styles.viewBtnText}>View Profile</Text>
                    </Pressable>

@@ -61,3 +61,46 @@ class TestPublicProfiles:
         url = reverse('public-therapist-profile', kwargs={'slug': therapist.slug})
         response = client.get(url)
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestPublicCounselorProfiles:
+    def make(self, verified=True):
+        from accounts.models import GraduateCounselor
+        user = UserFactory(role=User.COUNSELOR, first_name='Asha', last_name='Rao')
+        return GraduateCounselor.objects.create(
+            user=user, is_verified=verified, university='Delhi University', graduation_year=2022,
+            specialization='Anxiety', per_minute_rate=2.5, bio='Peer counselor')
+
+    def test_counselor_profile_loads_by_slug(self, client):
+        c = self.make()
+        r = client.get(reverse('public-counselor-profile', kwargs={'slug': c.slug}))
+        assert r.status_code == 200          # used to be a 500: GraduateCounselor was never imported
+        data = r.json()
+        assert data['name'] == 'Asha Rao' and data['role'] == 'COUNSELOR'
+        assert data['university'] == 'Delhi University' and data['per_minute_rate'] == 2.5
+
+    def test_profiles_load_by_numeric_id_too(self, client):
+        c = self.make()
+        r = client.get(reverse('public-counselor-profile', kwargs={'slug': str(c.id)}))
+        assert r.status_code == 200 and r.json()['id'] == c.id
+        tu = UserFactory(role=User.THERAPIST)
+        t = LicensedTherapist.objects.create(user=tu, is_verified=True)
+        r = client.get(reverse('public-therapist-profile', kwargs={'slug': str(t.id)}))
+        assert r.status_code == 200 and r.json()['role'] == 'THERAPIST'
+
+    def test_unverified_counselor_is_hidden(self, client):
+        c = self.make(verified=False)
+        assert client.get(reverse('public-counselor-profile', kwargs={'slug': c.slug})).status_code == 404
+        assert client.get(reverse('public-counselor-profile', kwargs={'slug': str(c.id)})).status_code == 404
+
+    def test_session_list_carries_the_provider_name(self, client):
+        from rest_framework.test import APIClient
+        from core.models import Session
+        c = self.make()
+        seeker = UserFactory(role=User.GENERAL_USER)
+        Session.objects.create(user=seeker, counselor=c, status=Session.ACTIVE)
+        api = APIClient()
+        api.force_authenticate(user=seeker)
+        rows = api.get(reverse('my-sessions')).json()
+        assert rows[0]['provider_name'] == 'Asha Rao'

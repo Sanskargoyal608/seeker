@@ -52,6 +52,12 @@ export const getTherapistsForEscalation = async (language = null, modality = nul
   return response.data.hits?.map(h => h.document) || [];
 };
 
+// Open the chat for a booking (either the seeker or the booked provider). Returns { session_id }.
+export const startBooking = async (bookingId) => {
+  const { data } = await apiClient.post(`/api/profiles/bookings/${bookingId}/start/`);
+  return data;
+};
+
 export const requestTherapistSession = async (therapistId) => {
   const { data } = await apiClient.post('/api/core/sessions/request-therapist/', {
     therapist_id: therapistId

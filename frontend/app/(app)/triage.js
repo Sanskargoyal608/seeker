@@ -290,7 +290,7 @@ export default function TriageScreen() {
                         </Pressable>
                         <Pressable 
                           style={styles.viewProfileBtn}
-                          onPress={() => router.push(`/(app)/public-profile?id=${t.id}`)}
+                          onPress={() => router.push(`/(app)/public-profile?slug=${t.id}&type=therapist`)}
                         >
                           <Text style={styles.viewProfileBtnText}>Profile</Text>
                         </Pressable>

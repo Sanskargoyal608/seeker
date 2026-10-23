@@ -127,11 +127,13 @@ class BookingTests(APITestCase):
                     self.assertNotEqual(slot['start_time'], '10:00')
 
     def test_start_booking_session(self):
-        datetime_str = f"{self.tomorrow.isoformat()}T10:00:00"
+        # A session can be opened shortly before its booked time.
+        from django.utils import timezone as dj_tz
+        import datetime as dt
         booking = Booking.objects.create(
             user=self.client_user,
             therapist=self.therapist,
-            scheduled_datetime=datetime_str,
+            scheduled_datetime=dj_tz.now() + dt.timedelta(minutes=5),
             duration_minutes=60,
             status=Booking.SCHEDULED
         )
@@ -148,3 +150,33 @@ class BookingTests(APITestCase):
         session = Session.objects.get(id=response.data['session_id'])
         self.assertEqual(session.status, Session.ACTIVE)
         self.assertEqual(session.duration_minutes, 60)
+
+
+class BookingJoinWindowTests(BookingTests):
+    """A booking cannot be opened days early or after its time is over."""
+
+    def _booking(self, offset_minutes, duration=60):
+        import datetime as dt
+        from django.utils import timezone as dj_tz
+        return Booking.objects.create(
+            user=self.client_user, therapist=self.therapist,
+            scheduled_datetime=dj_tz.now() + dt.timedelta(minutes=offset_minutes),
+            duration_minutes=duration, status=Booking.SCHEDULED)
+
+    def _start(self, booking):
+        self.client.force_authenticate(user=self.client_user)
+        return self.client.post(reverse('booking-start', kwargs={'pk': booking.id}))
+
+    def test_too_early_is_refused(self):
+        r = self._start(self._booking(offset_minutes=60 * 24))
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Too early', r.data['error'])
+        self.assertFalse(Session.objects.exists())
+
+    def test_ten_minutes_before_is_allowed(self):
+        self.assertEqual(self._start(self._booking(offset_minutes=9)).status_code, status.HTTP_200_OK)
+
+    def test_after_the_booked_time_is_refused(self):
+        r = self._start(self._booking(offset_minutes=-120, duration=60))
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('passed', r.data['error'])

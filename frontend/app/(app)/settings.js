@@ -134,7 +134,7 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = async () => {
     try {
-      await apiClient.delete('/api/accounts/delete/');
+      await apiClient.delete('/api/accounts/auth/delete/');
       setDeleteModalVisible(false);
       Alert.alert('Success', 'Your account has been deleted.');
       handleLogout();

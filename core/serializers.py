@@ -61,12 +61,13 @@ from .models import Session
 
 class SessionSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
+    provider_name = serializers.SerializerMethodField()
     last_message_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Session
         fields = [
-            'id', 'user', 'user_name', 'counselor', 'therapist', 'status', 
+            'id', 'user', 'user_name', 'provider_name', 'counselor', 'therapist', 'status', 
             'start_time', 'end_time', 'duration_minutes', 'is_crisis_flagged', 
             'created_at', 'last_message_date'
         ]
@@ -76,6 +77,13 @@ class SessionSerializer(serializers.ModelSerializer):
         if obj.user:
             return f"{obj.user.first_name} {obj.user.last_name}".strip() or f"User #{obj.user.id}"
         return f"User #{obj.id}"
+
+    def get_provider_name(self, obj):
+        provider = obj.therapist or obj.counselor
+        if provider is None:
+            return None
+        u = provider.user
+        return f"{u.first_name} {u.last_name}".strip() or u.email.split('@')[0]
 
     def get_last_message_date(self, obj):
         last_msg = obj.messages.order_by('-created_at').first()

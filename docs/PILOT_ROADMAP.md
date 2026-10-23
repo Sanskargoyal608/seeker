@@ -100,7 +100,7 @@ Nothing else is safe to build until the working tree is committed and tests can 
 
 **Booking**
 - [x] Fix the therapist start check (`profiles/views.py:319`) and the booking-id/session-id mix-up in the calendar.
-- [ ] Point the seeker's "Join Session" at the real start call. *(backend start/rejoin done; the app button still opens the wrong screen)*
+- [x] Point the seeker's "Join Session" at the real start call. A session can be opened from 10 minutes before the booked time until it ends; rejoining returns the same session.
 - [ ] Validate bookings: slot exists, future time, no double booking, verified provider.
 - [ ] Timezone handling.
 - [ ] Counselor bookings: `Booking` and slot calculation support counselors; counselors set a fixed per-session price; counselor public profile "Book" buttons work in the app and on the web.
@@ -108,20 +108,20 @@ Nothing else is safe to build until the working tree is committed and tests can 
 **Escalation and therapist tools**
 - [x] Remove `EscalationEvent` and its endpoint; move `has_escalation` and backchannel authorisation onto `EscalationRequest`. When a therapist accepts, the patient gets a NEW therapist session, the counselor's session ends, and the counselor keeps the backchannel (owner decision).
 - [x] Pending-state guard; decline feedback to the counselor.
-- [ ] Restore the therapist intake view, follow-up and escalation alert from the dead `dashboard.js` code; delete the dead code.
+- [x] Restore the therapist intake view, follow-up and escalation alert; delete the dead `dashboard.js` code. (Briefing, accepting a direct request and follow-up are in the live therapist screens; the dead code and the unused escalation screen are gone.)
 - [~] Link the triage dossier to the session the therapist receives. (Done for escalations: the new therapist session inherits the briefing. Still open for a seeker who picks a therapist from the triage recommendations.)
 
 **Mobile app**
-- [ ] Auth gate and role guards; fix session restore (`/api/accounts/auth/me/`).
-- [ ] Single-flight token refresh, saved to Redux; sockets reconnect with a fresh token.
+- [x] Auth gate and role guards; fix session restore (`/api/accounts/auth/me/`).
+- [~] Single-flight token refresh, saved to Redux (done). Sockets reconnecting with a fresh token: still to do (see chat item).
 - [ ] Chat: reconnect with backoff, server message ids and timestamps, "Invalid Date", live-message highlight.
 - [ ] Enable push on Android; agree the token type with the backend.
-- [ ] Contract fixes: account deletion path, session history, feedback field mapping, public profile ids, helpline categories path, therapist search filters.
+- [x] Contract fixes: account deletion path, session history, feedback field mapping (feedback gained a `concerns` field), public profile ids and types, helpline categories path, therapist search filters.
 
 **Uploads and profiles**
 - [ ] Fix the MinIO upload call; wrap registration in a transaction; validate file size and type.
-- [ ] Fix the public counselor profile 500.
-- [ ] Compliance screen with real per-document status; pending-verification experience.
+- [x] Fix the public counselor profile 500.
+- [~] Compliance screen with real per-document status (still to do); pending-approval screen (done).
 
 **Done when:** each of the six journeys in `docs/archive/Info.md` can be completed on an Android device without a workaround.
 

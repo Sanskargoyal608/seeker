@@ -80,7 +80,7 @@ export default function TherapistProfileScreen() {
             {therapist.slug && (
               <Pressable 
                 style={[styles.editBtn, { backgroundColor: COLORS.primaryLight }]} 
-                onPress={() => router.push(`/(app)/public-profile?slug=${therapist.slug}`)}
+                onPress={() => router.push('/(app)/public-profile')}
               >
                 <Text style={[styles.editBtnText, { color: COLORS.primary }]}>View Public</Text>
               </Pressable>

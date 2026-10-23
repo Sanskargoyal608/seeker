@@ -20,11 +20,13 @@ export default function SessionFeedbackScreen() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // The screen asks: 1) how did you feel before/after, 2) what helped most,
+      // 3) what could improve, 4) anything that worried you.
       await submitFeedback(id, {
         q1_before_session: q1.trim() || 'N/A',
-        q2_after_session: q2.trim() || 'N/A',
-        q3_what_helped: q3.trim() || 'N/A',
-        q4_what_improve: q4.trim() || 'N/A'
+        q3_what_helped: q2.trim() || 'N/A',
+        q4_what_improve: q3.trim() || 'N/A',
+        concerns: q4.trim() || 'N/A',
       });
       router.replace('/(app)/dashboard');
     } catch (err) {

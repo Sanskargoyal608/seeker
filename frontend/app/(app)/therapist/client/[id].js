@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, SPACING } from '../../../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../../../../api/axios';
+import { createTherapistFollowUp } from '../../../../api/core';
 
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -37,6 +38,16 @@ export default function ClientDetailScreen() {
     };
     fetchClient();
   }, [id]);
+
+  // Start a new chat with this client (allowed once they have had a booked session with you).
+  const handleFollowUp = async () => {
+    try {
+      const session = await createTherapistFollowUp(parseInt(id, 10));
+      router.push(`/(app)/chat/${session.id}`);
+    } catch (err) {
+      Alert.alert('Not possible', err.response?.data?.error || 'Could not start the follow-up chat.');
+    }
+  };
 
   const handleSaveNotes = async () => {
     setSaving(true);
@@ -97,26 +108,13 @@ export default function ClientDetailScreen() {
               <Ionicons name="chatbubbles-outline" size={18} color={COLORS.primary} />
               <Text style={styles.actionBtnOutlineText}>Message</Text>
             </Pressable>
-          </View>
-        </View>
-
-        {/* Emergency Contacts */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-          <View style={styles.contactCard}>
-            <View style={styles.contactIconBox}>
-               <Ionicons name="warning-outline" size={20} color={COLORS.error} />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactName}>Primary Emergency</Text>
-              <Text style={styles.contactPhone}>Provided in Intake</Text>
-            </View>
-            <Pressable style={styles.callBtn}>
-               <Ionicons name="call" size={16} color="#FFFFFF" />
-               <Text style={styles.callBtnText}>Call</Text>
+            <Pressable style={styles.actionBtnOutline} onPress={handleFollowUp}>
+              <Ionicons name="refresh-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.actionBtnOutlineText}>Follow up</Text>
             </Pressable>
           </View>
         </View>
+
 
         {/* Notes functionality has been removed */}
       </ScrollView>

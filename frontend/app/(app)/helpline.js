@@ -17,7 +17,7 @@ export default function HelplineScreen() {
       try {
         const [linesData, catsData] = await Promise.all([
           getHelplines(),
-          apiClient.get('/api/core/helpline/categories/').then(res => res.data).catch(() => [])
+          apiClient.get('/api/helpline/categories/').then(res => res.data).catch(() => [])
         ]);
         
         let groups = [];

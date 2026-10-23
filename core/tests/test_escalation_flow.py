@@ -210,3 +210,39 @@ async def test_open_chat_is_told_to_move_and_backchannel_opens_for_the_accepting
     # the patient is not allowed into the backchannel
     nope = WebsocketCommunicator(application, f'/ws/backchannel/{s.id}/?token={await sync_to_async(token)(seeker)}')
     assert (await nope.connect())[0] is False
+
+
+@pytest.mark.django_db
+class TestBriefingAccess:
+    def flow(self):
+        seeker, cu, c, tu, t = make_people()
+        s = live_session(seeker, c)
+        # give the session a real AI briefing
+        from core.models import TriageSession
+        TriageSession.objects.create(user=seeker, resulting_session=s, is_complete=True,
+                                     intake_dossier='AI briefing for the clinician')
+        escalate(cu, s, t)
+        return seeker, cu, c, tu, t, s, EscalationRequest.objects.get()
+
+    def test_the_target_therapist_can_read_the_briefing_before_accepting(self):
+        seeker, cu, c, tu, t, s, e = self.flow()
+        r = api(tu).get(reverse('session-intake', args=[s.id]))
+        assert r.status_code == status.HTTP_200_OK
+        assert r.json()['intake_dossier'] == 'AI briefing for the clinician'
+
+    def test_another_therapist_cannot(self):
+        seeker, cu, c, tu, t, s, e = self.flow()
+        other = UserFactory(role=User.THERAPIST)
+        LicensedTherapist.objects.create(user=other, is_verified=True)
+        assert api(other).get(reverse('session-intake', args=[s.id])).status_code == status.HTTP_403_FORBIDDEN
+
+    def test_the_new_therapist_session_shows_the_same_briefing(self):
+        seeker, cu, c, tu, t, s, e = self.flow()
+        new_id = api(tu).post(reverse('escalation-respond', args=[e.id]), {'action': 'ACCEPT'}, format='json').json()['session_id']
+        r = api(tu).get(reverse('session-intake', args=[new_id]))
+        assert r.status_code == status.HTTP_200_OK
+        assert r.json()['intake_dossier'] == 'AI briefing for the clinician'
+
+    def test_the_seeker_still_cannot_read_it(self):
+        seeker, cu, c, tu, t, s, e = self.flow()
+        assert api(seeker).get(reverse('session-intake', args=[s.id])).status_code == status.HTTP_403_FORBIDDEN

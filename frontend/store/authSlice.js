@@ -27,6 +27,10 @@ const authSlice = createSlice({
       state.deviceHash = action.payload.device_hash || null;
       state.isAuthenticated = true;
     },
+    // A refreshed access token: keep everything else about the session.
+    setAccessToken: (state, action) => {
+      state.accessToken = action.payload;
+    },
     setUser: (state, action) => {
       state.user = action.payload;
     },
@@ -59,6 +63,7 @@ const authSlice = createSlice({
 
 export const {
   setTokens,
+  setAccessToken,
   setUser,
   setLoading,
   setError,

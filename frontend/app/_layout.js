@@ -26,7 +26,7 @@ const queryClient = new QueryClient({
 });
 
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { selectUser } from '../store/authSlice';
+import { selectUser, setTokens, setUser } from '../store/authSlice';
 
 function PushNotificationWrapper({ children }) {
   const user = useSelector(selectUser);
@@ -44,17 +44,19 @@ function AuthRehydration({ children }) {
         const { storage: SecureStore } = require('../utils/storage');
         const token = await SecureStore.getItemAsync('access_token');
         const refresh = await SecureStore.getItemAsync('refresh_token');
-        if (token) {
-          // Temporarily set token. In a real app, you would validate with the backend
-          dispatch({ type: 'auth/setTokens', payload: { access: token, refresh } });
-          
-          // Re-fetch user profile to populate Redux
+        if (token || refresh) {
+          // Ask the server who we are. If the access token has expired the axios
+          // client refreshes it (or ends the session) before this resolves.
           const apiClient = require('../api/axios').default;
-          const { data } = await apiClient.get('/api/accounts/profile/');
-          dispatch({ type: 'auth/setUser', payload: data });
+          const { data } = await apiClient.get('/api/accounts/auth/me/');
+          const latestAccess = await SecureStore.getItemAsync('access_token');
+          const latestRefresh = await SecureStore.getItemAsync('refresh_token');
+          dispatch(setTokens({ access: latestAccess, refresh: latestRefresh }));
+          dispatch(setUser(data));
         }
       } catch (error) {
-        console.log('Rehydration error', error);
+        // Not signed in (or the server could not be reached): show the login screen.
+        console.log('Could not restore the session:', error?.response?.status || error?.message);
       } finally {
         setIsReady(true);
       }

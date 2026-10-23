@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from accounts.models import LicensedTherapist
+from accounts.models import LicensedTherapist, GraduateCounselor
 from accounts.permissions import IsGraduateCounselor, IsGeneralUser
 
 class TherapistSearchView(APIView):
@@ -107,20 +107,23 @@ class PublicTherapistProfileView(APIView):
         responses={200: {'example': {'id': 1, 'name': 'John Doe', 'bio': '...'}}}
     )
     def get(self, request, slug):
-        try:
-            therapist = LicensedTherapist.objects.get(slug=slug, is_verified=True, user__is_active=True)
-            data = {
-                'id': therapist.id,
-                'name': f"{therapist.user.first_name} {therapist.user.last_name}",
-                'bio': therapist.bio,
-                'per_session_rate': float(therapist.per_session_rate),
-                'languages': therapist.languages,
-                'modalities': therapist.modalities,
-                'profile_photo': therapist.profile_photo,
-            }
-            return Response(data, status=status.HTTP_200_OK)
-        except LicensedTherapist.DoesNotExist:
+        # The path part is a slug (public links) or a numeric id (the app has ids).
+        lookup = Q(slug=slug) | (Q(id=int(slug)) if slug.isdigit() else Q())
+        therapist = LicensedTherapist.objects.filter(
+            lookup, is_verified=True, user__is_active=True).select_related('user').first()
+        if therapist is None:
             return Response({'error': 'Therapist not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = {
+            'id': therapist.id,
+            'role': 'THERAPIST',
+            'name': f"{therapist.user.first_name} {therapist.user.last_name}".strip(),
+            'bio': therapist.bio,
+            'per_session_rate': float(therapist.per_session_rate),
+            'languages': therapist.languages,
+            'modalities': therapist.modalities,
+            'profile_photo': therapist.profile_photo,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 class PublicCounselorProfileView(APIView):
     """
@@ -133,19 +136,24 @@ class PublicCounselorProfileView(APIView):
         responses={200: {'example': {'id': 1, 'name': 'Jane Doe', 'bio': '...'}}}
     )
     def get(self, request, slug):
-        try:
-            counselor = GraduateCounselor.objects.get(slug=slug, is_verified=True, user__is_active=True)
-            data = {
-                'id': counselor.id,
-                'name': f"{counselor.user.first_name} {counselor.user.last_name}",
-                'bio': counselor.bio,
-                'specialization': counselor.specialization,
-                'years_experience': counselor.years_experience,
-                'profile_photo': counselor.profile_photo,
-            }
-            return Response(data, status=status.HTTP_200_OK)
-        except GraduateCounselor.DoesNotExist:
+        lookup = Q(slug=slug) | (Q(id=int(slug)) if slug.isdigit() else Q())
+        counselor = GraduateCounselor.objects.filter(
+            lookup, is_verified=True, user__is_active=True).select_related('user').first()
+        if counselor is None:
             return Response({'error': 'Counselor not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = {
+            'id': counselor.id,
+            'role': 'COUNSELOR',
+            'name': f"{counselor.user.first_name} {counselor.user.last_name}".strip(),
+            'bio': counselor.bio,
+            'specialization': counselor.specialization,
+            'university': counselor.university,
+            'graduation_year': counselor.graduation_year,
+            'years_experience': counselor.years_experience,
+            'per_minute_rate': float(counselor.per_minute_rate),
+            'profile_photo': counselor.profile_photo,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView, CreateAPIView
 from .models import AvailabilitySlot, BlockedDate, Booking
@@ -334,6 +342,19 @@ class StartBookingSessionView(APIView):
 
         if booking.status != Booking.SCHEDULED:
             return Response({'error': 'Booking is not scheduled'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # A session can only be opened shortly before the booked time and until it is over.
+        from django.conf import settings as dj_settings
+        now = timezone.now()
+        opens = booking.scheduled_datetime - datetime.timedelta(minutes=dj_settings.BOOKING_JOIN_EARLY_MINUTES)
+        closes = booking.scheduled_datetime + datetime.timedelta(minutes=booking.duration_minutes)
+        if now < opens:
+            return Response(
+                {'error': f'Too early. This session opens {dj_settings.BOOKING_JOIN_EARLY_MINUTES} minutes before the booked time.',
+                 'opens_at': opens.isoformat()},
+                status=status.HTTP_400_BAD_REQUEST)
+        if now > closes:
+            return Response({'error': 'The time for this booking has passed.'}, status=status.HTTP_400_BAD_REQUEST)
 
         session = Session.objects.create(
             user=booking.user,

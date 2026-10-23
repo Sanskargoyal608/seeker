@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import PanicButton from './PanicButton';
 import BottomNav from './BottomNav';
 import { PageContainer } from './PageContainer';
 import apiClient from '../api/axios';
+import { startBooking } from '../api/core';
 
 export default function BuddyDashboard({ user, dashboardData, activeTriage, refreshing, onRefresh }) {
   const router = useRouter();
@@ -78,7 +79,14 @@ export default function BuddyDashboard({ user, dashboardData, activeTriage, refr
           <View style={styles.upcomingCardWrapper}>
             <Pressable 
               style={({ pressed }) => [styles.upcomingCard, pressed && { opacity: 0.95, transform: [{ scale: 0.98 }] }]}
-              onPress={() => router.push('/(app)/schedule')}
+              onPress={async () => {
+                try {
+                  const { session_id } = await startBooking(upcomingSession.id);
+                  router.push(`/(app)/chat/${session_id}`);
+                } catch (e) {
+                  Alert.alert('Not yet', e.response?.data?.error || 'Could not open the session. Please try again.');
+                }
+              }}
             >
               <View style={styles.upcomingCardRow}>
                 <View style={styles.dateBox}>
@@ -169,7 +177,7 @@ export default function BuddyDashboard({ user, dashboardData, activeTriage, refr
           
           {recommendedTherapist ? (
             <Pressable 
-               onPress={() => router.push('/(app)/public-profile?slug=' + (recommendedTherapist?.slug || recommendedTherapist?.id))}
+               onPress={() => router.push('/(app)/public-profile?slug=' + recommendedTherapist?.id + '&type=therapist')}
                style={styles.therapistCard}
             >
               <View style={styles.therapistImgPlaceholder} />
