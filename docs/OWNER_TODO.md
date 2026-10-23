@@ -40,11 +40,10 @@ Kept here so nothing gets lost. Tick them off as you go. Written 2026-10-23.
 
 ## Decisions I still need from you
 
+(Answered and removed: push type = native Firebase; escalation = new therapist session; `/book/<name>` = full booking on the page.)
+
 - [ ] Who is on the on-call list and how fast must they respond?
 - [ ] Which regions and languages do the helplines need to cover?
-- [ ] Push notifications: native Firebase tokens, or Expo's push service?
-- [ ] After a therapist accepts an escalation, does the counselor stay in the chat, and who is paid?
-- [ ] What should the web page `/book/<name>` do: open the app, or be a real booking page?
 - [ ] Expo web and the Next.js site both want port 3000. Which address should each use?
 - [ ] What triage accuracy is good enough for the pilot? (See the persona results once the run finishes.)
 - [ ] Is widening from 5–10 testers to 50 in scope after the pilot?
