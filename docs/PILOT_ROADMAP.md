@@ -93,14 +93,14 @@ Nothing else is safe to build until the working tree is committed and tests can 
 ## Phase 3 — Make the core flows work end to end
 
 **Sessions and money**
-- [ ] Move sessions to `ACTIVE` with a start time on match.
-- [ ] Start the free timer at match; stop it overwriting `WAITING` and `ENDED`.
-- [ ] Platform fee 20% → 15%; therapist per-session pricing; counselor/therapist split after escalation.
-- [ ] Counselor earnings view.
+- [x] Move sessions to `ACTIVE` with a start time on match.
+- [x] Start the free timer at match; stop it overwriting `WAITING` and `ENDED`.
+- [x] Platform fee 20% → 15%; therapist and booked sessions priced per session. (No split is needed after an escalation: the therapist gets a new session of their own, see the escalation block.)
+- [x] Counselor earnings view.
 
 **Booking**
-- [ ] Fix the therapist start check (`profiles/views.py:319`) and the booking-id/session-id mix-up in the calendar.
-- [ ] Point the seeker's "Join Session" at the real start call.
+- [x] Fix the therapist start check (`profiles/views.py:319`) and the booking-id/session-id mix-up in the calendar.
+- [ ] Point the seeker's "Join Session" at the real start call. *(backend start/rejoin done; the app button still opens the wrong screen)*
 - [ ] Validate bookings: slot exists, future time, no double booking, verified provider.
 - [ ] Timezone handling.
 - [ ] Counselor bookings: `Booking` and slot calculation support counselors; counselors set a fixed per-session price; counselor public profile "Book" buttons work in the app and on the web.

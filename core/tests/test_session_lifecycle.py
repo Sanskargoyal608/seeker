@@ -113,8 +113,8 @@ def test_calculate_earnings_task():
     )
     
     res = calculate_earnings(session.id)
-    assert "Earnings calculated" in res
+    assert "Earnings for session" in res
     
     earnings = EarningsRecord.objects.get(session=session)
     assert earnings.gross_amount == 60.00
-    assert earnings.net_amount == 48.00  # 20% platform fee
+    assert earnings.net_amount == 51.00  # 15% platform fee

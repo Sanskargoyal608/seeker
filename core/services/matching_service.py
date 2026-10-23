@@ -1,5 +1,6 @@
 from django.db import transaction
 from core.models import Session
+from core.services.session_lifecycle import start_session
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import logging
@@ -42,8 +43,8 @@ class MatchingService:
 
             # Assign counselor and update status
             session.counselor = counselor
-            session.status = Session.MATCHED
-            session.save(update_fields=['counselor', 'status'])
+            session.save(update_fields=['counselor'])
+            start_session(session, status=Session.MATCHED)
             
             logger.info(f"Session {session.id} accepted by counselor {counselor.id}")
 

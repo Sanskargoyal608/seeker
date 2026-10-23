@@ -100,48 +100,72 @@ def send_escalation_notifications(escalation_id):
 
 @shared_task
 def calculate_earnings(session_id):
+    """
+    Work out what the provider earned for an ended session and store it once.
+
+    Pricing:
+      * therapist sessions, and any session that came from a booking, are a fixed
+        price per session (the provider's per_session_rate);
+      * live counselor chats are charged per minute.
+    A session shorter than a minute earns nothing. The platform keeps
+    PLATFORM_FEE_PERCENT of the price.
+    """
+    from decimal import Decimal, ROUND_HALF_UP
+    from django.conf import settings
+    from django.db import transaction
     from core.models import Session, EarningsRecord
-    from decimal import Decimal
-    try:
-        session = Session.objects.get(id=session_id)
+
+    with transaction.atomic():
+        try:
+            # Lock the session row so two workers cannot both create the record.
+            session = Session.objects.select_for_update().get(id=session_id)
+        except Session.DoesNotExist:
+            return "Session not found."
+
         if session.status != Session.ENDED:
             return "Session not ended yet."
-            
         if EarningsRecord.objects.filter(session=session).exists():
             return "Earnings already calculated."
-            
-        rate = Decimal('0.00')
-        counselor = None
-        therapist = None
-        
-        if session.counselor:
-            rate = session.counselor.per_minute_rate
-            counselor = session.counselor
-        elif session.therapist:
-            rate = session.therapist.per_minute_rate
-            therapist = session.therapist
-        else:
+
+        provider = session.therapist or session.counselor
+        if provider is None:
             return "No counselor or therapist assigned."
-            
-        duration = session.duration_minutes
-        gross_amount = rate * Decimal(duration)
-        platform_fee_percent = Decimal('20.00')
-        net_amount = gross_amount * (Decimal('100.00') - platform_fee_percent) / Decimal('100.00')
-        
+
+        duration = session.duration_minutes or 0
+        per_session = session.therapist_id is not None or session.booking_id is not None
+        rate_per_minute = Decimal('0.00')
+        session_rate = None
+
+        if duration < 1:
+            gross = Decimal('0.00')
+            if per_session:
+                session_rate = getattr(provider, 'per_session_rate', None)
+            else:
+                rate_per_minute = provider.per_minute_rate
+        elif per_session:
+            session_rate = getattr(provider, 'per_session_rate', Decimal('0.00')) or Decimal('0.00')
+            gross = Decimal(session_rate)
+        else:
+            rate_per_minute = provider.per_minute_rate
+            gross = rate_per_minute * Decimal(duration)
+
+        fee_percent = Decimal(str(settings.PLATFORM_FEE_PERCENT))
+        net = (gross * (Decimal('100') - fee_percent) / Decimal('100')).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP)
+
         EarningsRecord.objects.create(
             session=session,
-            counselor=counselor,
-            therapist=therapist,
+            counselor=session.counselor if session.therapist_id is None else None,
+            therapist=session.therapist,
+            pricing=EarningsRecord.PER_SESSION if per_session else EarningsRecord.PER_MINUTE,
             duration_minutes=duration,
-            rate_per_minute=rate,
-            gross_amount=gross_amount,
-            platform_fee_percent=platform_fee_percent,
-            net_amount=net_amount
+            rate_per_minute=rate_per_minute,
+            session_rate=session_rate,
+            gross_amount=gross.quantize(Decimal('0.01')),
+            platform_fee_percent=fee_percent,
+            net_amount=net,
         )
-        
-        return f"Earnings calculated for session {session_id}: Gross {gross_amount}, Net {net_amount}."
-    except Session.DoesNotExist:
-        return "Session not found."
+        return f"Earnings for session {session_id}: gross {gross}, net {net}."
 
 
 @shared_task

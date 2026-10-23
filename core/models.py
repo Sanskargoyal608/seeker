@@ -42,6 +42,17 @@ class Session(models.Model):
     duration_minutes = models.IntegerField(default=0)
     is_crisis_flagged = models.BooleanField(default=False)
 
+    # Set when the session grew out of a scheduled booking (priced per session).
+    booking = models.OneToOneField(
+        'profiles.Booking', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='session'
+    )
+    # Set on the therapist's session that replaced a counselor's after an escalation.
+    escalated_from = models.ForeignKey(
+        'self', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='escalated_to'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -202,10 +213,17 @@ class EarningsRecord(models.Model):
         'accounts.LicensedTherapist', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='earnings'
     )
+    PER_MINUTE = 'PER_MINUTE'
+    PER_SESSION = 'PER_SESSION'
+    PRICING_CHOICES = [(PER_MINUTE, 'Per minute'), (PER_SESSION, 'Per session')]
+
+    pricing = models.CharField(max_length=12, choices=PRICING_CHOICES, default=PER_MINUTE)
     duration_minutes = models.IntegerField()
     rate_per_minute = models.DecimalField(max_digits=8, decimal_places=2)
+    # The fixed price when pricing is PER_SESSION (rate_per_minute is 0 then).
+    session_rate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     gross_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    platform_fee_percent = models.DecimalField(max_digits=5, decimal_places=2, default=20.00)
+    platform_fee_percent = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
     net_amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 

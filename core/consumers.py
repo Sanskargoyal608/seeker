@@ -2,6 +2,7 @@ import json
 import asyncio
 import logging
 from datetime import timedelta
+from django.conf import settings
 from django.utils import timezone
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -84,6 +85,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if message_type == 'message':
             message = text_data_json.get('message', '')
 
+            if await self.is_session_ended():
+                await self.send(text_data=json.dumps({
+                    'type': 'system.alert',
+                    'message': 'This session has ended. Messages can no longer be sent.'
+                }))
+                return
+
             # Safety first: look for crisis language BEFORE anything else, so the
             # payment hold below can never swallow a cry for help.
             support = await self.scan_for_crisis(message)
@@ -147,9 +155,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from core.models import Session, SessionTimer
         try:
             session = Session.objects.get(id=self.session_id)
+            free_seconds = settings.FREE_CHAT_MINUTES * 60
+            if session.start_time is None:
+                # Nobody has accepted yet: the free time has not started to run.
+                return free_seconds, False
             timer, created = SessionTimer.objects.get_or_create(
                 session=session,
-                defaults={'end_time': timezone.now() + timedelta(minutes=15)}
+                defaults={'end_time': session.start_time + timedelta(minutes=settings.FREE_CHAT_MINUTES)}
             )
             
             if timer.is_paid:
@@ -165,7 +177,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from core.models import Session
         try:
             session = Session.objects.get(id=self.session_id)
-            if session.status != Session.PAYMENT_PENDING:
+            # Only a running chat can run out of free time. A waiting or ended
+            # session must keep its state.
+            if session.status in (Session.MATCHED, Session.ACTIVE):
                 session.status = Session.PAYMENT_PENDING
                 session.save(update_fields=['status'])
         except Session.DoesNotExist:
@@ -179,6 +193,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return session.status == Session.PAYMENT_PENDING and not session.is_crisis_flagged
         except Session.DoesNotExist:
             return False
+
+    @database_sync_to_async
+    def is_session_ended(self):
+        from core.models import Session
+        return Session.objects.filter(id=self.session_id, status=Session.ENDED).exists()
 
     @database_sync_to_async
     def is_crisis_flagged(self):

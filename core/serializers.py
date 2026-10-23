@@ -141,7 +141,7 @@ class ClientTherapistRelationshipSerializer(serializers.ModelSerializer):
 class EarningsRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = EarningsRecord
-        fields = ['id', 'session', 'duration_minutes', 'rate_per_minute', 'gross_amount', 'platform_fee_percent', 'net_amount', 'created_at']
+        fields = ['id', 'session', 'pricing', 'duration_minutes', 'rate_per_minute', 'session_rate', 'gross_amount', 'platform_fee_percent', 'net_amount', 'created_at']
 
 class PayoutRecordSerializer(serializers.ModelSerializer):
     class Meta:

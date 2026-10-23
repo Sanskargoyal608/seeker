@@ -306,40 +306,47 @@ class BookingCreateView(CreateAPIView):
 class StartBookingSessionView(APIView):
     """
     POST /api/profiles/bookings/<id>/start/
-    Converts a scheduled Booking into an active Session.
+    Starts the chat for a scheduled booking, for the seeker or the booked provider.
+    Calling it again for a session that is still running returns that same session,
+    so either side can leave and rejoin.
     """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
+        from core.models import Session, SessionTimer
+        from core.services.session_lifecycle import start_session
+
         try:
-            booking = Booking.objects.get(id=pk)
+            booking = Booking.objects.select_related('therapist__user').get(id=pk)
         except Booking.DoesNotExist:
             return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user != booking.user and (not hasattr(request.user, 'licensedtherapist') or request.user.licensedtherapist != booking.therapist):
+        therapist_profile = getattr(request.user, 'therapist_profile', None)
+        is_booked_therapist = therapist_profile is not None and therapist_profile.id == booking.therapist_id
+        if request.user.id != booking.user_id and not is_booked_therapist:
             return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        existing = Session.objects.filter(booking=booking).first()
+        if existing is not None:
+            if existing.status == Session.ENDED:
+                return Response({'error': 'This session has already ended.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'session_id': existing.id, 'status': existing.status}, status=status.HTTP_200_OK)
 
         if booking.status != Booking.SCHEDULED:
             return Response({'error': 'Booking is not scheduled'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create Session
-        from core.models import Session, SessionTimer
         session = Session.objects.create(
             user=booking.user,
             therapist=booking.therapist,
+            booking=booking,
             status=Session.ACTIVE,
             duration_minutes=booking.duration_minutes
         )
+        # The booked time is the session's length: it runs for the booking duration.
+        start_session(session, status=Session.ACTIVE, free_minutes=booking.duration_minutes)
 
-        # Update Booking Status
         booking.status = Booking.COMPLETED
-        booking.save()
-
-        # Set Timer
-        SessionTimer.objects.create(
-            session=session,
-            end_time=timezone.now() + datetime.timedelta(minutes=booking.duration_minutes)
-        )
+        booking.save(update_fields=['status', 'updated_at'])
 
         return Response({'session_id': session.id, 'status': session.status}, status=status.HTTP_200_OK)
 

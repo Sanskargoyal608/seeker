@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.db.models import Q
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -284,7 +286,7 @@ class VerifyPaymentView(APIView):
             from datetime import timedelta
             timer, _ = SessionTimer.objects.get_or_create(
                 session=session,
-                defaults={'end_time': timezone.now() + timedelta(minutes=15)}
+                defaults={'end_time': timezone.now() + timedelta(minutes=settings.FREE_CHAT_MINUTES)}
             )
             timer.is_paid = True
             timer.save(update_fields=['is_paid'])
@@ -388,10 +390,8 @@ class AcceptSessionView(APIView):
                 if session.status != Session.WAITING:
                     return Response({'error': 'Session is not waiting.'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                session.status = Session.MATCHED
-                session.save(update_fields=['status'])
-                
-                # We could notify the user here if we wanted
+                from .services.session_lifecycle import start_session
+                start_session(session, status=Session.MATCHED)
                 
                 return Response(
                     {'message': 'Session accepted successfully.', 'session_id': session.id},
@@ -1063,7 +1063,11 @@ class TherapistEarningsViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return EarningsRecord.objects.filter(therapist__user=self.request.user)
+        # A provider sees only their own earnings, whether counselor or therapist.
+        user = self.request.user
+        return EarningsRecord.objects.filter(
+            Q(therapist__user=user) | Q(counselor__user=user)
+        ).order_by('-created_at')
 
 class TherapistPayoutViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -1075,7 +1079,10 @@ class TherapistPayoutViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return PayoutRecord.objects.filter(therapist__user=self.request.user)
+        user = self.request.user
+        return PayoutRecord.objects.filter(
+            Q(therapist__user=user) | Q(counselor__user=user)
+        ).order_by('-created_at')
 
 class CounselorAvailabilityUpdateView(APIView):
     permission_classes = [IsAuthenticated]
