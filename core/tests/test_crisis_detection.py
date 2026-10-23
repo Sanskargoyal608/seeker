@@ -1,60 +1,85 @@
 import pytest
 from django.core import mail
+
+from accounts.models import User
 from core.models import CrisisKeyword, CrisisAlert, EmergencyContact, Session
 from core.services.crisis_detection import CrisisDetectionService
-from accounts.models import User
+
 
 @pytest.fixture
-def crisis_setup(db):
-    CrisisKeyword.objects.create(keyword="suicide", category="SUICIDE")
-    CrisisKeyword.objects.create(keyword="hurt myself", category="SELF_HARM")
+def session(db):
     EmergencyContact.objects.create(email="admin@test.com", name="Admin", is_active=True)
-    
     user = User.objects.create(email="user@test.com")
-    session = Session.objects.create(user=user)
-    return session
+    return Session.objects.create(user=user)
+
 
 @pytest.mark.django_db
-class TestCrisisDetection:
-    def test_no_crisis(self, crisis_setup):
-        session = crisis_setup
-        is_crisis = CrisisDetectionService.scan_message(session, "I am feeling a bit sad today")
-        
-        assert not is_crisis
-        assert not session.is_crisis_flagged
-        assert CrisisAlert.objects.count() == 0
-        assert len(mail.outbox) == 0
+class TestDetection:
+    @pytest.mark.parametrize('text', [
+        "I just want to commit suicide right now",
+        "i'm feeling SUICIDAL",
+        "I don’t want to live anymore",            # curly apostrophe
+        "dont want to live",
+        "I keep thinking about ending my life",
+        "I want to hurt myself",
+        "I've been self-harming and cutting myself",
+        "I took too many pills",
+        "he hits me when he's drunk",
+        "mujhe marna chahta hu",                    # Hinglish
+        "मैं आत्महत्या करना चाहता हूँ",              # Devanagari
+    ])
+    def test_detects_with_an_empty_keyword_table(self, text):
+        # Nothing is seeded: the built-in list alone must work.
+        assert CrisisKeyword.objects.count() == 0
+        assert CrisisDetectionService.detect(text) is not None
 
-    def test_crisis_detected(self, crisis_setup):
-        session = crisis_setup
-        is_crisis = CrisisDetectionService.scan_message(session, "I just want to commit suicide right now")
-        
-        assert is_crisis
-        
+    @pytest.mark.parametrize('text', [
+        "I am feeling a bit sad today",
+        "work has been stressful and I cannot sleep",
+        "My abusive-sounding boss? no, my abacus broke",   # 'abacus' is not 'abuse'
+        "Let's go to the photo shoot on Sunday",
+        "",
+        None,
+    ])
+    def test_ordinary_text_is_not_flagged(self, text):
+        assert CrisisDetectionService.detect(text) is None
+
+    def test_staff_added_phrases_are_used_too(self):
+        CrisisKeyword.objects.create(keyword="custom danger phrase", category="OTHER")
+        match = CrisisDetectionService.detect("this is a Custom Danger Phrase here")
+        assert match is not None and match.category == "OTHER"
+
+
+@pytest.mark.django_db
+class TestAlerts:
+    def test_scan_flags_session_records_alert_and_emails_staff(self, session):
+        assert CrisisDetectionService.scan_message(session, "I want to kill myself") is True
+
         session.refresh_from_db()
         assert session.is_crisis_flagged
-        
-        alert = CrisisAlert.objects.first()
-        assert alert is not None
-        assert alert.matched_keyword == "suicide"
-        
+        alert = CrisisAlert.objects.get()
+        assert alert.source == CrisisAlert.CHAT and alert.user_id == session.user_id
+        assert alert.staff_notified_at is not None and alert.notification_error == ''
+
         assert len(mail.outbox) == 1
         assert "CRISIS ALERT" in mail.outbox[0].subject
-        assert "admin@test.com" in mail.outbox[0].to
+        assert mail.outbox[0].to == ["admin@test.com"]
 
-    def test_crisis_case_insensitive(self, crisis_setup):
-        session = crisis_setup
-        is_crisis = CrisisDetectionService.scan_message(session, "I want to HURT MYSELF")
-        
-        assert is_crisis
-        assert CrisisAlert.objects.count() == 1
-        assert CrisisAlert.objects.first().matched_keyword == "hurt myself"
+    def test_no_crisis_creates_nothing(self, session):
+        assert CrisisDetectionService.scan_message(session, "just a normal day") is False
+        assert CrisisAlert.objects.count() == 0 and len(mail.outbox) == 0
 
-    def test_crisis_fallback_email(self, crisis_setup):
+    def test_never_falls_back_to_a_personal_address(self, session):
         EmergencyContact.objects.all().delete()
-        
-        session = crisis_setup
         CrisisDetectionService.scan_message(session, "suicide")
-        
+
+        assert len(mail.outbox) == 0                       # nobody was invented
+        alert = CrisisAlert.objects.get()                  # but the alert is kept...
+        assert 'No active staff alert emails' in alert.notification_error   # ...and says why
+        assert alert.staff_notified_at is None
+
+    def test_repeat_detections_are_recorded_but_staff_emailed_once(self, session):
+        for text in ("I want to die", "I really want to die", "I want to die tonight"):
+            CrisisDetectionService.scan_message(session, text)
+        assert CrisisAlert.objects.count() == 3
         assert len(mail.outbox) == 1
-        assert "sanskargoyal608@gmail.com" in mail.outbox[0].to

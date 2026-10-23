@@ -3,7 +3,8 @@ import json
 import requests
 import logging
 from django.conf import settings
-from core.models import TriageSession, TriageMessage, Session, SessionNote
+from core.models import TriageSession, TriageMessage, Session, SessionNote, CrisisAlert
+from core.services.crisis_detection import CrisisDetectionService, CrisisMatch
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ If active suicidal thoughts, self-harm intent, abuse, or violence are detected:
 1. Set urgency = "critical", add flags to crisis_flags.
 2. Set provider_tier_recommendation = "LICENSED_THERAPIST".
 3. Set is_complete = true immediately.
-4. Response: "I hear you, and please know you matter. Because your safety is our top priority, if you're in immediate danger, please reach out to emergency services (call 988 or 112). I am also immediately connecting you with professional crisis care."
+4. Response: "I hear you, and please know you matter. Because your safety is our top priority, if you're in immediate danger, please reach out to emergency services (call 112) or the free Tele-MANAS helpline (14416). I am also immediately connecting you with professional crisis care."
 
 ═══════════════════════════════════════════════════
 CLINICAL RAG CONTEXT
@@ -203,21 +204,28 @@ Respond with this exact JSON format (no markdown code fence around the json):
             "temperature": 0.7
         }
 
-        try:
-            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=60)
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
-        except Exception as e:
-            logger.error(f"OpenAI API error: {e}")
-            return json.dumps({
-                "message_to_user": "I am here with you. Could you share a little more about what has been on your mind lately?",
-                "suggested_chips": ["Feeling overwhelmed", "Struggling with stress", "Just need to talk", "Not sure where to start"],
-                "internal_reasoning": "API fallback",
-                "extracted_data": {},
-                "intake_dossier": None,
-                "is_complete": False,
-                "clinical_summary": None
-            })
+        if not self.api_key:
+            logger.error("OPENAI_API_KEY is not set; triage cannot use the AI model.")
+            return None
+
+        # One retry for transient trouble (timeout, connection, 429/5xx). Anything
+        # else (bad key, bad request) will not fix itself, so give up at once.
+        for attempt in (1, 2):
+            try:
+                response = requests.post("https://api.openai.com/v1/chat/completions",
+                                         headers=headers, json=data, timeout=45)
+                response.raise_for_status()
+                return response.json()["choices"][0]["message"]["content"]
+            except (requests.Timeout, requests.ConnectionError) as e:
+                logger.error("OpenAI API transient error (attempt %s): %s", attempt, e)
+            except requests.HTTPError as e:
+                logger.error("OpenAI API HTTP error (attempt %s): %s", attempt, e)
+                if e.response is None or not (e.response.status_code == 429 or e.response.status_code >= 500):
+                    break
+            except Exception as e:
+                logger.error("OpenAI API unexpected error: %s", e)
+                break
+        return None  # the caller hands the person to a human instead of looping
 
     def _match_therapists(self, triage_session):
         """
@@ -352,7 +360,7 @@ Respond with this exact JSON format (no markdown code fence around the json):
 
         raw_response = self._call_openai(history, triage_session)
         try:
-            parsed = json.loads(raw_response)
+            parsed = json.loads(raw_response) if raw_response else {}
         except json.JSONDecodeError:
             parsed = {}
 
@@ -381,12 +389,98 @@ Respond with this exact JSON format (no markdown code fence around the json):
             triage_session=triage_session, role="user", content=user_message
         )
 
+        # Independent of the AI: scan what the person wrote for crisis language.
+        keyword_match = CrisisDetectionService.detect(user_message)
+        crisis_alert_raised = False
+        if keyword_match:
+            CrisisDetectionService.raise_alert(
+                user=triage_session.user, session=None, source=CrisisAlert.TRIAGE,
+                content=user_message, match=keyword_match,
+            )
+            crisis_alert_raised = True
+
         history = triage_session.messages.all()
         raw_response = self._call_openai(history, triage_session)
 
-        try:
+        # If the AI is unavailable we do not pretend to carry on: the person is told
+        # honestly and handed to a human straight away.
+        ai_unavailable = raw_response is None
+        if ai_unavailable:
+            parsed = {
+                "message_to_user": (
+                    "I'm having trouble on my side right now, so I'm going to connect you with a "
+                    "person who can talk with you directly. You don't need to do anything else."
+                ),
+                "suggested_chips": [],
+                "extracted_data": {},
+                "is_complete": True,
+            }
+        else:
+            try:
+                parsed = json.loads(raw_response)
+            except json.JSONDecodeError:
+                parsed = {
+                    "message_to_user": "I hear you. Could you share a bit more about what you're experiencing?",
+                    "suggested_chips": ["It's hard to explain", "Just started recently", "A few months now", "I'd rather skip this"],
+                    "extracted_data": {},
+                    "is_complete": False
+                }
+
+        ai_message = parsed.get("message_to_user", "Hi there, I'm here with you. Can you tell me a little about what's been on your mind lately?")
+        chips = parsed.get("suggested_chips", ["Feeling overwhelmed", "Struggling with stress", "Just need to talk", "Not sure where to start"])
+
+        triage_session.suggested_chips = chips
+        triage_session.save(update_fields=['suggested_chips'])
+
+        TriageMessage.objects.create(
+            triage_session=triage_session, role="model", content=ai_message
+        )
+
+        return triage_session
+
+    def process_response(self, triage_session_id, user_message):
+        triage_session = TriageSession.objects.get(id=triage_session_id)
+
+        if triage_session.is_complete:
+            return triage_session
+
+        # Increment turn count
+        triage_session.turn_count += 1
+
+        TriageMessage.objects.create(
+            triage_session=triage_session, role="user", content=user_message
+        )
+
+        # Independent of the AI: scan what the person wrote for crisis language.
+        keyword_match = CrisisDetectionService.detect(user_message)
+        crisis_alert_raised = False
+        if keyword_match:
+            CrisisDetectionService.raise_alert(
+                user=triage_session.user, session=None, source=CrisisAlert.TRIAGE,
+                content=user_message, match=keyword_match,
+            )
+            crisis_alert_raised = True
+
+        history = triage_session.messages.all()
+        raw_response = self._call_openai(history, triage_session)
+
+        # If the AI is unavailable we do not pretend to carry on: the person is told
+        # honestly and handed to a human straight away.
+        ai_unavailable = raw_response is None
+        if ai_unavailable:
+            parsed = {
+                "message_to_user": (
+                    "I'm having trouble on my side right now, so I'm going to connect you with a "
+                    "person who can talk with you directly. You don't need to do anything else."
+                ),
+                "suggested_chips": [],
+                "extracted_data": {},
+                "is_complete": True,
+            }
+        else:
+          try:
             parsed = json.loads(raw_response)
-        except json.JSONDecodeError:
+          except json.JSONDecodeError:
             parsed = {
                 "message_to_user": "I hear you. Could you share a bit more about what you're experiencing?",
                 "suggested_chips": ["It's hard to explain", "Just started recently", "A few months now", "I'd rather skip this"],
@@ -424,6 +518,13 @@ Respond with this exact JSON format (no markdown code fence around the json):
             fi = extracted.get("functional_impairment")
             if isinstance(fi, dict) and fi:
                 triage_session.functional_impairment = fi
+
+        if keyword_match:
+            flags = list(triage_session.crisis_flags or [])
+            label = f"keyword:{keyword_match.category}"
+            if label not in flags:
+                flags.append(label)
+            triage_session.crisis_flags = flags
 
         triage_session.suggested_chips = chips
         triage_session.clinical_summary = parsed.get("clinical_summary") or triage_session.clinical_summary
@@ -470,7 +571,7 @@ Respond with this exact JSON format (no markdown code fence around the json):
         has_crisis = len(triage_session.crisis_flags or []) > 0
         can_complete_early = is_ai_complete and has_problem and (has_timeline or has_symptoms)
 
-        if can_complete_early or (triage_session.conversation_phase == "CLOSING" and (is_ai_complete or triage_session.turn_count >= HARD_TURN_LIMIT)) or has_crisis:
+        if can_complete_early or ai_unavailable or (triage_session.conversation_phase == "CLOSING" and (is_ai_complete or triage_session.turn_count >= HARD_TURN_LIMIT)) or has_crisis:
             triage_session.is_complete = True
             triage_session.conversation_phase = "CLOSING"
         else:
@@ -501,11 +602,20 @@ Respond with this exact JSON format (no markdown code fence around the json):
             # ═══════════════════════════════════════
             # ROUTING OUTCOME HANDOFF
             # ═══════════════════════════════════════
+            if has_crisis and not crisis_alert_raised:
+                # The AI (not the keyword scan) saw risk: staff must hear about it too.
+                CrisisDetectionService.raise_alert(
+                    user=triage_session.user, session=None, source=CrisisAlert.TRIAGE,
+                    content=triage_session.chief_complaint or user_message,
+                    match=CrisisMatch('AI_FLAG', str(triage_session.crisis_flags[0])[:100]),
+                )
+
             if routing == "GRADUATE_COUNSELOR":
                 # Automatically place into active counselor queue
                 new_session = Session.objects.create(
                     user=triage_session.user,
-                    status=Session.WAITING
+                    status=Session.WAITING,
+                    is_crisis_flagged=has_crisis,
                 )
                 triage_session.resulting_session = new_session
 
@@ -522,7 +632,8 @@ Respond with this exact JSON format (no markdown code fence around the json):
                 # Also create waiting session pre-attached with dossier so user can proceed
                 new_session = Session.objects.create(
                     user=triage_session.user,
-                    status=Session.WAITING
+                    status=Session.WAITING,
+                    is_crisis_flagged=has_crisis,
                 )
                 triage_session.resulting_session = new_session
 
@@ -531,6 +642,12 @@ Respond with this exact JSON format (no markdown code fence around the json):
                     note_text=dossier,
                     is_private=True
                 )
+
+            if has_crisis and triage_session.resulting_session_id:
+                # Tie the intake-time alerts to the session staff will actually see.
+                CrisisAlert.objects.filter(
+                    user=triage_session.user, source=CrisisAlert.TRIAGE, session__isnull=True,
+                ).update(session=triage_session.resulting_session)
 
         triage_session.save()
         return triage_session

@@ -53,7 +53,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 # Calculate time remaining
                 time_remaining, is_paid = await self.get_timer_status()
                 
-                if time_remaining <= 0 and not is_paid:
+                if time_remaining <= 0 and not is_paid and await self.is_crisis_flagged():
+                    # A person in crisis is never put behind the paywall.
+                    pass
+                elif time_remaining <= 0 and not is_paid:
                     # Timer expired, request payment
                     await self.set_payment_pending()
                     await self.send(text_data=json.dumps({
@@ -80,8 +83,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if message_type == 'message':
             message = text_data_json.get('message', '')
-            
-            # Check payment status
+
+            # Safety first: look for crisis language BEFORE anything else, so the
+            # payment hold below can never swallow a cry for help.
+            support = await self.scan_for_crisis(message)
+            if support:
+                await self.send(text_data=json.dumps({
+                    'type': 'crisis.support',
+                    'message': support['message'],
+                    'helplines': support['helplines'],
+                }))
+
+            # Check payment status (never applies to a crisis-flagged session)
             is_payment_pending = await self.check_payment_pending()
             
             if is_payment_pending:
@@ -92,14 +105,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message': 'Message held. Please complete payment to deliver your message.'
                 }))
                 return
-
-            # Scan for crisis
-            is_crisis = await self.scan_for_crisis(message)
-            if is_crisis:
-                await self.send(text_data=json.dumps({
-                    'type': 'system.alert',
-                    'message': 'A counselor has been alerted to provide immediate assistance.'
-                }))
 
             # Save and broadcast
             await self.save_message(message, is_held=False)
@@ -171,9 +176,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from core.models import Session
         try:
             session = Session.objects.get(id=self.session_id)
-            return session.status == Session.PAYMENT_PENDING
+            return session.status == Session.PAYMENT_PENDING and not session.is_crisis_flagged
         except Session.DoesNotExist:
             return False
+
+    @database_sync_to_async
+    def is_crisis_flagged(self):
+        from core.models import Session
+        return Session.objects.filter(id=self.session_id, is_crisis_flagged=True).exists()
 
     @database_sync_to_async
     def save_message(self, content, is_held):
@@ -221,13 +231,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def scan_for_crisis(self, content):
+        """
+        Scan what the SEEKER writes (a counselor asking about suicide is not a
+        crisis). Returns None, or {'message', 'helplines'} to show the seeker.
+        """
         from core.models import Session
         from core.services.crisis_detection import CrisisDetectionService
+        from core.services.crisis_support import support_payload
         try:
-            session = Session.objects.get(id=self.session_id)
-            return CrisisDetectionService.scan_message(session, content)
+            session = Session.objects.select_related('user').get(id=self.session_id)
         except Session.DoesNotExist:
-            return False
+            return None
+        if self.scope['user'].id != session.user_id:
+            return None
+        if not CrisisDetectionService.scan_message(session, content):
+            return None
+        return support_payload()
 
 
     @database_sync_to_async

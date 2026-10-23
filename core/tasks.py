@@ -147,20 +147,111 @@ def calculate_earnings(session_id):
 @shared_task
 def auto_withdraw_stale_sessions():
     """
-    Runs every 5 minutes. Automatically marks WAITING sessions older than
-    60 minutes as ENDED so they are removed from the counselor queue.
-    This handles the case where no counselor accepted the session.
+    Runs every 5 minutes. Ends WAITING sessions nobody picked up for 60 minutes and
+    tells the seeker, so they can try again.
+
+    Never withdraws a session that is flagged as a crisis, or one the seeker
+    requested from a specific therapist (those wait for that therapist).
     """
     from core.models import Session
+    from notifications.services.fcm_service import NotificationService
 
     cutoff = timezone.now() - timedelta(minutes=60)
-    stale = Session.objects.filter(
+    stale = list(Session.objects.filter(
         status=Session.WAITING,
         created_at__lt=cutoff,
-        counselor__isnull=True,  # only truly unaccepted sessions
-    )
-    count = stale.count()
-    if count:
-        stale.update(status=Session.ENDED)
-        logger.info(f"auto_withdraw_stale_sessions: withdrew {count} WAITING session(s) older than 60 minutes.")
-    return f"Withdrew {count} stale session(s)."
+        counselor__isnull=True,
+        therapist__isnull=True,
+        is_crisis_flagged=False,
+    ).select_related('user'))
+
+    for session in stale:
+        session.status = Session.ENDED
+        session.end_time = timezone.now()
+        session.save(update_fields=['status', 'end_time'])
+        try:
+            NotificationService.send_push_notification(
+                session.user, "No counselor was available",
+                "We could not connect you with a counselor this time. Please try again, "
+                "or use the helpline numbers in the app if you need someone right now.",
+                {'type': 'session_withdrawn', 'session_id': session.id})
+        except Exception as exc:
+            logger.error("Could not tell user about withdrawn session %s: %s", session.id, exc)
+
+    if stale:
+        logger.info("auto_withdraw_stale_sessions: withdrew %s session(s) older than 60 minutes.", len(stale))
+    return f"Withdrew {len(stale)} stale session(s)."
+
+
+@shared_task(bind=True, max_retries=4, default_retry_delay=20)
+def notify_staff_of_crisis(self, alert_id):
+    """
+    Tell the on-call staff about a crisis alert: an email to every active address
+    in Django Admin > Emergency contacts (staff alert list), plus a push
+    notification to staff users. Retries if the email cannot be sent. If nobody is
+    configured the alert is still stored, the problem is written to the alert and
+    logged as critical, so it is visible in Admin and in the server logs.
+    """
+    from django.conf import settings
+    from django.core.mail import send_mail
+    from django.template.loader import render_to_string
+    from accounts.models import User
+    from core.models import CrisisAlert, EmergencyContact
+    from notifications.services.fcm_service import NotificationService
+
+    try:
+        alert = CrisisAlert.objects.select_related('session', 'user').get(id=alert_id)
+    except CrisisAlert.DoesNotExist:
+        # The row may not be visible yet if we were queued inside a transaction.
+        raise self.retry(countdown=5)
+
+    emails = list(EmergencyContact.objects.filter(is_active=True).values_list('email', flat=True))
+    user_label = alert.user.email if alert.user else 'unknown user'
+    where = f"session {alert.session_id}" if alert.session_id else "no active session"
+    snippet = alert.message_content[:500]
+    source = alert.get_source_display()
+
+    errors = []
+    if not emails:
+        msg = "No active staff alert emails configured (Admin > Emergency contacts)."
+        logger.critical("CRISIS ALERT %s could not be emailed: %s", alert.id, msg)
+        errors.append(msg)
+    else:
+        context = {'session_id': alert.session_id or '-', 'user_email': user_label,
+                   'matched_keyword': alert.matched_keyword, 'content': snippet}
+        try:
+            html_message = render_to_string('emails/crisis_alert_email.html', context)
+        except Exception:
+            html_message = None
+        try:
+            send_mail(
+                subject=f"CRISIS ALERT ({source}): urgent attention required",
+                message=(
+                    f"CRISIS ALERT\nSource: {source}\nWhere: {where}\nUser: {user_label}\n"
+                    f"Matched: {alert.matched_keyword}\nMessage: {snippet}\n\n"
+                    f"Please review immediately."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=emails,
+                html_message=html_message,
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.error("Crisis email for alert %s failed: %s", alert.id, exc)
+            if self.request.retries < self.max_retries:
+                raise self.retry(exc=exc, countdown=30 * (self.request.retries + 1))
+            errors.append(f"Email failed after retries: {exc}")
+
+    for staff in User.objects.filter(is_staff=True, is_active=True):
+        try:
+            NotificationService.send_push_notification(
+                staff, "Crisis alert", f"{source}: {where}",
+                {'type': 'crisis_alert', 'alert_id': str(alert.id)})
+        except Exception as exc:
+            logger.error("Crisis push to staff %s failed: %s", staff.id, exc)
+
+    update = {'notification_error': "; ".join(errors)}
+    if not errors:
+        update['staff_notified_at'] = timezone.now()
+    CrisisAlert.objects.filter(pk=alert.pk).update(**update)
+    return f"alert {alert.id}: {'notified' if not errors else 'NOT notified - ' + update['notification_error']}"

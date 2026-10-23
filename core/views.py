@@ -474,6 +474,14 @@ class SessionMessageListView(APIView):
             message_text=str(text).strip()
         )
 
+        # Same safety net as the live chat: look at what the seeker wrote.
+        support = None
+        if user.id == session.user_id:
+            from .services.crisis_detection import CrisisDetectionService
+            from .services.crisis_support import support_payload
+            if CrisisDetectionService.scan_message(session, msg.message_text):
+                support = support_payload()
+
         # Broadcast via Channel Layer if running
         try:
             from channels.layers import get_channel_layer
@@ -491,13 +499,16 @@ class SessionMessageListView(APIView):
         except Exception as e:
             pass
 
-        return Response({
+        body = {
             'id': str(msg.id),
             'text': msg.message_text,
             'sender_id': user.id,
             'sender_role': user.role,
             'created_at': msg.created_at
-        }, status=status.HTTP_201_CREATED)
+        }
+        if support:
+            body['crisis_support'] = support
+        return Response(body, status=status.HTTP_201_CREATED)
 
 from django.shortcuts import get_object_or_404
 from .models import Session, SessionNote, ChatMessage, EscalationEvent
@@ -668,53 +679,29 @@ from core.models import CrisisAlert
 
 class UserPanicButtonView(APIView):
     """
-    Triggered by a user when they press the Panic Button.
-    Creates a CrisisAlert and flags the active session if one exists.
-    Sends an immediate alert to the system admins.
+    The "I need urgent help" button. Always records a CrisisAlert (with or without
+    a chat session), flags the session if there is one, has the on-call staff
+    notified, and answers with real helpline numbers.
     """
     permission_classes = [IsAuthenticated, IsGeneralUser]
 
-    @extend_schema(responses={200: {'example': {'message': 'Admin has been alerted and help is on the way.'}}})
+    @extend_schema(responses={200: {'example': {'message': 'We have told our support team.', 'helplines': []}}})
     def post(self, request):
+        from .services.crisis_detection import CrisisDetectionService, CrisisMatch
+        from .services.crisis_support import support_payload
+
         user = request.user
-        
-        # Check if user has an active or pending session
         active_session = Session.objects.filter(
-            user=user, 
-            status__in=[Session.ACTIVE, Session.MATCHED, Session.WAITING]
-        ).first()
+            user=user,
+            status__in=[Session.ACTIVE, Session.MATCHED, Session.WAITING, Session.PAYMENT_PENDING, Session.PAID]
+        ).order_by('-created_at').first()
 
-        if active_session:
-            active_session.is_crisis_flagged = True
-            active_session.save(update_fields=['is_crisis_flagged'])
-            
-            CrisisAlert.objects.create(
-                session=active_session,
-                message_content=f"User {user.email} pressed the PANIC button.",
-                matched_keyword="PANIC_BUTTON",
-                is_resolved=False
-            )
-            
-        # Send email to Admin
-        subject = f"CRITICAL: Panic Button Triggered by {user.email}"
-        message = f"User {user.first_name} {user.last_name} ({user.email}) has pressed the panic button.\n"
-        if active_session:
-            message += f"They are in Session {active_session.id}."
-        else:
-            message += "They do not currently have an active session."
-            
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email='noreply@seeker.app',
-            recipient_list=['admin@seeker.app'],
-            fail_silently=True,
+        CrisisDetectionService.raise_alert(
+            user=user, session=active_session, source=CrisisAlert.PANIC,
+            content=f"{user.first_name or 'A user'} pressed the urgent help button.",
+            match=CrisisMatch('PANIC', 'PANIC_BUTTON'),
         )
-
-        return Response(
-            {'message': 'Admin has been alerted and help is on the way.'}, 
-            status=status.HTTP_200_OK
-        )
+        return Response(support_payload(), status=status.HTTP_200_OK)
 
 from rest_framework.permissions import IsAdminUser
 

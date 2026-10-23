@@ -332,16 +332,38 @@ class CrisisKeyword(models.Model):
 
 
 class CrisisAlert(models.Model):
+    """
+    A record that someone may be in crisis. Created for every detection, from any
+    source, whether or not a chat session exists (the panic button and triage can
+    fire before one does).
+    """
+    CHAT = 'CHAT'
+    TRIAGE = 'TRIAGE'
+    PANIC = 'PANIC'
+    SOURCE_CHOICES = [(CHAT, 'Chat message'), (TRIAGE, 'AI intake'), (PANIC, 'Panic button')]
+
     session = models.ForeignKey(
-        Session, on_delete=models.CASCADE, related_name='crisis_alerts'
+        Session, on_delete=models.CASCADE, related_name='crisis_alerts',
+        null=True, blank=True,
     )
+    user = models.ForeignKey(
+        'accounts.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='crisis_alerts',
+    )
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default=CHAT)
     message_content = models.TextField()
     matched_keyword = models.CharField(max_length=100)
     is_resolved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Staff notification state. Repeated detections for one person within a few
+    # minutes are recorded but do not email staff again (suppressed).
+    suppressed = models.BooleanField(default=False)
+    staff_notified_at = models.DateTimeField(null=True, blank=True)
+    notification_error = models.TextField(blank=True)
+
     def __str__(self):
-        return f"Crisis Alert for Session {self.session_id} - {self.matched_keyword}"
+        return f"Crisis Alert ({self.source}) session={self.session_id} - {self.matched_keyword}"
 
 
 class EmergencyContact(models.Model):

@@ -76,14 +76,14 @@ Nothing else is safe to build until the working tree is committed and tests can 
 
 ## Phase 2 — Make crisis handling real
 
-- [ ] Crisis scan before the payment hold, and on the REST message path; never paywall a crisis-flagged session.
-- [ ] Keyword check on triage input independent of the AI; set the crisis flag and alert when it fires.
-- [ ] Alert a configured on-call staff list by push and email, with a persistent alert record; remove the hardcoded personal Gmail and `admin@seeker.app`. The existing `core.EmergencyContact` admin list (staff emails) is the starting point; consider renaming it to avoid confusion with users' own emergency contacts.
+- [x] Crisis scan before the payment hold, and on the REST message path; never paywall a crisis-flagged session.
+- [x] Keyword check on triage input independent of the AI; set the crisis flag and alert when it fires.
+- [x] Alert a configured on-call staff list by push and email, with a persistent alert record; remove the hardcoded personal Gmail and `admin@seeker.app`. The existing `core.EmergencyContact` admin list (staff emails) is the starting point; consider renaming it to avoid confusion with users' own emergency contacts.
 - [ ] Panic button: real recipients, persisted without an active session, honest response message.
 - [ ] Replace `Alert.alert` in `PanicButton` with a modal that works on web; wire the two dead Crisis buttons.
-- [ ] Seed crisis keywords and helpline entries at deploy time; expand the keyword list beyond 22 English phrases.
-- [ ] Stop auto-ending crisis-flagged and therapist-requested waiting sessions; notify the seeker when a session is withdrawn.
-- [ ] Define behaviour when OpenAI is down.
+- [x] Seed crisis keywords and helpline entries at deploy time; expand the keyword list beyond 22 English phrases.
+- [x] Stop auto-ending crisis-flagged and therapist-requested waiting sessions; notify the seeker when a session is withdrawn.
+- [x] Define behaviour when OpenAI is down.
 - [ ] Re-run the persona simulation; agree an acceptance bar; fix the personas that never complete.
 
 **Done when:** a crisis message at any point (triage, free chat, after the free window, panic button) produces a staff alert in a test environment.

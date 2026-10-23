@@ -66,12 +66,21 @@ class CrisisKeywordAdmin(admin.ModelAdmin):
 
 @admin.register(CrisisAlert)
 class CrisisAlertAdmin(admin.ModelAdmin):
-    list_display = ('id', 'session', 'matched_keyword', 'is_resolved', 'created_at')
-    list_filter = ('is_resolved',)
-    search_fields = ('message_content',)
+    """Review crisis alerts. 'Staff notified' is blank when nobody could be reached."""
+    list_display = ('id', 'created_at', 'source', 'user', 'session', 'matched_keyword',
+                    'staff_notified_at', 'notification_error', 'suppressed', 'is_resolved')
+    list_filter = ('is_resolved', 'source', 'suppressed')
+    search_fields = ('message_content', 'user__email')
+    readonly_fields = ('created_at', 'staff_notified_at', 'notification_error')
+    actions = ['mark_resolved']
+
+    @admin.action(description='Mark selected alerts as resolved')
+    def mark_resolved(self, request, queryset):
+        queryset.update(is_resolved=True)
 
 @admin.register(EmergencyContact)
 class EmergencyContactAdmin(admin.ModelAdmin):
+    """The staff alert list: every ACTIVE address here is emailed when a crisis is detected."""
     list_display = ('name', 'email', 'is_active', 'created_at')
     list_filter = ('is_active',)
 

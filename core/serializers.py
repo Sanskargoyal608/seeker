@@ -14,9 +14,16 @@ class TriageSessionSerializer(serializers.ModelSerializer):
     """
     messages = TriageMessageSerializer(many=True, read_only=True)
     is_crisis = serializers.SerializerMethodField()
+    crisis_support = serializers.SerializerMethodField()
 
     def get_is_crisis(self, obj):
         return bool(obj.crisis_flags)
+
+    def get_crisis_support(self, obj):
+        if not obj.crisis_flags:
+            return None
+        from core.services.crisis_support import support_payload
+        return support_payload()
 
     class Meta:
         model = TriageSession
@@ -25,7 +32,7 @@ class TriageSessionSerializer(serializers.ModelSerializer):
             'chief_complaint', 'emotional_state', 'duration',
             'primary_concern', 'sleep_quality', 'appetite_change',
             'social_functioning', 'triggers', 'physical_symptoms',
-            'support_preference', 'routing_decision', 'is_crisis',
+            'support_preference', 'routing_decision', 'is_crisis', 'crisis_support',
             'suggested_chips', 'recommended_therapists',
             'resulting_session', 'created_at', 'messages'
         ]

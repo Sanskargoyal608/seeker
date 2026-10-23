@@ -237,6 +237,10 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
+# In tests, run background tasks inline instead of needing a broker.
+CELERY_TASK_ALWAYS_EAGER = TESTING
+CELERY_TASK_EAGER_PROPAGATES = False
+
 CELERY_BEAT_SCHEDULE = {
     'send-session-reminders-every-15-mins': {
         'task': 'notifications.tasks.send_scheduled_session_reminders',

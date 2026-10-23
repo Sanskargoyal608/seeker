@@ -14,12 +14,12 @@ class MatchingService:
     def get_waiting_sessions():
         """
         Returns the open counselor queue: WAITING sessions that no therapist has
-        been requested for, oldest first (FIFO). Sessions a seeker requested from
+        been requested for. Crisis-flagged sessions come first, then oldest first. Sessions a seeker requested from
         a specific therapist never appear here.
         """
         return Session.objects.filter(
             status=Session.WAITING, therapist__isnull=True
-        ).order_by('created_at')
+        ).order_by('-is_crisis_flagged', 'created_at')
 
     @staticmethod
     def accept_session(counselor, session_id):
