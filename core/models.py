@@ -115,48 +115,6 @@ class SessionNote(models.Model):
         verbose_name_plural = 'Session Notes'
 
 
-class EscalationEvent(models.Model):
-    LOW = 'LOW'
-    MEDIUM = 'MEDIUM'
-    HIGH = 'HIGH'
-    CRITICAL = 'CRITICAL'
-
-    URGENCY_CHOICES = [
-        (LOW, 'Low'), (MEDIUM, 'Medium'), (HIGH, 'High'), (CRITICAL, 'Critical'),
-    ]
-
-    PENDING = 'PENDING'
-    ACCEPTED = 'ACCEPTED'
-    COMPLETED = 'COMPLETED'
-
-    STATUS_CHOICES = [
-        (PENDING, 'Pending'), (ACCEPTED, 'Accepted'), (COMPLETED, 'Completed'),
-    ]
-
-    session = models.ForeignKey(
-        Session, on_delete=models.CASCADE, related_name='escalations'
-    )
-    from_counselor = models.ForeignKey(
-        'accounts.GraduateCounselor', on_delete=models.SET_NULL,
-        null=True, related_name='escalations_sent'
-    )
-    to_therapist = models.ForeignKey(
-        'accounts.LicensedTherapist', on_delete=models.SET_NULL,
-        null=True, related_name='escalations_received'
-    )
-    reason = models.TextField()
-    urgency = models.CharField(max_length=10, choices=URGENCY_CHOICES, default=MEDIUM)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Escalation {self.pk} [{self.urgency}] [{self.status}]"
-
-    class Meta:
-        verbose_name = 'Escalation Event'
-        verbose_name_plural = 'Escalation Events'
-
-
 class EscalationRequest(models.Model):
     HIGH = 'HIGH'
     MEDIUM = 'MEDIUM'

@@ -52,15 +52,6 @@ export const getTherapistsForEscalation = async (language = null, modality = nul
   return response.data.hits?.map(h => h.document) || [];
 };
 
-export const escalateSession = async (sessionId, therapistId, urgency, reason) => {
-  const response = await apiClient.post(`/api/core/sessions/${sessionId}/escalate/`, {
-    to_therapist: therapistId,
-    urgency,
-    reason,
-  });
-  return response.data;
-};
-
 export const requestTherapistSession = async (therapistId) => {
   const { data } = await apiClient.post('/api/core/sessions/request-therapist/', {
     therapist_id: therapistId

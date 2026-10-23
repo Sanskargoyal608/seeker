@@ -82,17 +82,17 @@ class BackchannelConsumer(AsyncWebsocketConsumer):
             if user.role == User.COUNSELOR:
                 return session.counselor == user.counselor_profile
             elif user.role == User.THERAPIST:
-                # Assuming therapist needs to be part of an escalation or session
-                # For safety, let's say if the therapist has any escalations for this session OR is assigned to it
-                from core.models import EscalationEvent
-                if session.therapist == user.therapist_profile:
+                # The therapist who accepted an escalation of this session (the
+                # session itself has ended by then), or one assigned to it.
+                from core.models import EscalationRequest
+                therapist = user.therapist_profile
+                if session.therapist == therapist:
                     return True
-                has_escalation = EscalationEvent.objects.filter(
-                    session=session,
-                    to_therapist=user.therapist_profile
+                return EscalationRequest.objects.filter(
+                    session=session, therapist=therapist,
+                    status=EscalationRequest.ACCEPTED,
                 ).exists()
-                return has_escalation
-                
+
             return False
         except Session.DoesNotExist:
             return False

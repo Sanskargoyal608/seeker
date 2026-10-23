@@ -106,10 +106,10 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [ ] Counselor bookings: `Booking` and slot calculation support counselors; counselors set a fixed per-session price; counselor public profile "Book" buttons work in the app and on the web.
 
 **Escalation and therapist tools**
-- [ ] Remove `EscalationEvent` and its endpoint; move `has_escalation` and backchannel authorisation onto `EscalationRequest`.
-- [ ] Pending-state guard; decline feedback to the counselor.
+- [x] Remove `EscalationEvent` and its endpoint; move `has_escalation` and backchannel authorisation onto `EscalationRequest`. When a therapist accepts, the patient gets a NEW therapist session, the counselor's session ends, and the counselor keeps the backchannel (owner decision).
+- [x] Pending-state guard; decline feedback to the counselor.
 - [ ] Restore the therapist intake view, follow-up and escalation alert from the dead `dashboard.js` code; delete the dead code.
-- [ ] Link the triage dossier to the session the therapist receives.
+- [~] Link the triage dossier to the session the therapist receives. (Done for escalations: the new therapist session inherits the briefing. Still open for a seeker who picks a therapist from the triage recommendations.)
 
 **Mobile app**
 - [ ] Auth gate and role guards; fix session restore (`/api/accounts/auth/me/`).

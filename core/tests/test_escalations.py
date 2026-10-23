@@ -68,9 +68,13 @@ def test_respond_escalation_request(api_client, user, counselor_user, therapist_
     
     escalation.refresh_from_db()
     assert escalation.status == 'ACCEPTED'
-    
+
+    # The patient continues with the therapist in a NEW session; the counselor's ends.
     session.refresh_from_db()
-    assert session.therapist == therapist_user.therapist_profile
+    assert session.status == Session.ENDED
+    new_session = Session.objects.get(id=response.data['session_id'])
+    assert new_session.therapist == therapist_user.therapist_profile
+    assert new_session.user == user and new_session.escalated_from_id == session.id
 
 @pytest.mark.django_db
 def test_therapist_follow_up(api_client, user, therapist_user):

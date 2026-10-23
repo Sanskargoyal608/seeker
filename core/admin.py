@@ -2,7 +2,7 @@
 from django.contrib import admin
 from .models import (
     Session, ChatMessage, SessionNote, 
-    EscalationEvent, EarningsRecord, PayoutRecord,
+    EarningsRecord, PayoutRecord,
     CrisisKeyword, CrisisAlert, EmergencyContact, SessionTimer
 )
 
@@ -26,13 +26,6 @@ class SessionNoteAdmin(admin.ModelAdmin):
     list_display = ('id', 'session', 'author', 'is_private', 'created_at')
     list_filter = ('is_private', 'created_at')
     search_fields = ('session__id', 'author__email', 'note_text')
-
-
-@admin.register(EscalationEvent)
-class EscalationEventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'urgency', 'status', 'from_counselor', 'to_therapist', 'created_at')
-    list_filter = ('urgency', 'status', 'created_at')
-    search_fields = ('from_counselor__user__email', 'to_therapist__user__email')
 
 
 @admin.register(EarningsRecord)

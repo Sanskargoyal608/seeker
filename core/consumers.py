@@ -141,6 +141,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender_role': sender_role
         }))
 
+    async def session_moved(self, event):
+        """The conversation continues in a new session (a therapist took over)."""
+        await self.send(text_data=json.dumps({
+            'type': 'session.moved',
+            'new_session_id': event['new_session_id'],
+            'message': event['message'],
+        }))
+
     # Receive system alert from room group
     async def system_alert(self, event):
         message = event['message']
@@ -341,6 +349,12 @@ class EscalationConsumer(AsyncWebsocketConsumer):
             'reason': reason,
             'triage_session_id': triage_session_id
         }))
+
+    async def escalation_update(self, event):
+        """Tells a counselor what happened to an escalation they sent."""
+        payload = {k: v for k, v in event.items() if k != 'type'}
+        payload['type'] = 'escalation.update'
+        await self.send(text_data=json.dumps(payload))
 
     @database_sync_to_async
     def get_counselor_profile(self, user):

@@ -61,43 +61,6 @@ def queue_timeout_task():
     
     return f"Alerted {notified_count} counselors about {stale_sessions.count()} stale sessions."
 
-from django.core.mail import send_mail
-
-@shared_task
-def send_escalation_notifications(escalation_id):
-    from core.models import EscalationEvent
-    from notifications.services.fcm_service import NotificationService
-
-    try:
-        escalation = EscalationEvent.objects.get(id=escalation_id)
-        therapist_user = escalation.to_therapist.user
-        therapist_email = therapist_user.email
-        
-        # ACTUAL FCM PUSH NOTIFICATION
-        NotificationService.send_push_notification(
-            user=therapist_user,
-            title=f"Urgent: Session Escalation [{escalation.urgency}]",
-            body=f"Reason: {escalation.reason}",
-            data={'type': 'escalation_alert', 'session_id': str(escalation.session.id)}
-        )
-        
-        # ACTUAL SMTP EMAIL NOTIFICATION
-        send_mail(
-            subject=f"Urgent: Session Escalation [{escalation.urgency}]",
-            message=f"A session has been escalated to you by a counselor.\n\n"
-                    f"Session ID: {escalation.session.id}\n"
-                    f"Urgency: {escalation.urgency}\n"
-                    f"Reason: {escalation.reason}\n\n"
-                    f"Please log in to the backchannel to assist.",
-            from_email="noreply@seeker.com",
-            recipient_list=[therapist_email],
-            fail_silently=False,
-        )
-        
-        return f"Escalation notification sent to {therapist_email}"
-    except EscalationEvent.DoesNotExist:
-        return "Escalation event not found."
-
 @shared_task
 def calculate_earnings(session_id):
     """

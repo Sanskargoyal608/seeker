@@ -511,8 +511,8 @@ class SessionMessageListView(APIView):
         return Response(body, status=status.HTTP_201_CREATED)
 
 from django.shortcuts import get_object_or_404
-from .models import Session, SessionNote, ChatMessage, EscalationEvent
-from .serializers import SessionNoteSerializer, EscalationEventSerializer
+from .models import Session, SessionNote, ChatMessage
+from .serializers import SessionNoteSerializer
 from .permissions import IsNoteOwnerOrTherapist
 
 class SessionNoteListView(APIView):
@@ -607,34 +607,6 @@ class MessageHighlightView(APIView):
             # Delete associated note if unhighlighted
             SessionNote.objects.filter(linked_message=message).delete()
             return Response({'is_highlighted': False}, status=status.HTTP_200_OK)
-
-from .tasks import send_escalation_notifications
-
-class EscalateSessionView(APIView):
-    """POST /api/sessions/{id}/escalate/"""
-    permission_classes = [IsAuthenticated, IsVerified]
-    
-    def post(self, request, session_id):
-        if request.user.role != request.user.COUNSELOR:
-            return Response({"error": "Only counselors can escalate."}, status=status.HTTP_403_FORBIDDEN)
-            
-        session = get_object_or_404(Session, id=session_id)
-        if session.counselor != request.user.counselor_profile:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-            
-        serializer = EscalationEventSerializer(data=request.data)
-        if serializer.is_valid():
-            escalation = serializer.save(
-                session=session, 
-                from_counselor=request.user.counselor_profile,
-                status=EscalationEvent.PENDING
-            )
-            
-            # Fire celery task
-            send_escalation_notifications.delay(escalation.id)
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 from django.utils import timezone
 from .tasks import calculate_earnings
@@ -808,28 +780,39 @@ class TherapistListView(APIView):
 class EscalateCreateView(APIView):
     """
     POST /api/core/escalate/
-    Counselor triggers escalation to a therapist.
+    A counselor asks a licensed therapist to take over a session. The therapist is
+    alerted live (WebSocket) and by push; nothing changes in the session until they
+    accept (see EscalationRespondView).
     """
     permission_classes = [IsAuthenticated, IsGraduateCounselor, IsVerified]
-    
+
     def post(self, request):
         from .models import EscalationRequest, Session
         from accounts.models import LicensedTherapist
         from channels.layers import get_channel_layer
         from asgiref.sync import async_to_sync
         from .serializers import EscalationRequestSerializer
+        import logging
 
-        therapist_id = request.data.get('therapist_id')
-        session_id = request.data.get('session_id')
-        urgency = request.data.get('urgency', EscalationRequest.MEDIUM)
-        reason = request.data.get('reason', '')
-        
-        session = get_object_or_404(Session, id=session_id)
+        urgency = str(request.data.get('urgency') or EscalationRequest.MEDIUM).upper()
+        reason = str(request.data.get('reason') or '').strip()
+        if urgency not in dict(EscalationRequest.URGENCY_CHOICES):
+            return Response({'urgency': ['Must be one of HIGH, MEDIUM, LOW.']}, status=status.HTTP_400_BAD_REQUEST)
+        if not reason:
+            return Response({'reason': ['Please say why you are escalating.']}, status=status.HTTP_400_BAD_REQUEST)
+
+        session = get_object_or_404(Session, id=request.data.get('session_id'))
         if session.counselor != request.user.counselor_profile:
             return Response(status=status.HTTP_403_FORBIDDEN)
-            
-        therapist = get_object_or_404(LicensedTherapist, id=therapist_id, is_verified=True, user__is_active=True)
-        
+        if session.status == Session.ENDED:
+            return Response({'error': 'This session has already ended.'}, status=status.HTTP_400_BAD_REQUEST)
+        if EscalationRequest.objects.filter(session=session, status=EscalationRequest.PENDING).exists():
+            return Response({'error': 'This session already has an escalation waiting for a therapist.'},
+                            status=status.HTTP_409_CONFLICT)
+
+        therapist = get_object_or_404(
+            LicensedTherapist, id=request.data.get('therapist_id'), is_verified=True, user__is_active=True)
+
         escalation = EscalationRequest.objects.create(
             counselor=request.user.counselor_profile,
             therapist=therapist,
@@ -838,28 +821,30 @@ class EscalateCreateView(APIView):
             reason=reason,
             status=EscalationRequest.PENDING
         )
-        
-        channel_layer = get_channel_layer()
-        room_group_name = f'escalations_therapist_{therapist.id}'
-        
-        async_to_sync(channel_layer.group_send)(
-            room_group_name,
-            {
-                'type': 'escalation.alert',
-                'escalation_id': escalation.id,
-                'urgency': urgency,
-                'reason': reason,
-                'triage_session_id': session.id
-            }
-        )
-        
-        # Trigger Push Notification
-        from notifications.tasks import send_escalation_alert
-        send_escalation_alert.delay(therapist.user.id, urgency, session.id)
-        
-        serializer = EscalationRequestSerializer(escalation)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        # The escalation is saved; alerting is best effort and must never fail the request.
+        log = logging.getLogger(__name__)
+        try:
+            async_to_sync(get_channel_layer().group_send)(
+                f'escalations_therapist_{therapist.id}',
+                {
+                    'type': 'escalation.alert',
+                    'escalation_id': escalation.id,
+                    'urgency': urgency,
+                    'reason': reason,
+                    'session_id': session.id,
+                    'triage_session_id': session.id,  # old name, kept for the existing app
+                }
+            )
+        except Exception as exc:
+            log.error("Live escalation alert failed for escalation %s: %s", escalation.id, exc)
+        try:
+            from notifications.tasks import send_escalation_alert
+            send_escalation_alert.delay(therapist.user.id, urgency, session.id)
+        except Exception as exc:
+            log.error("Escalation push failed for escalation %s: %s", escalation.id, exc)
+
+        return Response(EscalationRequestSerializer(escalation).data, status=status.HTTP_201_CREATED)
 
 class MoodEntryView(APIView):
     permission_classes = [IsAuthenticated]
@@ -881,36 +866,116 @@ class MoodEntryView(APIView):
 
 class EscalationRespondView(APIView):
     """
-    POST /api/core/escalations/<id>/respond/
-    Therapist responds to escalation request.
+    POST /api/core/escalations/<id>/respond/   {"action": "ACCEPT" | "DECLINE"}
+
+    ACCEPT: the therapist and the patient get a NEW session of their own (the
+    therapist's own pricing, the intake notes carried over). The counselor's session
+    ends and the counselor keeps only the private backchannel with the therapist.
+    DECLINE: the counselor is told, and can pick another therapist.
+    Only a PENDING escalation can be answered, and only once.
     """
     permission_classes = [IsAuthenticated, IsLicensedTherapist, IsVerified]
-    
+
     def post(self, request, escalation_id):
-        from .models import EscalationRequest
-        
-        escalation = get_object_or_404(EscalationRequest, id=escalation_id)
-        if escalation.therapist != request.user.therapist_profile:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-            
-        action = request.data.get('action') # ACCEPT or DECLINE
-        
-        if action == 'ACCEPT':
-            escalation.status = EscalationRequest.ACCEPTED
-            escalation.save(update_fields=['status'])
-            
-            session = escalation.session
-            session.therapist = request.user.therapist_profile
-            session.save(update_fields=['therapist'])
-            
-            return Response({'message': 'Escalation accepted, joined session.', 'session_id': session.id})
-            
-        elif action == 'DECLINE':
-            escalation.status = EscalationRequest.DECLINED
-            escalation.save(update_fields=['status'])
-            return Response({'message': 'Escalation declined.'})
-            
-        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+        from django.db import transaction
+        from .models import EscalationRequest, Session, SessionNote
+        from .services.session_lifecycle import start_session
+        from .tasks import calculate_earnings
+
+        action = str(request.data.get('action') or '').upper()
+        if action not in ('ACCEPT', 'DECLINE'):
+            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+        therapist = request.user.therapist_profile
+        with transaction.atomic():
+            escalation = get_object_or_404(
+                EscalationRequest.objects.select_for_update(of=('self',)).select_related('session', 'counselor__user'),
+                id=escalation_id)
+            if escalation.therapist_id != therapist.id:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            if escalation.status != EscalationRequest.PENDING:
+                return Response({'error': 'This escalation has already been answered.'},
+                                status=status.HTTP_409_CONFLICT)
+
+            if action == 'DECLINE':
+                escalation.status = EscalationRequest.DECLINED
+                escalation.save(update_fields=['status', 'updated_at'])
+                result = {'message': 'Escalation declined.'}
+                old = new = None
+            else:
+                old = escalation.session
+                if old is None or old.status == Session.ENDED:
+                    return Response({'error': 'The session has already ended.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                new = Session.objects.create(
+                    user=old.user, therapist=therapist, status=Session.ACTIVE,
+                    escalated_from=old, is_crisis_flagged=old.is_crisis_flagged,
+                )
+                start_session(new, status=Session.ACTIVE)
+                # The therapist starts with the same briefing the counselor had.
+                for note in SessionNote.objects.filter(session=old, author__isnull=True):
+                    SessionNote.objects.create(session=new, note_text=note.note_text, is_private=True)
+
+                old.status = Session.ENDED
+                old.end_time = timezone.now()
+                if old.start_time:
+                    old.duration_minutes = int((old.end_time - old.start_time).total_seconds() // 60)
+                old.save(update_fields=['status', 'end_time', 'duration_minutes'])
+
+                escalation.status = EscalationRequest.ACCEPTED
+                escalation.save(update_fields=['status', 'updated_at'])
+                result = {'message': 'Escalation accepted. A new session with the patient has started.',
+                          'session_id': new.id, 'previous_session_id': old.id}
+
+        self._tell_everyone(action, escalation, old, new)
+        if new is not None:
+            calculate_earnings.delay(old.id)
+        return Response(result)
+
+    @staticmethod
+    def _tell_everyone(action, escalation, old, new):
+        """Best-effort notices; the decision is already saved and must not be undone by a failed push."""
+        import logging
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        from notifications.services.fcm_service import NotificationService
+        log = logging.getLogger(__name__)
+        layer = get_channel_layer()
+        counselor_user = escalation.counselor.user
+
+        def push(user, title, body, data):
+            try:
+                NotificationService.send_push_notification(user, title, body, data)
+            except Exception as exc:
+                log.error("Escalation notice to user %s failed: %s", user.id, exc)
+
+        def live(group, payload):
+            try:
+                async_to_sync(layer.group_send)(group, payload)
+            except Exception as exc:
+                log.error("Escalation live notice to %s failed: %s", group, exc)
+
+        if action == 'DECLINE':
+            live(f'escalations_counselor_{escalation.counselor_id}',
+                 {'type': 'escalation.update', 'escalation_id': escalation.id, 'status': 'DECLINED'})
+            push(counselor_user, 'Escalation declined',
+                 'The therapist could not take this case. You can choose another therapist.',
+                 {'type': 'escalation_update', 'session_id': escalation.session_id})
+            return
+
+        live(f'escalations_counselor_{escalation.counselor_id}',
+             {'type': 'escalation.update', 'escalation_id': escalation.id, 'status': 'ACCEPTED',
+              'previous_session_id': old.id, 'session_id': new.id})
+        # The patient's open chat screen is told where to go next.
+        live(f'chat_{old.id}',
+             {'type': 'session.moved', 'new_session_id': new.id,
+              'message': 'A licensed therapist has joined you. Your conversation continues in a new chat.'})
+        push(old.user, 'A therapist is ready to talk',
+             'A licensed therapist has taken over your conversation.',
+             {'type': 'session_moved', 'session_id': new.id})
+        push(counselor_user, 'Escalation accepted',
+             'The therapist has taken over. Your session has ended; use the backchannel to hand over.',
+             {'type': 'escalation_update', 'session_id': old.id})
 
 class TherapistFollowUpView(APIView):
     """
@@ -965,7 +1030,9 @@ class SessionDetailView(APIView):
 
         from .serializers import SessionSerializer
         data = SessionSerializer(session).data
-        data['has_escalation'] = session.escalations.exists()
+        data['has_escalation'] = session.escalation_requests.exclude(status='DECLINED').exists()
+        moved = session.escalated_to.first()
+        data['escalated_to_session_id'] = moved.id if moved else None
         return Response(data, status=status.HTTP_200_OK)
 
 class SessionIntakeView(APIView):

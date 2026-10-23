@@ -159,6 +159,14 @@ export default function ChatScreen() {
           } else {
             setPaymentRequiredData(data.message);
           }
+        } else if (data.type === 'session.moved') {
+          // A therapist took over. The patient continues in the new chat; the
+          // counselor's session is over and they hand over in the backchannel.
+          if (isProvider) {
+            router.replace(`/(app)/backchannel/${id}`);
+          } else {
+            router.replace(`/(app)/chat/${data.new_session_id}`);
+          }
         } else if (data.type === 'crisis.support') {
           setCrisisSupport({ message: data.message, helplines: data.helplines });
         } else if (data.type === 'system.alert') {
@@ -569,7 +577,7 @@ export default function ChatScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.feedbackLabel}>Urgency</Text>
               <View style={styles.urgencyContainer}>
-                {['LOW', 'MEDIUM', 'CRITICAL'].map((u) => (
+                {['LOW', 'MEDIUM', 'HIGH'].map((u) => (
                   <Pressable
                     key={u}
                     style={[styles.urgencyBtn, escalateUrgency === u && styles.urgencyBtnSelected]}

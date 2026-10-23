@@ -19,7 +19,6 @@ urlpatterns = [
     path('sessions/<int:session_id>/notes/', views.SessionNoteListView.as_view(), name='session-notes-list'),
     path('sessions/<int:session_id>/notes/<int:note_id>/', views.SessionNoteDetailView.as_view(), name='session-note-detail'),
     path('messages/<int:message_id>/highlight/', views.MessageHighlightView.as_view(), name='message-highlight'),
-    path('sessions/<int:session_id>/escalate/', views.EscalateSessionView.as_view(), name='escalate-session'),
     path('panic/', views.UserPanicButtonView.as_view(), name='user-panic-button'),
     path('sessions/request-therapist/', views.RequestBudgetSessionView.as_view(), name='request-budget-session'),
     path('sessions/<int:session_id>/admin-terminate/', views.AdminTerminateSessionView.as_view(), name='admin-terminate-session'),
