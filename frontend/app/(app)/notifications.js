@@ -6,6 +6,7 @@ import { Ionicons, MaterialSymbols } from '@expo/vector-icons';
 import { getNotifications, markNotificationRead } from '../../api/core';
 import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../constants/theme';
 import apiClient from '../../api/axios'; // For markAllRead if implemented
+import PanicButton from '../../components/PanicButton';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -124,9 +125,7 @@ export default function NotificationsScreen() {
           </Pressable>
           <Text style={styles.headerTitle}>Buddy Wellness</Text>
         </View>
-        <Pressable style={styles.crisisBtn}>
-          <Text style={styles.crisisBtnText}>Crisis</Text>
-        </Pressable>
+        <PanicButton />
       </View>
 
       <View style={styles.pageHeader}>

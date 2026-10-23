@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { submitFeedback } from '../../../api/core';
 import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../../constants/theme';
+import PanicButton from '../../../components/PanicButton';
 
 export default function SessionFeedbackScreen() {
   const { id } = useLocalSearchParams();
@@ -45,9 +46,7 @@ export default function SessionFeedbackScreen() {
           </View>
           <Text style={styles.headerTitle}>Buddy Wellness</Text>
         </View>
-        <Pressable style={styles.crisisBtn}>
-          <Text style={styles.crisisBtnText}>Crisis</Text>
-        </Pressable>
+        <PanicButton />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

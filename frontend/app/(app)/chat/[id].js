@@ -23,6 +23,7 @@ import apiClient from '../../../api/axios';
 import { COLORS, FONTS, RADIUS, SPACING, SHADOWS } from '../../../constants/theme';
 import Constants from 'expo-constants';
 import { Ionicons, MaterialSymbols } from '@expo/vector-icons';
+import CrisisSupportModal from '../../../components/CrisisSupportModal';
 import { endSession, submitFeedback, getTherapistsForEscalation, createEscalationRequest, getSession } from '../../../api/core';
 
 const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || 'http://localhost:8000';
@@ -41,6 +42,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [timer, setTimer] = useState(null);
+  const [crisisSupport, setCrisisSupport] = useState(null); // {message, helplines} when the server saw crisis language
   const [connected, setConnected] = useState(false);
   const [triageInfo, setTriageInfo] = useState(null);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
@@ -157,6 +159,8 @@ export default function ChatScreen() {
           } else {
             setPaymentRequiredData(data.message);
           }
+        } else if (data.type === 'crisis.support') {
+          setCrisisSupport({ message: data.message, helplines: data.helplines });
         } else if (data.type === 'system.alert') {
           Alert.alert('System', data.message);
         }
@@ -672,6 +676,14 @@ export default function ChatScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      <CrisisSupportModal
+        visible={!!crisisSupport}
+        onClose={() => setCrisisSupport(null)}
+        message={crisisSupport?.message}
+        helplines={crisisSupport?.helplines}
+        alerted
+      />
     </SafeAreaView>
   );
 }

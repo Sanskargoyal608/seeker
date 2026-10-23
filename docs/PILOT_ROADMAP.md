@@ -79,14 +79,16 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [x] Crisis scan before the payment hold, and on the REST message path; never paywall a crisis-flagged session.
 - [x] Keyword check on triage input independent of the AI; set the crisis flag and alert when it fires.
 - [x] Alert a configured on-call staff list by push and email, with a persistent alert record; remove the hardcoded personal Gmail and `admin@seeker.app`. The existing `core.EmergencyContact` admin list (staff emails) is the starting point; consider renaming it to avoid confusion with users' own emergency contacts.
-- [ ] Panic button: real recipients, persisted without an active session, honest response message.
-- [ ] Replace `Alert.alert` in `PanicButton` with a modal that works on web; wire the two dead Crisis buttons.
+- [x] Panic button: real recipients, persisted without an active session, honest response message.
+- [x] Replace `Alert.alert` in `PanicButton` with a modal that works on web; wire the two dead Crisis buttons.
 - [x] Seed crisis keywords and helpline entries at deploy time; expand the keyword list beyond 22 English phrases.
 - [x] Stop auto-ending crisis-flagged and therapist-requested waiting sessions; notify the seeker when a session is withdrawn.
 - [x] Define behaviour when OpenAI is down.
 - [ ] Re-run the persona simulation; agree an acceptance bar; fix the personas that never complete.
 
 **Done when:** a crisis message at any point (triage, free chat, after the free window, panic button) produces a staff alert in a test environment.
+
+**Status (2026-10-23):** all items done except the persona re-run (needs the OpenAI key and the simulation script, which is not in the repo; spends real API credit). Verified by automated tests for every path. Not yet verified: the new crisis screens on a real Android device and in a browser. The staff alert list (Django Admin > Emergency contacts) must be filled in before the pilot; the helpline numbers must be verified by a person.
 
 ## Phase 3 — Make the core flows work end to end
 

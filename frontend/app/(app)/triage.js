@@ -19,6 +19,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { startTriage, respondTriage, getActiveTriage } from '../../api/core';
 import { COLORS, FONTS, RADIUS, SPACING } from '../../constants/theme';
 import PanicButton from '../../components/PanicButton';
+import CrisisSupportModal from '../../components/CrisisSupportModal';
 
 export default function TriageScreen() {
   const router = useRouter();
@@ -35,6 +36,9 @@ export default function TriageScreen() {
   const [recommendedTherapists, setRecommendedTherapists] = useState([]);
   const [resultingSessionId, setResultingSessionId] = useState(null);
   const [isCrisis, setIsCrisis] = useState(false);
+  const [crisisSupport, setCrisisSupport] = useState(null);
+  const [showCrisisHelp, setShowCrisisHelp] = useState(false);
+  const crisisShown = useRef(false);
   const flatListRef = useRef();
 
   const PHASES = ['OPENING', 'EXPLORATION', 'DEEPENING', 'CLOSING'];
@@ -64,6 +68,11 @@ export default function TriageScreen() {
 
     if (data.is_crisis) {
       setIsCrisis(true);
+      setCrisisSupport(data.crisis_support || null);
+      if (!crisisShown.current) {
+        crisisShown.current = true;
+        setShowCrisisHelp(true); // open help once, straight away
+      }
     }
 
     if (data.status === 'WAITING' || data.status === 'ROUTING' || data.is_complete) {
@@ -156,6 +165,13 @@ export default function TriageScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <CrisisSupportModal
+        visible={showCrisisHelp}
+        onClose={() => setShowCrisisHelp(false)}
+        message={crisisSupport?.message}
+        helplines={crisisSupport?.helplines}
+        alerted
+      />
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -185,10 +201,10 @@ export default function TriageScreen() {
 
         {/* Crisis Helpline Banner */}
         {isCrisis && (
-          <View style={styles.crisisBanner}>
+          <Pressable style={styles.crisisBanner} onPress={() => setShowCrisisHelp(true)} accessibilityRole="button">
             <Ionicons name="warning" size={16} color="#fff" />
-            <Text style={styles.crisisBannerText}>If you're in immediate danger, call 988 (Suicide & Crisis Lifeline) or 112</Text>
-          </View>
+            <Text style={styles.crisisBannerText}>If you're in immediate danger, call 112. Tap for free helplines.</Text>
+          </Pressable>
         )}
 
         <FlatList
