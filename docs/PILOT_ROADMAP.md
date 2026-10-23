@@ -65,10 +65,10 @@ Nothing else is safe to build until the working tree is committed and tests can 
   - [x] accept access tokens only
   - [x] check `is_active`
   - [x] validate origin
-- [~] Correct the throttle rates (done: now read from settings; login 10/min, register 30/hour, per-email OTP limits). Proxy count still to do.
-- [~] Remove account-enumeration responses (done for forgot-password and request-otp). Raw exception text in error bodies still to do.
+- [x] Correct the throttle rates (read from settings: login 10/min, register 30/hour, per-email OTP limits) and set the proxy count (`NUM_PROXIES`, 0 on the LAN, 1 behind a tunnel).
+- [x] Remove account-enumeration responses and raw exception text from error bodies.
 - [ ] Remove fake trust signals in the app: "Verified Identity", "Background checked", "Available Now", the non-functional 2FA switch.
-- [ ] Safe to expose through a tunnel: `DEBUG` off, `ALLOWED_HOSTS` and CORS read from env (LAN address plus the tunnel domain), Swagger and Flower not reachable through the tunnel.
+- [x] Safe to expose through a tunnel: `DEBUG` off by default, a real `SECRET_KEY` required, `ALLOWED_HOSTS` and CORS read from env, Swagger only in debug mode. (Flower is not reachable through a tunnel that points at port 8000.)
 
 **Done when:** each hole has a test that fails before the fix and passes after, and no tunnel link is shared until this phase is done.
 

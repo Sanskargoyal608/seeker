@@ -7,10 +7,39 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / '.env.local')
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'unsafe-local-secret')
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+import sys
+from django.core.exceptions import ImproperlyConfigured
 
-ALLOWED_HOSTS = ['*']
+TESTING = 'pytest' in sys.modules or 'test' in sys.argv
+
+
+def _env_list(name):
+    return [item.strip() for item in os.getenv(name, '').split(',') if item.strip()]
+
+
+# Safe by default: debug mode is opt-in, and a real secret key is mandatory
+# outside debug mode. Debug mode leaks settings and tracebacks, so never leave it
+# on while the server is reachable through a tunnel or from the internet.
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+if not SECRET_KEY:
+    if DEBUG or TESTING:
+        SECRET_KEY = 'unsafe-local-secret'
+    else:
+        raise ImproperlyConfigured('SECRET_KEY must be set when DEBUG is not True.')
+
+# Comma-separated host names, e.g. ALLOWED_HOSTS=localhost,192.168.1.20,my-tunnel.trycloudflare.com
+# Unset in debug mode means "any host", so a phone on the LAN just works; unset
+# outside debug mode means localhost only.
+ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS') or (
+    ['*'] if DEBUG else ['localhost', '127.0.0.1', '[::1]', 'django', 'testserver']
+)
+
+# Number of reverse proxies (e.g. a Cloudflare tunnel = 1) in front of Django.
+# Without this, DRF trusts a client-supplied X-Forwarded-For and per-IP throttles
+# can be dodged. 0 means: use the connecting address.
+NUM_PROXIES = int(os.getenv('NUM_PROXIES', 0))
 
 INSTALLED_APPS = [
     'daphne',
@@ -105,9 +134,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import sys
-TESTING = 'pytest' in sys.modules or 'test' in sys.argv
-
 if TESTING:
     CHANNEL_LAYERS = {
         'default': {
@@ -143,6 +169,7 @@ else:
     }
 
 REST_FRAMEWORK = {
+    'NUM_PROXIES': NUM_PROXIES,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'accounts.authentication.SessionAwareJWTAuthentication',
     ),
@@ -183,7 +210,11 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Browsers only (the Expo web build); native apps are not subject to CORS.
+# Set CORS_ALLOWED_ORIGINS=http://localhost:8081,https://my-tunnel.example.com to restrict.
+# Unset in debug mode means any origin.
+CORS_ALLOWED_ORIGINS = _env_list('CORS_ALLOWED_ORIGINS')
+CORS_ALLOW_ALL_ORIGINS = DEBUG and not CORS_ALLOWED_ORIGINS
 
 # Email Configuration - Gmail SMTP (set credentials in .env.local)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')

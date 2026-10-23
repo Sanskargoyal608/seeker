@@ -1,3 +1,5 @@
+import logging
+
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,6 +22,8 @@ from accounts.otp_service import OTPService
 from accounts.services.file_upload import FileUploadService
 from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact, OTPToken
 import accounts.throttles as throttles
+
+logger = logging.getLogger(__name__)
 
 
 def health(request):
@@ -323,9 +327,10 @@ class RegisterGeneralUserView(APIView):
                 'detail': 'Registration successful. You are now logged in.',
             }, status=status.HTTP_201_CREATED)
 
-        except Exception as e:
+        except Exception:
+            logger.exception('Registration failed')
             return Response(
-                {'detail': f'Registration failed: {str(e)}'},
+                {'detail': 'Registration could not be completed. Please check your details and try again.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -413,9 +418,10 @@ class RegisterCounselorView(APIView):
                 'detail': 'Registration successful. Your account is pending admin verification.',
             }, status=status.HTTP_201_CREATED)
 
-        except Exception as e:
+        except Exception:
+            logger.exception('Registration failed')
             return Response(
-                {'detail': f'Registration failed: {str(e)}'},
+                {'detail': 'Registration could not be completed. Please check your details and try again.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -495,9 +501,10 @@ class RegisterTherapistView(APIView):
                 'detail': 'Registration successful. Your account is pending admin verification.',
             }, status=status.HTTP_201_CREATED)
 
-        except Exception as e:
+        except Exception:
+            logger.exception('Registration failed')
             return Response(
-                {'detail': f'Registration failed: {str(e)}'},
+                {'detail': 'Registration could not be completed. Please check your details and try again.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -557,5 +564,7 @@ class DocumentUploadView(APIView):
             
             response_serializer = UserDetailSerializer(user)
             return Response(response_serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            logger.exception('Document upload failed')
+            return Response({'error': 'The document could not be uploaded. Please try again.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
