@@ -48,8 +48,8 @@ Nothing else is safe to build until the working tree is committed and tests can 
 
 ## Phase 1 — Close the security holes
 
-- [ ] Participant and ownership checks on chat messages, session detail, triage respond and the mock `verify-payment`.
-- [ ] Clinical summary for clinicians only: stop returning dossier, provisional conditions, severity and crisis flags to the seeker (triage replies and `sessions/<id>/intake/`).
+- [x] Participant and ownership checks on chat messages, session detail, triage respond and the mock `verify-payment`.
+- [x] Clinical summary for clinicians only: stop returning dossier, provisional conditions, severity and crisis flags to the seeker (triage replies and `sessions/<id>/intake/`).
 - [ ] Unverified providers: allow profile, document upload and availability setup; block queue, accept, escalate, respond, follow-up and bookings; keep them out of search results and the Typesense index. Only verified therapists as escalation and booking targets.
 - [ ] Keep therapist-directed sessions out of the counselor queue.
 - [ ] Disable wallet withdrawals: payouts endpoint read-only; remove the withdraw buttons.

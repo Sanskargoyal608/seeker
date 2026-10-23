@@ -7,20 +7,25 @@ class TriageMessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'role', 'content', 'created_at']
 
 class TriageSessionSerializer(serializers.ModelSerializer):
+    """
+    Seeker-facing view of a triage session. Clinical interpretation (suspected
+    and provisional conditions, severity, risk flags, dossier, summary) is for
+    clinicians only and must never be returned here.
+    """
     messages = TriageMessageSerializer(many=True, read_only=True)
-    
+    is_crisis = serializers.SerializerMethodField()
+
+    def get_is_crisis(self, obj):
+        return bool(obj.crisis_flags)
+
     class Meta:
         model = TriageSession
         fields = [
             'id', 'is_complete', 'conversation_phase', 'turn_count',
             'chief_complaint', 'emotional_state', 'duration',
-            'primary_concern', 'suspected_conditions', 'relevant_screening',
-            'sleep_quality', 'appetite_change', 'social_functioning',
-            'triggers', 'physical_symptoms',
-            'urgency', 'crisis_flags', 'support_preference',
-            'routing_decision', 'ai_confidence', 'clinical_summary',
-            'provisional_conditions', 'functional_impairment', 'therapy_goals',
-            'recommended_modalities', 'specialization_tags', 'intake_dossier',
+            'primary_concern', 'sleep_quality', 'appetite_change',
+            'social_functioning', 'triggers', 'physical_symptoms',
+            'support_preference', 'routing_decision', 'is_crisis',
             'suggested_chips', 'recommended_therapists',
             'resulting_session', 'created_at', 'messages'
         ]

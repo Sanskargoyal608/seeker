@@ -250,6 +250,9 @@ class TriageRespondView(APIView):
         triage_session_id = req_serializer.validated_data['triage_session_id']
         user_response = req_serializer.validated_data['response']
         
+        if not TriageSession.objects.filter(id=triage_session_id, user=request.user).exists():
+            return Response({'detail': 'Triage session not found.'}, status=status.HTTP_404_NOT_FOUND)
+
         service = TriageService()
         triage_session = service.process_response(triage_session_id, user_response)
         
@@ -269,7 +272,7 @@ class VerifyPaymentView(APIView):
         from asgiref.sync import async_to_sync
         
         try:
-            session = Session.objects.get(id=session_id)
+            session = Session.objects.get(id=session_id, user=request.user)
             
             # 1. Update session status
             if session.status == Session.PAYMENT_PENDING:
@@ -411,6 +414,10 @@ class SessionMessageListView(APIView):
         try:
             session = Session.objects.get(id=actual_id)
         except Session.DoesNotExist:
+            return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        from .permissions import is_session_participant
+        if not is_session_participant(request.user, session):
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
         messages = session.messages.all().order_by('created_at')
@@ -964,7 +971,11 @@ class SessionDetailView(APIView):
         from django.shortcuts import get_object_or_404
         
         session = get_object_or_404(Session, id=session_id)
-        
+
+        from .permissions import is_session_participant
+        if not is_session_participant(request.user, session):
+            return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
+
         from .serializers import SessionSerializer
         data = SessionSerializer(session).data
         data['has_escalation'] = session.escalations.exists()
@@ -974,7 +985,7 @@ class SessionIntakeView(APIView):
     """
     GET /api/core/sessions/<id>/intake/
     Fetches the clinical intake dossier for a given session's user.
-    Accessible by the assigned counselor or therapist.
+    Accessible by the assigned counselor or therapist (and staff), never the seeker.
     """
     permission_classes = [IsAuthenticated]
 
@@ -996,7 +1007,7 @@ class SessionIntakeView(APIView):
             session.counselor == getattr(request.user, 'counselor_profile', None) or
             session.counselor == getattr(request.user, 'graduatecounselor', None)
         )
-        if not (is_assigned_therapist or is_assigned_counselor or request.user.is_staff or session.user == request.user):
+        if not (is_assigned_therapist or is_assigned_counselor or request.user.is_staff):
             return Response({'error': 'Unauthorized to view clinical intake'}, status=status.HTTP_403_FORBIDDEN)
             
         # Check triage dossier first

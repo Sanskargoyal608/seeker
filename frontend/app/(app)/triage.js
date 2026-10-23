@@ -34,7 +34,6 @@ export default function TriageScreen() {
   const [routingDecision, setRoutingDecision] = useState(null);
   const [recommendedTherapists, setRecommendedTherapists] = useState([]);
   const [resultingSessionId, setResultingSessionId] = useState(null);
-  const [intakeDossier, setIntakeDossier] = useState(null);
   const [isCrisis, setIsCrisis] = useState(false);
   const flatListRef = useRef();
 
@@ -55,7 +54,6 @@ export default function TriageScreen() {
     setRoutingDecision(data.routing_decision || null);
     setRecommendedTherapists(data.recommended_therapists || []);
     setResultingSessionId(data.resulting_session || null);
-    setIntakeDossier(data.intake_dossier || null);
 
     const formattedMessages = (data.messages || []).map((msg, index) => ({
       id: index.toString(),
@@ -64,7 +62,7 @@ export default function TriageScreen() {
     }));
     setMessages(formattedMessages);
 
-    if (data.crisis_flags && data.crisis_flags.length > 0) {
+    if (data.is_crisis) {
       setIsCrisis(true);
     }
 

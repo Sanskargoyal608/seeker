@@ -35,3 +35,31 @@ class IsNoteOwnerOrTherapist(permissions.BasePermission):
             return obj.session.therapist == request.user.therapist_profile
             
         return False
+
+
+def is_session_participant(user, session):
+    """True if `user` is the seeker, the assigned counselor/therapist, or staff."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_staff or session.user_id == user.id:
+        return True
+    counselor = getattr(user, 'counselor_profile', None)
+    therapist = getattr(user, 'therapist_profile', None)
+    return bool(
+        (counselor and session.counselor_id == counselor.id)
+        or (therapist and session.therapist_id == therapist.id)
+    )
+
+
+def is_session_provider(user, session):
+    """True only for the assigned counselor/therapist (and staff), never the seeker."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_staff:
+        return True
+    counselor = getattr(user, 'counselor_profile', None)
+    therapist = getattr(user, 'therapist_profile', None)
+    return bool(
+        (counselor and session.counselor_id == counselor.id)
+        or (therapist and session.therapist_id == therapist.id)
+    )
