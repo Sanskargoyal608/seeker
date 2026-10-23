@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 
 from accounts.serializers import (
@@ -42,11 +43,8 @@ class LoginView(APIView):
 
         user = serializer.validated_data['user']
 
-        # Get device hash from User-Agent
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-
-        # Generate tokens with device tracking
-        tokens = DeviceTokenService.generate_tokens(user, user_agent)
+        # Every login is its own device session
+        tokens = DeviceTokenService.generate_tokens(user)
 
         # Serialize user data
         user_serializer = UserDetailSerializer(user)
@@ -116,31 +114,20 @@ class RefreshTokenView(APIView):
 
         refresh_token = serializer.validated_data['refresh']
 
+        invalid = Response(
+            {'detail': 'Invalid or expired token. Please log in again.'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
         try:
-            # Decode the refresh token to get user_id
             refresh = RefreshToken(refresh_token)
-            user_id = refresh.payload.get('user_id')
+        except TokenError:
+            return invalid
 
-            # Verify token is in Redis (device-specific check)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
-            if not DeviceTokenService.verify_token_valid(user_id, refresh_token, user_agent):
-                return Response(
-                    {'detail': 'Invalid or expired token for this device.'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
+        user = User.objects.filter(id=refresh.payload.get('user_id'), is_active=True).first()
+        if user is None or not DeviceTokenService.refresh_is_active(user, refresh_token, refresh.payload):
+            return invalid
 
-            # Generate new access token
-            new_access_token = str(refresh.access_token)
-
-            return Response({
-                'access': new_access_token,
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {'detail': f'Token refresh failed: {str(e)}'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        return Response({'access': str(refresh.access_token)}, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
@@ -151,11 +138,8 @@ class LogoutView(APIView):
 
     @extend_schema(request=None, responses=None)
     def post(self, request):
-        user_id = request.user.id
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-
-        # Invalidate token for this device
-        DeviceTokenService.invalidate_token(user_id, user_agent)
+        # End only the session this request belongs to; other devices stay logged in.
+        DeviceTokenService.invalidate_device(request.user.id, request.auth.get('device_id'))
 
         return Response(
             {'detail': 'Logged out successfully.'},
@@ -202,11 +186,11 @@ class AccountDeleteView(APIView):
     def delete(self, request):
         user = request.user
         user.is_active = False
-        user.save()
-        
-        # Invalidate tokens
-        RefreshToken.for_user(user) # Technically doesn't blacklist all, but standard flow
-        
+        user.save(update_fields=['is_active'])
+
+        # End every session of the deleted account
+        DeviceTokenService.invalidate_all_user_tokens(user.id)
+
         return Response({"detail": "Account deleted successfully."}, status=status.HTTP_200_OK)
 
 
@@ -326,8 +310,7 @@ class RegisterGeneralUserView(APIView):
                 )
 
             # Generate tokens
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
-            tokens = DeviceTokenService.generate_tokens(user, user_agent)
+            tokens = DeviceTokenService.generate_tokens(user)
 
             # Return response with tokens and user
             user_serializer = UserDetailSerializer(user)
@@ -418,8 +401,7 @@ class RegisterCounselorView(APIView):
             )
 
             # Generate tokens
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
-            tokens = DeviceTokenService.generate_tokens(user, user_agent)
+            tokens = DeviceTokenService.generate_tokens(user)
 
             user_serializer = UserDetailSerializer(user)
 
@@ -501,8 +483,7 @@ class RegisterTherapistView(APIView):
             )
 
             # Generate tokens
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
-            tokens = DeviceTokenService.generate_tokens(user, user_agent)
+            tokens = DeviceTokenService.generate_tokens(user)
 
             user_serializer = UserDetailSerializer(user)
 

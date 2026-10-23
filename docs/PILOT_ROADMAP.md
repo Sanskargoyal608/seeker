@@ -59,12 +59,12 @@ Nothing else is safe to build until the working tree is committed and tests can 
   - [x] single-use reset codes
   - [x] dedicated throttles
   - [x] apply the password validators
-- [ ] Make logout-all and reset-time token invalidation real; replace the User-Agent device binding with a client device id.
-- [ ] WebSocket auth:
-  - [ ] fix the middleware crash on bad tokens
-  - [ ] accept access tokens only
-  - [ ] check `is_active`
-  - [ ] validate origin
+- [x] Make logout-all and reset-time token invalidation real; each login is its own device session (several devices per account), so one phone no longer logs out another.
+- [x] WebSocket auth:
+  - [x] fix the middleware crash on bad tokens
+  - [x] accept access tokens only
+  - [x] check `is_active`
+  - [x] validate origin
 - [~] Correct the throttle rates (done: now read from settings; login 10/min, register 30/hour, per-email OTP limits). Proxy count still to do.
 - [~] Remove account-enumeration responses (done for forgot-password and request-otp). Raw exception text in error bodies still to do.
 - [ ] Remove fake trust signals in the app: "Verified Identity", "Background checked", "Available Now", the non-functional 2FA switch.

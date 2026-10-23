@@ -1,112 +1,110 @@
 # accounts/token_service.py
-import hashlib
-import json
+"""
+Per-device login sessions.
+
+Every login creates its own session ("device") identified by a random id that is
+carried as a claim in both the refresh and the access token. Several devices can
+be logged in at once and do not affect each other.
+
+  * logout            -> revokes that one device (refresh entry deleted, access
+                         tokens for the device rejected)
+  * logout everywhere -> bumps User.token_epoch; every token issued before the
+    / password reset    bump carries an older epoch and is rejected
+"""
+import uuid
+
+from django.conf import settings
 from django.core.cache import cache
+from django.db.models import F
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils import timezone
-from datetime import timedelta
+
+from accounts.models import User
 
 
 class DeviceTokenService:
-    """
-    Manages device-based token storage in Redis.
-    Ensures tokens are device-specific and can be revoked per device.
-    """
-
-    TOKEN_EXPIRY_DAYS = 10
     REDIS_PREFIX = 'auth_token'
+    REVOKED_PREFIX = 'auth_revoked'
+
+    # ---- keys / lifetimes -------------------------------------------------
+    @classmethod
+    def _session_key(cls, user_id: int, device_id: str) -> str:
+        return f"{cls.REDIS_PREFIX}:{user_id}:{device_id}"
+
+    @classmethod
+    def _revoked_key(cls, user_id: int, device_id: str) -> str:
+        return f"{cls.REVOKED_PREFIX}:{user_id}:{device_id}"
 
     @staticmethod
-    def _get_device_hash(user_agent: str = None) -> str:
-        """
-        Generate a device hash from User-Agent.
-        Falls back to a generic hash if User-Agent is not provided.
-        """
-        if not user_agent:
-            user_agent = 'unknown-device'
-        return hashlib.sha256(user_agent.encode()).hexdigest()[:16]
+    def _refresh_lifetime_seconds() -> int:
+        return int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
 
     @staticmethod
-    def _get_redis_key(user_id: int, device_hash: str) -> str:
-        """Generate Redis key for storing device tokens"""
-        return f"{DeviceTokenService.REDIS_PREFIX}:{user_id}:{device_hash}"
+    def _access_lifetime_seconds() -> int:
+        return int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds())
 
+    # ---- issuing ----------------------------------------------------------
     @classmethod
     def generate_tokens(cls, user, user_agent: str = None) -> dict:
         """
-        Generate JWT tokens and store refresh token in Redis.
-        Returns access token, refresh token, and device hash.
+        Start a new login session for `user` and return its tokens.
+        `user_agent` is accepted for backwards compatibility and ignored: two
+        phones with the same app build are two separate devices.
         """
+        device_id = uuid.uuid4().hex
+
         refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
+        refresh['device_id'] = device_id
+        refresh['epoch'] = user.token_epoch
 
-        device_hash = cls._get_device_hash(user_agent)
-        redis_key = cls._get_redis_key(user.id, device_hash)
-
-        # Store in Redis with 10-day expiry
-        token_data = {
-            'access': access_token,
-            'refresh': refresh_token,
-            'user_id': user.id,
-            'device_hash': device_hash,
-            'created_at': timezone.now().isoformat(),
-        }
-
-        cache.set(redis_key, json.dumps(token_data),
-                  timeout=60*60*24*cls.TOKEN_EXPIRY_DAYS)
+        cache.set(cls._session_key(user.id, device_id), str(refresh),
+                  timeout=cls._refresh_lifetime_seconds())
 
         return {
-            'access': access_token,
-            'refresh': refresh_token,
-            'device_hash': device_hash,
+            'access': str(refresh.access_token),  # inherits device_id and epoch
+            'refresh': str(refresh),
+            'device_hash': device_id,  # name kept for the existing clients
         }
 
+    # ---- checking ---------------------------------------------------------
     @classmethod
-    def verify_token_valid(cls, user_id: int, refresh_token: str, user_agent: str = None) -> bool:
-        """
-        Verify if a refresh token is valid for the given device.
-        Returns True if valid, False otherwise.
-        """
-        device_hash = cls._get_device_hash(user_agent)
-        redis_key = cls._get_redis_key(user_id, device_hash)
-
-        token_data = cache.get(redis_key)
-        if not token_data:
-            return False
-
-        try:
-            stored_tokens = json.loads(token_data)
-            return stored_tokens.get('refresh') == refresh_token
-        except (json.JSONDecodeError, TypeError):
-            return False
+    def is_device_revoked(cls, user_id: int, device_id) -> bool:
+        return bool(device_id) and cache.get(cls._revoked_key(user_id, device_id)) is not None
 
     @classmethod
-    def invalidate_token(cls, user_id: int, user_agent: str = None) -> bool:
-        """
-        Invalidate a token for the given device (logout).
-        Removes the token from Redis.
-        """
-        device_hash = cls._get_device_hash(user_agent)
-        redis_key = cls._get_redis_key(user_id, device_hash)
-        cache.delete(redis_key)
+    def claims_are_current(cls, user, payload) -> bool:
+        """True if a token's claims still describe a live session for `user`."""
+        if payload.get('epoch', 0) != user.token_epoch:
+            return False
+        return not cls.is_device_revoked(user.id, payload.get('device_id'))
+
+    @classmethod
+    def refresh_is_active(cls, user, refresh_token: str, payload) -> bool:
+        """True if this exact refresh token is the live one for its device."""
+        if not cls.claims_are_current(user, payload):
+            return False
+        device_id = payload.get('device_id')
+        if not device_id:
+            return False
+        return cache.get(cls._session_key(user.id, device_id)) == refresh_token
+
+    # ---- revoking ---------------------------------------------------------
+    @classmethod
+    def invalidate_device(cls, user_id: int, device_id) -> bool:
+        """Log out one device."""
+        if not device_id:
+            return False
+        cache.delete(cls._session_key(user_id, device_id))
+        # Access tokens are stateless; reject the device's until they would expire anyway.
+        cache.set(cls._revoked_key(user_id, device_id), 1,
+                  timeout=cls._access_lifetime_seconds() + 60)
         return True
 
     @classmethod
     def invalidate_all_user_tokens(cls, user_id: int) -> bool:
         """
-        Invalidate all tokens for a user across all devices.
-        Use case: Force logout from all devices on password change.
+        Log a user out everywhere. Every token issued before this call carries an
+        older epoch and stops working immediately. Stored in the database, so it
+        survives a cache flush.
         """
-        # Since we don't have a way to query all Redis keys with a pattern
-        # using Django cache, we store a blacklist key.
-        blacklist_key = f"{cls.REDIS_PREFIX}:blacklist:{user_id}"
-        cache.set(blacklist_key, timezone.now().isoformat(),
-                  timeout=60*60*24*cls.TOKEN_EXPIRY_DAYS)
+        User.objects.filter(pk=user_id).update(token_epoch=F('token_epoch') + 1)
         return True
-
-    @classmethod
-    def is_user_globally_blacklisted(cls, user_id: int) -> bool:
-        """Check if a user is globally blacklisted (all tokens invalidated)"""
-        blacklist_key = f"{cls.REDIS_PREFIX}:blacklist:{user_id}"
-        return cache.get(blacklist_key) is not None
