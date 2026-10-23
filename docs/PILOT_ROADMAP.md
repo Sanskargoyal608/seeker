@@ -52,7 +52,7 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [x] Clinical summary for clinicians only: stop returning dossier, provisional conditions, severity and crisis flags to the seeker (triage replies and `sessions/<id>/intake/`).
 - [x] Unverified providers: allow profile, document upload and availability setup; block queue, accept, escalate, respond, follow-up and bookings; keep them out of search results and the Typesense index. Only verified therapists as escalation and booking targets.
 - [x] Keep therapist-directed sessions out of the counselor queue.
-- [ ] Disable wallet withdrawals: payouts endpoint read-only; remove the withdraw buttons.
+- [x] Disable wallet withdrawals: payouts endpoint read-only; remove the withdraw buttons.
 - [ ] OTP and password reset:
   - [ ] attempt limits and lockout
   - [ ] invalidate old codes on reissue

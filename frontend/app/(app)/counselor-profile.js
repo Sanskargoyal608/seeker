@@ -82,26 +82,6 @@ export default function CounselorProfileScreen() {
     }
   };
 
-  const handleWithdraw = async () => {
-    const available = totalEarnings - totalPayouts;
-    if (available <= 0) {
-      Alert.alert('No Funds', 'You have no available balance to withdraw.');
-      return;
-    }
-    Alert.alert('Withdraw Funds', `Withdraw ₹${available.toFixed(2)}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Withdraw', onPress: async () => {
-        try {
-          await api.post('/api/core/therapist/payouts/', { total_amount: available });
-          Alert.alert('Success', 'Withdrawal request submitted!');
-          fetchFinances();
-        } catch(e) {
-          Alert.alert('Error', 'Failed to process withdrawal.');
-        }
-      }}
-    ]);
-  };
-
   const deactivateAccount = () => {
     Alert.alert("Deactivate", "Are you sure you want to deactivate your account?", [
       { text: "Cancel", style: "cancel" },
@@ -128,11 +108,7 @@ export default function CounselorProfileScreen() {
           <Text style={styles.balanceAmount}>
             ${loadingFinances ? '...' : availableBalance.toFixed(2)}
           </Text>
-          <Text style={styles.payoutText}>Next payout: Automatic upon request</Text>
-          
-          <Pressable style={styles.primaryBtn} onPress={handleWithdraw}>
-            <Text style={styles.primaryBtnText}>Withdraw Funds</Text>
-          </Pressable>
+          <Text style={styles.payoutText}>Withdrawals are not available yet.</Text>
         </View>
 
         {/* Chat Rate */}

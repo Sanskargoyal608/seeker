@@ -134,3 +134,27 @@ class TestIntakeClinicianOnly:
     def test_stranger_cannot_read_intake(self, world):
         r = client_for(world['stranger']).get(reverse('session-intake', args=[world['session'].id]))
         assert r.status_code == status.HTTP_403_FORBIDDEN
+
+
+class TestPayoutsReadOnly:
+    @pytest.fixture
+    def therapist_user(self, db):
+        from accounts.models import LicensedTherapist
+        u = UserFactory(role=User.THERAPIST)
+        LicensedTherapist.objects.create(user=u, is_verified=True)
+        return u
+
+    def test_cannot_create_payout(self, therapist_user):
+        r = client_for(therapist_user).post(reverse('therapist-payouts-list'), {'total_amount': '99999.00'}, format='json')
+        assert r.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+    def test_cannot_edit_or_delete_payout(self, therapist_user):
+        from core.models import PayoutRecord
+        p = PayoutRecord.objects.create(therapist=therapist_user.therapist_profile, total_amount='10.00', status='PENDING')
+        c = client_for(therapist_user)
+        url = reverse('therapist-payouts-detail', args=[p.id])
+        assert c.patch(url, {'status': 'PAID'}, format='json').status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+        assert c.delete(url).status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+    def test_can_list_own_payouts(self, therapist_user):
+        assert client_for(therapist_user).get(reverse('therapist-payouts-list')).status_code == status.HTTP_200_OK

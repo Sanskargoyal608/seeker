@@ -1078,16 +1078,17 @@ class TherapistEarningsViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return EarningsRecord.objects.filter(therapist__user=self.request.user)
 
-class TherapistPayoutViewSet(viewsets.ModelViewSet):
+class TherapistPayoutViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only history of a provider's payouts. Providers cannot create, edit or
+    delete payouts: withdrawals are out of scope for the pilot, and payout
+    records may only be created by admins (Django Admin) once real payments exist.
+    """
     serializer_class = PayoutRecordSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return PayoutRecord.objects.filter(therapist__user=self.request.user)
-        
-    def perform_create(self, serializer):
-        # Auto-accept payouts per user requirements
-        serializer.save(therapist=self.request.user.therapist_profile, status='PAID')
 
 class CounselorAvailabilityUpdateView(APIView):
     permission_classes = [IsAuthenticated]

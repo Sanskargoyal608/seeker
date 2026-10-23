@@ -32,25 +32,6 @@ export default function EarningsScreen() {
     fetchFinancials();
   }, []);
 
-  const handleWithdraw = async () => {
-    const totalEarnings = earnings.reduce((sum, e) => sum + parseFloat(e.net_amount), 0);
-    const totalPayouts = payouts.reduce((sum, p) => sum + parseFloat(p.total_amount), 0);
-    const available = totalEarnings - totalPayouts;
-
-    if (available <= 0) {
-      Alert.alert('Notice', 'No available funds to withdraw.');
-      return;
-    }
-
-    try {
-      await apiClient.post('/api/core/therapist/payouts/', { total_amount: available });
-      Alert.alert('Success', 'Withdrawal processed successfully. Funds will be deposited shortly.');
-      fetchFinancials();
-    } catch (err) {
-      Alert.alert('Error', 'Failed to process withdrawal.');
-    }
-  };
-
   const renderTransaction = ({ item }) => {
     // If it has net_amount, it's an earning. If it has total_amount, it's a payout.
     const isEarning = item.net_amount !== undefined;
@@ -89,9 +70,6 @@ export default function EarningsScreen() {
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Available Balance</Text>
         <Text style={styles.balanceAmount}>${availableBalance.toFixed(2)}</Text>
-        <Pressable style={styles.withdrawBtn} onPress={handleWithdraw}>
-          <Text style={styles.withdrawBtnText}>Withdraw Funds</Text>
-        </Pressable>
       </View>
 
       <View style={styles.listHeader}>
