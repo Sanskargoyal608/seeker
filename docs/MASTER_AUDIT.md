@@ -1,10 +1,10 @@
 # Seeker — Master Audit
 
-**Date:** 2026-10-13
+**Date:** 2026-10-13 · **Updated:** 2026-10-23 (owner decisions, conflict review, corrections; code unchanged since the audit)
 **Scope:** every doc, the whole Django backend, the Expo app in `frontend/`, the Next.js app in `web/`, infra and repo hygiene.
 **Companion:** [PILOT_ROADMAP.md](PILOT_ROADMAP.md) is the phase plan built on this audit.
 
-This document supersedes the status claims in `Comprehensive_Audit_Report.md`, `Feature_Status_Tracker.md` and the older audits now under `docs/archive/`.
+This document supersedes the status claims in all older audits and trackers, now under `docs/archive/`.
 
 ---
 
@@ -21,7 +21,7 @@ Findings come from reading code, not from running the app:
 
 ## 2. Verdict
 
-A broad, mostly wired prototype. It is not the "100% functional" state the Sep 22 banner in `Comprehensive_Audit_Report.md` claims, and it is not safe for real users yet. The blockers are open data access, crisis handling that alerts nobody, weak account security, and several core flows that cannot complete.
+A broad, mostly wired prototype. It is not the "100% functional" state the Sep 22 banner in `docs/archive/Comprehensive_Audit_Report.md` claims, and it is not safe for real users yet. The blockers are open data access, crisis handling that alerts nobody, weak account security, and several core flows that cannot complete.
 
 ## 3. What is built and works (by code reading)
 
@@ -46,7 +46,7 @@ A broad, mostly wired prototype. It is not the "100% functional" state the Sep 2
 | Read any session's metadata (seeker name, provider ids, crisis flag) | `core/views.py:962-971` |
 | Mark any session as paid (no ownership check, no verification) | `core/views.py:266-309` |
 
-Also: the seeker can read the clinician dossier and provisional conditions (`SessionIntakeView`, `TriageSessionSerializer`). This needs an owner decision.
+Also: the seeker can read the clinician dossier and provisional conditions (`SessionIntakeView`, and `TriageSessionSerializer` on every triage reply). Owner decision (2026-10-23): clinicians only.
 
 ### 4.2 Crisis handling
 
@@ -57,7 +57,8 @@ Also: the seeker can read the clinician dossier and provisional conditions (`Ses
 | Triage never calls the keyword detector; it relies on the LLM. A crisis flag creates an ordinary waiting session with no alert | `core/services/triage_service.py:457-533` |
 | If OpenAI fails or the key is missing, the user gets a canned reply every turn, then is routed to the counselor queue | `core/services/triage_service.py:210-220` |
 | A crisis hit tells the sender "a counselor has been alerted" but alerts no provider. The only action is an email | `core/consumers.py:99-103` |
-| Email falls back to a hardcoded personal Gmail, with user email and message text in plaintext | `core/services/crisis_detection.py:55` |
+| Crisis emails go to every active row of `core.EmergencyContact`, a global staff email list managed in Django Admin. When that list is empty they fall back to a hardcoded personal Gmail, with user email and message text in plaintext | `core/services/crisis_detection.py:51-55` |
+| The user's own emergency contacts (`accounts.EmergencyContact`, two required at registration) are stored and never used by anything. The two models share a name but are unrelated | `accounts/models.py`, `core/models.py:347` |
 | Default email backend is console, so by default nothing is sent | `config/settings.py` |
 | Panic button always answers "help is on the way"; only emails hardcoded `admin@seeker.app` with `fail_silently=True`; persists nothing without an active session | `core/views.py:662-710` |
 | Crisis keywords exist only if `seed_crisis_keywords` is run by hand; 22 English phrases | `core/management/commands/` |
@@ -90,7 +91,7 @@ Also: the seeker can read the clinician dossier and provisional conditions (`Ses
 |---|---|
 | Payment is a mock; `razorpay` is installed but never imported | `core/views.py:261` |
 | Therapists can create their own payouts of any amount, saved as PAID; update and delete also open | `core/views.py:1070-1079` |
-| Sessions never become `ACTIVE` and `start_time` is never set, so duration and earnings are 0 for queue-matched sessions | `core/services/matching_service.py:39`, `core/views.py:647` |
+| No live code path sets `start_time`, so every session ends with duration 0 and zero earnings. Queue-matched sessions also never become `ACTIVE` (booking start and therapist follow-up do set `ACTIVE`) | `core/services/matching_service.py:39`, `core/views.py:647,949`, `profiles/views.py:330` |
 | Earnings: 20% fee hardcoded; therapists priced per-minute though they charge per session; only the counselor is paid after an escalation | `core/tasks.py:102-144` |
 | Counselor earnings always show 0 (app calls therapist-only endpoints); a counselor withdrawal returns 500 | `frontend/app/(app)/counselor-profile.js:41-42,95` |
 | `SeekerBillingRecord` is never written; billing list is always empty | `core/models.py:392` |
@@ -150,7 +151,7 @@ Also: the seeker can read the clinician dossier and provisional conditions (`Ses
 
 ## 7. Planned and never built
 
-Real Razorpay and weekly payouts · therapist 2FA at login · encryption of personal data at rest · CI · root README · 90% coverage target · counselor orientation quiz and video · read receipts, typing events, live queue socket · video or audio · account data export and true deletion · the 5–10 real-user test · legal review.
+Real Razorpay and weekly payouts · therapist 2FA at login · encryption of personal data at rest · CI and root README *(added in Phase 0)* · 90% coverage target · counselor orientation quiz and video · read receipts, typing events, live queue socket · video or audio · account data export and true deletion · the 5–10 real-user test · legal review.
 
 ## 8. Triage quality
 
@@ -167,6 +168,8 @@ The suicidal-teen and self-harm personas were routed correctly in both. The dome
 
 ## 9. Repo and infra
 
+*As found on 2026-10-13. Phase 0 (branch `phase0/stabilise`) addressed the uncommitted work, tracked build output, dependency pinning, stale tests and the Docker build context. Still open: the API key rotation and the Docker hardening items.*
+
 - **Uncommitted:** SDK 54 → 57 upgrade, web conversion, new features, backend changes and four required migrations, all in one working tree.
 - **Secrets:** `.env.local` and `firebase-credentials.json` are ignored and were never committed. The Docker build copies `firebase-credentials.json` into the image (`.dockerignore` does not exclude it). The Google API key in the `fetch_*` scripts should be rotated.
 - **Tracked, should not be:** `celerybeat-schedule`, `.coverage`, `staticfiles/`, `frontend/dist/`.
@@ -176,32 +179,65 @@ The suicidal-teen and self-harm personas were routed correctly in both. The dome
 - **Runtime log (`django_logs.txt`, Jul 29 – Aug 14):** two import-time `NameError` outages (now fixed), 15 recurring Redis timeouts on the WebSocket path (unexplained), and the still-present `GraduateCounselor` NameError.
 - **Docs:** four different phase schemes; no single source of truth; `WEBSOCKET_API.md` describes only the Sprint 1 echo.
 
-## 10. Decisions taken (2026-10-13)
+## 10. Decisions taken
 
-| Question | Decision |
-|---|---|
-| Finish line | Closed pilot, 5–10 real users |
-| Platforms | Android plus web |
-| Web | Both: Expo web for the logged-in app, Next.js (`web/`) for public pages |
-| Payments | Mock stays for the pilot; fix the security holes around it |
-| Crisis alerts | On-call staff / admin |
-| Free window and fee | 15 minutes free, 15% platform fee |
-| Unplanned features kept | Mentorship, mood and breathing, compliance screen |
-| Unplanned features cut | Wallet withdrawals |
-| Must-haves before real users | Encrypt personal data at rest, legal docs and consent, CI and test gate |
-| Deferred | Therapist 2FA, iOS, real Razorpay |
-
-Assumptions not yet confirmed by the owner: product name stays "Seeker"; OpenAI stays the triage provider; `EscalationRequest` becomes the single escalation model.
+| Question | Decision | Date |
+|---|---|---|
+| Finish line | Closed pilot, 5–10 real users | 10-13 |
+| Platforms | Android plus web; no iOS for now | 10-13 |
+| Web | Both: Expo web for the logged-in app, Next.js (`web/`) for public pages | 10-13 |
+| Payments | Mock stays for the pilot; fix the security holes around it | 10-13 |
+| Crisis alerts | On-call staff / admin | 10-13 |
+| Free window and fee | 15 minutes free, 15% platform fee | 10-13 |
+| Unplanned features kept | Mentorship, mood and breathing, compliance screen | 10-13 |
+| Unplanned features cut | Wallet withdrawals | 10-13 |
+| Must-haves before real users | Encrypt personal data at rest, legal docs and consent, CI and test gate | 10-13 |
+| Deferred | Therapist 2FA, iOS, real Razorpay | 10-13 |
+| Where it runs | Development phase: locally on the LAN. A Cloudflare (or similar) tunnel may be opened to give outside testers a public URL | 10-23 |
+| Email | Real email through the Gmail SMTP account in `.env.local` (not Mailhog) | 10-23 |
+| Triage | Keep the adaptive flow (not "exactly 4 questions"); fix crisis handling and accuracy | 10-23 |
+| AI provider | OpenAI `gpt-4o-mini` (current code). No Gemini code remains | 10-23 |
+| Product name | "Buddy" in all visible text (screens, emails, web pages). Internal ids unchanged: `com.seeker.app`, `seeker://`, repo and code names | 10-23 |
+| Counselor bookings | Counselors are bookable like therapists, at a fixed per-session price they set; live queue chats stay per-minute | 10-23 |
+| Escalation | `EscalationRequest` is the single model; remove `EscalationEvent` | 10-23 |
+| AI clinical summary | Clinicians only; the seeker never sees provisional conditions, severity or risk flags | 10-23 |
+| Unverified providers | May log in, edit profile, upload documents and set availability; hidden from search and cannot take sessions | 10-23 |
 
 ## 11. Open questions
 
-1. May seekers see the AI dossier and provisional conditions, or clinicians only?
-2. What may an unverified counselor or therapist do before approval?
-3. Who is on the on-call list, and what is the response-time target?
-4. Which helpline numbers and regions apply?
-5. Are migrations `0011`–`0014` applied to any shared database?
-6. After a therapist accepts an escalation, does the counselor stay in the session, and who is paid?
-7. Push: native FCM tokens or the Expo push service?
-8. Should `/book/[slug]` on the web deep-link into the app or be a real booking page?
-9. Production API and WebSocket hostnames; hosting target.
-10. Is one account expected to be logged in on several devices at once?
+1. Who is on the on-call staff list, and what is the response-time target?
+2. Which helpline numbers and regions apply?
+3. Are migrations `0011`–`0014` applied to any shared database?
+4. After a therapist accepts an escalation, does the counselor stay in the session, and who is paid?
+5. Push: native FCM tokens or the Expo push service?
+6. Should `/book/[slug]` on the web deep-link into the app or be a real booking page?
+7. Is one account expected to be logged in on several devices at once?
+8. With Expo web and Next.js both kept, which addresses do they use? Both currently expect port 3000.
+9. What routing accuracy must the triage reach before the pilot (the two persona runs scored 58% and 69%)?
+10. Is widening from 5–10 users to 50 (as `Info.md` plans) in scope after the pilot?
+
+## 12. Conflicts between documents
+
+How each conflict found in the docs is resolved. "Decision" means an owner decision in section 10.
+
+| Topic | What the documents say | Resolution |
+|---|---|---|
+| Free window | 5 min (`Info.md`, roadmaps, design) vs 15 min (code, Phase 2 audit) | Decision: 15 min |
+| Platform fee | 15% (Phase 2 roadmap) vs 20% (code, audits) | Decision: 15% (code still 20%) |
+| AI provider | Claude (docx) vs Gemini (`Info.md`, Phase 2 docs) vs OpenAI (code, tracker) | Decision: OpenAI |
+| Triage shape | "Exactly 4 questions" (`Info.md`, docx) vs adaptive phases (code) | Decision: adaptive |
+| Crisis recipients | Therapist + clinical supervisor, emergency contacts if life-threatening (`Info.md` §3.1.6, docx) vs admin email (`Info.md` §3.1.1) vs staff list / personal Gmail (code) | Decision: on-call staff |
+| Therapist 2FA | Mandatory (`Info.md`, docx) vs fields only (code) | Decision: deferred |
+| Payments | Razorpay test mode in MVP (`Info.md`) vs mock (code) | Decision: mock for pilot |
+| Web | Next.js SSR (`Info.md`, Phase 3 roadmap) vs Expo web, Next.js rejected (web conversion plan) | Decision: both. Open: addresses (Q8) |
+| Hosting | Local Docker only (`Info.md`) vs AWS (docx) vs hosted server (this roadmap, Oct 13) | Decision: local + optional tunnel |
+| Email | Mailhog (`Info.md`) vs Brevo/SendGrid (Phase 1 roadmap) vs Gmail SMTP (code, `.env.local`) | Decision: Gmail SMTP |
+| Mood tracking | Post-MVP (`Info.md`) vs built (code) | Decision: kept |
+| Counselor bookings | Weekly availability + booking link (`Info.md`) vs therapist-only `Booking` (code) | Decision: bookable, fixed price |
+| Escalation | `EscalationEvent` (`Info.md`, Phase 2) vs `EscalationRequest` (Phase 3) | Decision: `EscalationRequest` |
+| Product name | Seeker (all docs, `app.json`) vs Buddy (app UI, design system) | Decision: Buddy in visible text |
+| Star ratings | Never (`Info.md`) vs star rating (docx, web conversion plan §4.1) | `Info.md` stands: no stars |
+| Google OAuth | In MVP (`Info.md`) vs dropped for OTP (Phase 1 roadmap) | OTP only; OAuth deferred |
+| CI | GitHub Actions in Phase 1 (`Info.md`) vs no CI (Phase 1 roadmap) | Added in Phase 0 |
+| Status claims | "100% functional" (comprehensive audit banner), "all resolved" (tracker) vs this audit | This audit; both archived |
+| Pilot size | 5–10 then 50 (`Info.md`) vs 5–10 (this roadmap) | Open (Q10) |

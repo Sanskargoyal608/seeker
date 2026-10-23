@@ -1,6 +1,6 @@
 # Archived planning and audit documents
 
-These files are kept for history only. They contradict each other on phase
+These files are kept for history only. `Comprehensive_Audit_Report.md` and `Feature_Status_Tracker.md` (September 2026) were moved here on 2026-10-23; their "done" claims are contradicted by the code. They contradict each other on phase
 numbering, scope and status, and their "done" claims were not verified against
 the code.
 

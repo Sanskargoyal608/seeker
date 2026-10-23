@@ -1,17 +1,25 @@
 # Seeker — Pilot Roadmap
 
-**Date:** 2026-10-13
+**Date:** 2026-10-13 · **Updated:** 2026-10-23
 **Basis:** [MASTER_AUDIT.md](MASTER_AUDIT.md)
-**Finish line:** a closed pilot with 5–10 real users on Android and web.
+**Finish line:** a closed pilot with 5–10 real users on Android and web, run from a local machine on the LAN, with a Cloudflare (or similar) tunnel for testers outside it.
 
-This roadmap replaces the phase numbering in the older documents now under `docs/archive/` and in `Feature_Status_Tracker.md`.
+This roadmap replaces the phase numbering in the older documents now under `docs/archive/`.
 
 ## Scope decisions
 
+Full list with dates in [MASTER_AUDIT.md §10](MASTER_AUDIT.md#10-decisions-taken).
+
 - Android plus web. Expo web for the logged-in app; Next.js (`web/`) for public profile and booking pages.
+- Development phase: everything runs locally. No cloud hosting before the pilot is validated.
+- Real email through Gmail SMTP, so OTP codes and crisis alerts arrive.
 - Payments stay mocked for the pilot.
 - Crisis alerts go to on-call staff / admin.
-- 15 minutes free, 15% platform fee.
+- 15 minutes free, 15% platform fee. Booked sessions (therapist or counselor) have a fixed per-session price.
+- AI triage: keep the adaptive flow on OpenAI `gpt-4o-mini`. The clinical summary is for clinicians only.
+- `EscalationRequest` is the only escalation model.
+- Unverified providers can set up their profile and schedule but are hidden from search and cannot take sessions.
+- The product is called "Buddy" in all visible text; internal ids stay `seeker`.
 - Kept: mentorship, mood and breathing, compliance screen. Cut: wallet withdrawals.
 - Must-haves: encryption of personal data at rest, legal docs and consent, CI and test gate.
 
@@ -27,7 +35,7 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [x] Commit `core/migrations/0011`–`0014` together with the model changes.
 - [x] Untrack `celerybeat-schedule`, `.coverage`, `staticfiles/`, `frontend/dist/` and the stray `frontend/%ProgramData%` file; extend `.gitignore`.
 - [x] Pin dependencies with a lock file; choose Django 5.x or 6.0; declare `PyJWT`, `requests`, `pytest-asyncio`; drop unused packages.
-- [x] Add a test settings path that does not need the Docker Postgres.
+- [x] Make tests runnable outside Docker: Postgres and Redis hosts from env vars; CI starts both as services.
 - [x] Fix or delete the three stale `core` test files (`test_triage.py`, `test_triage_service.py`, `test_consumers.py`).
 - [x] Add GitHub Actions running the test suite on every push. *(First run passed on 2026-10-13.)*
 - [ ] Rotate the Google API key in the `fetch_*` scripts (owner action, in the Google Cloud console).
@@ -41,7 +49,8 @@ Nothing else is safe to build until the working tree is committed and tests can 
 ## Phase 1 — Close the security holes
 
 - [ ] Participant and ownership checks on chat messages, session detail, triage respond and the mock `verify-payment`.
-- [ ] Require verified status on queue, accept, escalate, respond and follow-up; only verified therapists as targets.
+- [ ] Clinical summary for clinicians only: stop returning dossier, provisional conditions, severity and crisis flags to the seeker (triage replies and `sessions/<id>/intake/`).
+- [ ] Unverified providers: allow profile, document upload and availability setup; block queue, accept, escalate, respond, follow-up and bookings; keep them out of search results and the Typesense index. Only verified therapists as escalation and booking targets.
 - [ ] Keep therapist-directed sessions out of the counselor queue.
 - [ ] Disable wallet withdrawals: payouts endpoint read-only; remove the withdraw buttons.
 - [ ] OTP and password reset:
@@ -59,14 +68,15 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [ ] Correct the throttle rates; set the proxy count.
 - [ ] Remove account-enumeration responses and raw exception text from error bodies.
 - [ ] Remove fake trust signals in the app: "Verified Identity", "Background checked", "Available Now", the non-functional 2FA switch.
+- [ ] Safe to expose through a tunnel: `DEBUG` off, `ALLOWED_HOSTS` and CORS read from env (LAN address plus the tunnel domain), Swagger and Flower not reachable through the tunnel.
 
-**Done when:** each hole has a test that fails before the fix and passes after.
+**Done when:** each hole has a test that fails before the fix and passes after, and no tunnel link is shared until this phase is done.
 
 ## Phase 2 — Make crisis handling real
 
 - [ ] Crisis scan before the payment hold, and on the REST message path; never paywall a crisis-flagged session.
 - [ ] Keyword check on triage input independent of the AI; set the crisis flag and alert when it fires.
-- [ ] Alert a configured on-call staff list by push and email, with a persistent alert record; remove the hardcoded personal Gmail and `admin@seeker.app`.
+- [ ] Alert a configured on-call staff list by push and email, with a persistent alert record; remove the hardcoded personal Gmail and `admin@seeker.app`. The existing `core.EmergencyContact` admin list (staff emails) is the starting point; consider renaming it to avoid confusion with users' own emergency contacts.
 - [ ] Panic button: real recipients, persisted without an active session, honest response message.
 - [ ] Replace `Alert.alert` in `PanicButton` with a modal that works on web; wire the two dead Crisis buttons.
 - [ ] Seed crisis keywords and helpline entries at deploy time; expand the keyword list beyond 22 English phrases.
@@ -87,11 +97,12 @@ Nothing else is safe to build until the working tree is committed and tests can 
 **Booking**
 - [ ] Fix the therapist start check (`profiles/views.py:319`) and the booking-id/session-id mix-up in the calendar.
 - [ ] Point the seeker's "Join Session" at the real start call.
-- [ ] Validate bookings: slot exists, future time, no double booking, verified therapist.
+- [ ] Validate bookings: slot exists, future time, no double booking, verified provider.
 - [ ] Timezone handling.
+- [ ] Counselor bookings: `Booking` and slot calculation support counselors; counselors set a fixed per-session price; counselor public profile "Book" buttons work in the app and on the web.
 
 **Escalation and therapist tools**
-- [ ] Merge onto `EscalationRequest`; fix `has_escalation`.
+- [ ] Remove `EscalationEvent` and its endpoint; move `has_escalation` and backchannel authorisation onto `EscalationRequest`.
 - [ ] Pending-state guard; decline feedback to the counselor.
 - [ ] Restore the therapist intake view, follow-up and escalation alert from the dead `dashboard.js` code; delete the dead code.
 - [ ] Link the triage dossier to the session the therapist receives.
@@ -114,6 +125,7 @@ Nothing else is safe to build until the working tree is committed and tests can 
 
 - [ ] Expo web: remaining `Alert.alert` calls, register upload, time picker, active-nav highlight, sidebar logout and crisis.
 - [ ] Next.js: `await params`, one app directory with a root layout, Docker service, not-found and error pages.
+- [ ] Give Expo web and Next.js separate addresses; both currently expect port 3000.
 - [ ] Decide what `/book/[slug]` does.
 
 **Done when:** both web builds run from Docker and the public profile pages render real data.
@@ -122,23 +134,24 @@ Nothing else is safe to build until the working tree is committed and tests can 
 
 - [ ] Encrypt chat messages, notes, dossiers and contact details at rest.
 - [ ] Privacy policy and terms; explicit consent before intake text is sent to OpenAI.
-- [ ] Decide whether seekers may see the AI dossier and provisional conditions.
 - [ ] Real account deletion or anonymisation, with re-authentication.
 - [ ] Push privacy: unregister on logout, one owner per token, no message previews, honour preferences.
 - [ ] Hash OTPs at rest; stop logging email addresses.
 
 **Done when:** a legal reviewer has signed off the documents and the consent screens are live.
 
-## Phase 6 — Pilot readiness and pilot
+## Phase 6 — Local pilot readiness and pilot
 
-- [ ] Production settings: `DEBUG` off, explicit hosts and CORS, HTTPS and WSS, security headers.
-- [ ] Deployment: non-root image, migrate and `collectstatic` on release, backups, Redis auth, error monitoring, real health check.
-- [ ] Mobile release config: `eas.json`, environment-driven API URL, icon and splash, version codes.
+- [ ] API and WebSocket address configurable per environment (LAN IP or tunnel URL) instead of the hardcoded IP in `app.json`.
+- [ ] Android builds testers can install: allow plain HTTP to the LAN address for development builds; use the tunnel's HTTPS address for outside testers.
+- [ ] Real email: Gmail SMTP configured for OTP codes, crisis alerts and reminders; one sender address used everywhere.
+- [ ] Tunnel runbook: how to open and close it, which hostnames to allow, what must be off before sharing a link.
+- [ ] Startup on the pilot machine: migrate, seed crisis keywords and helplines, and a backup of the local database before and during the pilot.
 - [ ] Finish the kept extras: mentorship (role checks, realtime chat), mood and breathing.
-- [ ] Unify branding, currency (₹) and version strings.
+- [ ] "Buddy" in all visible text (app name, screens, emails, web pages); internal ids unchanged. Currency ₹; one version string.
 - [ ] Regression on physical Android devices and target browsers.
 - [ ] Run the pilot with 5–10 users and a written on-call rota.
 
 ## Deferred past the pilot
 
-Real Razorpay and automated payouts · wallet withdrawals · therapist 2FA · iOS · video and audio · Google OAuth · orientation quiz and video · gamification · i18n · calendar sync · read receipts · admin dashboard.
+Cloud hosting, domain, HTTPS and production monitoring · real Razorpay and automated payouts · wallet withdrawals · therapist 2FA · iOS · video and audio · Google OAuth · orientation quiz and video · gamification · i18n · calendar sync · read receipts · admin dashboard.
