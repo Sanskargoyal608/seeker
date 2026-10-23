@@ -17,7 +17,7 @@ from accounts.throttles import LoginThrottle, RefreshTokenThrottle, RegisterThro
 from accounts.token_service import DeviceTokenService
 from accounts.otp_service import OTPService
 from accounts.services.file_upload import FileUploadService
-from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact
+from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact, OTPToken
 import accounts.throttles as throttles
 
 
@@ -61,24 +61,26 @@ class LoginView(APIView):
 
 class ForgotPasswordRequestView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [throttles.OTPRequestThrottle]
 
     @extend_schema(request=ForgotPasswordRequestSerializer, responses={200: {'example': {'message': 'If the email exists, an OTP has been sent.'}}})
     def post(self, request):
         serializer = ForgotPasswordRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
-        
-        # Generate OTP
-        otp_code, otp_token = OTPService.create_otp_for_email(email)
-        
-        # Send OTP email
-        OTPService.send_otp_email(email, otp_code)
-        
+
+        # Same response whether or not the account exists, so this endpoint
+        # cannot be used to discover which emails are registered.
+        if User.objects.filter(email=email, is_active=True).exists():
+            otp_code, _ = OTPService.create_otp_for_email(email, purpose=OTPToken.RESET)
+            OTPService.send_otp_email(email, otp_code)
+
         return Response({'message': 'If the email exists, an OTP has been sent.'}, status=status.HTTP_200_OK)
 
 
 class ForgotPasswordResetView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [throttles.OTPVerifyThrottle]
 
     @extend_schema(request=ForgotPasswordResetSerializer, responses={200: {'example': {'message': 'Password reset successful'}}})
     def post(self, request):
@@ -86,13 +88,9 @@ class ForgotPasswordResetView(APIView):
         serializer.is_valid(raise_exception=True)
         
         user = serializer.validated_data['user']
-        otp = serializer.validated_data['otp']
         new_password = serializer.validated_data['new_password']
-        
-        # Mark OTP as verified
-        otp.is_verified = True
-        otp.save()
-        
+
+        # The OTP was consumed (single use) while validating the request.
         # Update password
         user.set_password(new_password)
         user.save()
@@ -220,7 +218,7 @@ class RequestOTPView(APIView):
     Sends 6-digit OTP to the provided email.
     """
     permission_classes = [AllowAny]
-    throttle_classes = [throttles.RegisterThrottle]
+    throttle_classes = [throttles.RegisterThrottle, throttles.OTPRequestThrottle]
 
     @extend_schema(request=RequestOTPSerializer)
     def post(self, request):
@@ -230,17 +228,18 @@ class RequestOTPView(APIView):
         email = serializer.validated_data['email']
         role = serializer.validated_data['role']
 
-        # Generate and send OTP
-        otp_code, _ = OTPService.create_otp_for_email(email)
-
-        # Send email
-        success = OTPService.send_otp_email(email, otp_code)
-
-        if not success:
-            return Response(
-                {'detail': 'Failed to send OTP email. Please try again.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        if User.objects.filter(email=email).exists():
+            # Do not reveal that the address is registered: answer exactly as for
+            # a new address, and tell the owner by email instead.
+            OTPService.send_account_exists_email(email)
+        else:
+            otp_code, _ = OTPService.create_otp_for_email(email)
+            success = OTPService.send_otp_email(email, otp_code)
+            if not success:
+                return Response(
+                    {'detail': 'Failed to send OTP email. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         return Response({
             'detail': f'OTP sent to {email}. Valid for 10 minutes.',
@@ -254,6 +253,7 @@ class VerifyOTPView(APIView):
     Verify OTP code from email.
     """
     permission_classes = [AllowAny]
+    throttle_classes = [throttles.OTPVerifyThrottle]
 
     @extend_schema(request=VerifyOTPSerializer)
     def post(self, request):

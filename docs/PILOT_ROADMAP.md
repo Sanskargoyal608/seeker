@@ -53,20 +53,20 @@ Nothing else is safe to build until the working tree is committed and tests can 
 - [x] Unverified providers: allow profile, document upload and availability setup; block queue, accept, escalate, respond, follow-up and bookings; keep them out of search results and the Typesense index. Only verified therapists as escalation and booking targets.
 - [x] Keep therapist-directed sessions out of the counselor queue.
 - [x] Disable wallet withdrawals: payouts endpoint read-only; remove the withdraw buttons.
-- [ ] OTP and password reset:
-  - [ ] attempt limits and lockout
-  - [ ] invalidate old codes on reissue
-  - [ ] single-use reset codes
-  - [ ] dedicated throttles
-  - [ ] apply the password validators
+- [x] OTP and password reset:
+  - [x] attempt limits and lockout
+  - [x] invalidate old codes on reissue
+  - [x] single-use reset codes
+  - [x] dedicated throttles
+  - [x] apply the password validators
 - [ ] Make logout-all and reset-time token invalidation real; replace the User-Agent device binding with a client device id.
 - [ ] WebSocket auth:
   - [ ] fix the middleware crash on bad tokens
   - [ ] accept access tokens only
   - [ ] check `is_active`
   - [ ] validate origin
-- [ ] Correct the throttle rates; set the proxy count.
-- [ ] Remove account-enumeration responses and raw exception text from error bodies.
+- [~] Correct the throttle rates (done: now read from settings; login 10/min, register 30/hour, per-email OTP limits). Proxy count still to do.
+- [~] Remove account-enumeration responses (done for forgot-password and request-otp). Raw exception text in error bodies still to do.
 - [ ] Remove fake trust signals in the app: "Verified Identity", "Background checked", "Available Now", the non-functional 2FA switch.
 - [ ] Safe to expose through a tunnel: `DEBUG` off, `ALLOWED_HOSTS` and CORS read from env (LAN address plus the tunnel domain), Swagger and Flower not reachable through the tunnel.
 

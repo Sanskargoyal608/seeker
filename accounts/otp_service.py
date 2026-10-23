@@ -1,6 +1,7 @@
 # accounts/otp_service.py
 import secrets
 from datetime import timedelta
+from django.db import transaction
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
@@ -24,79 +25,79 @@ class OTPService:
         """Generate a 6-digit OTP code"""
         return ''.join(secrets.choice('0123456789') for _ in range(OTPService.OTP_LENGTH))
 
-    @classmethod
-    def create_otp_for_email(cls, email: str) -> tuple:
-        """
-        Create OTP for an email address.
-        Stores in database and returns the code and token object.
+    MAX_ATTEMPTS = 5
+    # Once the code is confirmed, the user has this long to finish the signup form.
+    VERIFIED_GRACE_MINUTES = 30
 
-        Args:
-            email (str): Email address to create OTP for
+    @classmethod
+    def create_otp_for_email(cls, email: str, purpose: str = OTPToken.REGISTER) -> tuple:
+        """
+        Create a fresh OTP for an email address and purpose.
+        Any earlier unused code for the same email and purpose is invalidated, so
+        requesting codes repeatedly never leaves several valid guesses outstanding.
 
         Returns:
             tuple: (otp_code, OTPToken object)
         """
-        # Clean up expired OTPs for this email
-        OTPToken.objects.filter(
-            email=email,
-            expires_at__lt=timezone.now()
-        ).delete()
+        OTPToken.objects.filter(email=email, expires_at__lt=timezone.now()).delete()
+        OTPToken.objects.filter(email=email, purpose=purpose, is_verified=False).delete()
 
-        # Generate new OTP
         otp_code = cls.generate_otp()
         validity = timezone.now() + timedelta(minutes=cls.OTP_VALIDITY_MINUTES)
 
         token = OTPToken.objects.create(
             email=email,
             otp_code=otp_code,
+            purpose=purpose,
             expires_at=validity,
             is_verified=False
         )
 
-        logger.info(f"OTP created for email: {email}")
+        logger.info("OTP created (purpose=%s)", purpose)
         return otp_code, token
 
     @classmethod
-    def verify_otp(cls, email: str, otp_code: str) -> bool:
+    def verify_otp(cls, email: str, otp_code: str, purpose: str = OTPToken.REGISTER) -> bool:
         """
-        Verify OTP code for an email.
-        Marks the token as verified if valid.
-
-        Args:
-            email (str): Email address
-            otp_code (str): OTP code to verify
-
-        Returns:
-            bool: True if OTP is valid, False otherwise
+        Check a code. A code is single-use, belongs to one purpose, and is dead
+        after MAX_ATTEMPTS wrong guesses (the user must request a new one).
         """
-        try:
-            token = OTPToken.objects.get(
-                email=email,
-                otp_code=otp_code,
-                is_verified=False,
-                expires_at__gt=timezone.now()  # Not expired
+        with transaction.atomic():
+            token = (
+                OTPToken.objects.select_for_update()
+                .filter(email=email, purpose=purpose, is_verified=False,
+                        expires_at__gt=timezone.now())
+                .order_by('-created_at')
+                .first()
             )
+            if token is None:
+                logger.warning("OTP check with no active code (purpose=%s)", purpose)
+                return False
+
+            if token.attempts >= cls.MAX_ATTEMPTS:
+                logger.warning("OTP locked after too many attempts (purpose=%s)", purpose)
+                return False
+
+            if not secrets.compare_digest(token.otp_code, str(otp_code)):
+                token.attempts += 1
+                token.save(update_fields=['attempts'])
+                logger.warning("Wrong OTP (purpose=%s, attempt %s)", purpose, token.attempts)
+                return False
+
             token.is_verified = True
-            token.save()
-            logger.info(f"OTP verified for email: {email}")
+            if purpose == OTPToken.REGISTER:
+                token.expires_at = timezone.now() + timedelta(minutes=cls.VERIFIED_GRACE_MINUTES)
+                token.save(update_fields=['is_verified', 'expires_at'])
+            else:
+                token.save(update_fields=['is_verified'])
             return True
-        except OTPToken.DoesNotExist:
-            logger.warning(f"Invalid or expired OTP for email: {email}")
-            return False
 
     @classmethod
     def is_email_verified(cls, email: str) -> bool:
-        """
-        Check if an email has been verified with OTP.
-
-        Args:
-            email (str): Email address to check
-
-        Returns:
-            bool: True if email has valid verified OTP, False otherwise
-        """
+        """True if the email has confirmed a registration code that has not yet lapsed."""
         return OTPToken.objects.filter(
             email=email,
+            purpose=OTPToken.REGISTER,
             is_verified=True,
             expires_at__gt=timezone.now()
         ).exists()
@@ -158,11 +159,32 @@ Seeker Team"""
                 fail_silently=False,
             )
 
-            logger.info(f"OTP email sent to: {email}")
+            logger.info("OTP email sent")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send OTP email to {email}: {str(e)}")
+            logger.error("Failed to send OTP email: %s", e)
+            return False
+
+    @classmethod
+    def send_account_exists_email(cls, email: str) -> bool:
+        """Tell the owner of an already-registered address that someone tried to sign up with it."""
+        try:
+            send_mail(
+                subject="Someone tried to create an account with your email",
+                message=(
+                    "Someone asked to create a new account with this email address, "
+                    "but an account already exists.\n\n"
+                    "If it was you, just log in, or use 'Forgot password' if you cannot remember "
+                    "your password. If it was not you, you can ignore this email."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            return True
+        except Exception as e:
+            logger.error("Failed to send account-exists email: %s", e)
             return False
 
     @classmethod

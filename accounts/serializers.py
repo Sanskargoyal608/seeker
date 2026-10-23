@@ -1,6 +1,8 @@
 # accounts/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password as django_validate_password
+from accounts.otp_service import OTPService
 from accounts.models import User, GraduateCounselor, LicensedTherapist, EmergencyContact, OTPToken, UserPreferences
 
 
@@ -168,36 +170,34 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 
 class ForgotPasswordRequestSerializer(serializers.Serializer):
+    # Deliberately does not check that the account exists: the response must be
+    # identical either way so the endpoint cannot be used to discover accounts.
     email = serializers.EmailField()
-
-    def validate_email(self, value):
-        if not User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("No account found with this email")
-        return value
 
 
 class ForgotPasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    otp_code = serializers.CharField(max_length=6)
+    otp_code = serializers.CharField(max_length=6, min_length=6)
     new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        django_validate_password(value)
+        return value
 
     def validate(self, data):
         email = data.get('email')
-        otp_code = data.get('otp_code')
-        
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("No account found with this email")
+        generic = serializers.ValidationError({'otp_code': ['Invalid or expired OTP.']})
 
-        try:
-            from django.utils import timezone
-            otp = OTPToken.objects.get(email=email, otp_code=otp_code, expires_at__gt=timezone.now())
-        except OTPToken.DoesNotExist:
-            raise serializers.ValidationError("Invalid or expired OTP")
-            
+        user = User.objects.filter(email=email, is_active=True).first()
+        if user is None:
+            raise generic
+
+        # Single use: a successful check consumes the code. Wrong guesses count
+        # against the code's attempt limit.
+        if not OTPService.verify_otp(email, data.get('otp_code'), purpose=OTPToken.RESET):
+            raise generic
+
         data['user'] = user
-        data['otp'] = otp
         return data
 
 
@@ -221,15 +221,9 @@ class LogoutSerializer(serializers.Serializer):
 # ============= REGISTRATION SERIALIZERS =============
 
 class RequestOTPSerializer(serializers.Serializer):
-    """Serializer for requesting OTP"""
+    """Serializer for requesting OTP. Does not reveal whether the email is already registered."""
     email = serializers.EmailField()
     role = serializers.ChoiceField(choices=['GENERAL_USER', 'COUNSELOR', 'THERAPIST'])
-
-    def validate_email(self, value):
-        # Check if user already exists
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email is already registered.")
-        return value
 
 
 class VerifyOTPSerializer(serializers.Serializer):
@@ -254,6 +248,10 @@ class RegisterGeneralUserSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
     emergency_contacts = EmergencyContactSerializer(many=True)
+
+    def validate_password(self, value):
+        django_validate_password(value)
+        return value
 
     def validate(self, data):
         # Password confirmation
@@ -301,6 +299,10 @@ class RegisterCounselorSerializer(serializers.Serializer):
     degree_file = serializers.FileField(required=False)
     graduation_certificate = serializers.FileField(required=False)
 
+    def validate_password(self, value):
+        django_validate_password(value)
+        return value
+
     def validate(self, data):
         if data.get('password') != data.get('password_confirm'):
             raise serializers.ValidationError({
@@ -341,6 +343,10 @@ class RegisterTherapistSerializer(serializers.Serializer):
 
     # File uploads
     license_file = serializers.FileField(required=False)
+
+    def validate_password(self, value):
+        django_validate_password(value)
+        return value
 
     def validate(self, data):
         if data.get('password') != data.get('password_confirm'):

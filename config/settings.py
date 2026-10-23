@@ -157,9 +157,13 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '1000/day',
         'user': '5000/day',
-        'login': '5/min',
-        'register': '10/hour',
+        # Per client IP. Generous enough for several pilot testers behind one network.
+        'login': '10/min',
+        'register': '30/hour',
         'refresh_token': '30/hour',
+        # Per target email address
+        'otp_request': '5/hour',
+        'otp_verify': '20/hour',
     },
 }
 

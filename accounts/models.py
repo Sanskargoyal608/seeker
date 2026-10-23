@@ -151,8 +151,14 @@ class EmergencyContact(models.Model):
 
 
 class OTPToken(models.Model):
+    REGISTER = 'REGISTER'
+    RESET = 'RESET'
+    PURPOSE_CHOICES = [(REGISTER, 'Registration'), (RESET, 'Password reset')]
+
     email = models.EmailField()
     otp_code = models.CharField(max_length=6)
+    purpose = models.CharField(max_length=10, choices=PURPOSE_CHOICES, default=REGISTER)
+    attempts = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_verified = models.BooleanField(default=False)
