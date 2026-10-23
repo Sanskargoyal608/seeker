@@ -36,6 +36,11 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'therapist', 'scheduled_datetime', 'duration_minutes', 'intake_data']
         read_only_fields = ['id']
 
+    def validate_therapist(self, therapist):
+        if not therapist.is_verified or not therapist.user.is_active:
+            raise serializers.ValidationError('This therapist is not available for booking.')
+        return therapist
+
     def create(self, validated_data):
         intake_data = validated_data.pop('intake_data')
         booking = Booking.objects.create(

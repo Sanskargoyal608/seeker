@@ -342,7 +342,7 @@ class QueueView(APIView):
     """
     Counselor-only endpoint to list all WAITING sessions.
     """
-    permission_classes = [IsAuthenticated, IsGraduateCounselor]
+    permission_classes = [IsAuthenticated, IsGraduateCounselor, IsVerified]
 
     def get(self, request):
         sessions = MatchingService.get_waiting_sessions()
@@ -360,7 +360,7 @@ class AcceptSessionView(APIView):
     """
     Provider endpoint to accept a waiting session.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def patch(self, request, session_id):
         from accounts.models import User
@@ -601,7 +601,7 @@ from .tasks import send_escalation_notifications
 
 class EscalateSessionView(APIView):
     """POST /api/sessions/{id}/escalate/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
     
     def post(self, request, session_id):
         if request.user.role != request.user.COUNSELOR:
@@ -774,7 +774,7 @@ class RequestBudgetSessionView(APIView):
         if not therapist_id:
             return Response({'error': 'therapist_id is required'}, status=status.HTTP_400_BAD_REQUEST)
             
-        therapist = get_object_or_404(LicensedTherapist, id=therapist_id)
+        therapist = get_object_or_404(LicensedTherapist, id=therapist_id, is_verified=True, user__is_active=True)
         
         # Create a session in WAITING status explicitly assigned to this therapist
         session = Session.objects.create(
@@ -823,7 +823,7 @@ class EscalateCreateView(APIView):
     POST /api/core/escalate/
     Counselor triggers escalation to a therapist.
     """
-    permission_classes = [IsAuthenticated, IsGraduateCounselor]
+    permission_classes = [IsAuthenticated, IsGraduateCounselor, IsVerified]
     
     def post(self, request):
         from .models import EscalationRequest, Session
@@ -841,7 +841,7 @@ class EscalateCreateView(APIView):
         if session.counselor != request.user.counselor_profile:
             return Response(status=status.HTTP_403_FORBIDDEN)
             
-        therapist = get_object_or_404(LicensedTherapist, id=therapist_id)
+        therapist = get_object_or_404(LicensedTherapist, id=therapist_id, is_verified=True, user__is_active=True)
         
         escalation = EscalationRequest.objects.create(
             counselor=request.user.counselor_profile,
@@ -897,7 +897,7 @@ class EscalationRespondView(APIView):
     POST /api/core/escalations/<id>/respond/
     Therapist responds to escalation request.
     """
-    permission_classes = [IsAuthenticated, IsLicensedTherapist]
+    permission_classes = [IsAuthenticated, IsLicensedTherapist, IsVerified]
     
     def post(self, request, escalation_id):
         from .models import EscalationRequest
@@ -930,7 +930,7 @@ class TherapistFollowUpView(APIView):
     POST /api/core/follow-up/
     Therapist initiates chat with past client.
     """
-    permission_classes = [IsAuthenticated, IsLicensedTherapist]
+    permission_classes = [IsAuthenticated, IsLicensedTherapist, IsVerified]
     
     def post(self, request):
         from accounts.models import User

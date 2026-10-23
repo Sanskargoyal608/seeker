@@ -13,10 +13,13 @@ class MatchingService:
     @staticmethod
     def get_waiting_sessions():
         """
-        Returns a queryset of all sessions currently in the WAITING state,
-        ordered by oldest first (FIFO queue).
+        Returns the open counselor queue: WAITING sessions that no therapist has
+        been requested for, oldest first (FIFO). Sessions a seeker requested from
+        a specific therapist never appear here.
         """
-        return Session.objects.filter(status=Session.WAITING).order_by('created_at')
+        return Session.objects.filter(
+            status=Session.WAITING, therapist__isnull=True
+        ).order_by('created_at')
 
     @staticmethod
     def accept_session(counselor, session_id):
@@ -29,6 +32,9 @@ class MatchingService:
                 # Lock the row until the transaction completes
                 session = Session.objects.select_for_update().get(id=session_id)
             except Session.DoesNotExist:
+                raise ValueError("Session does not exist.")
+
+            if session.therapist_id is not None:
                 raise ValueError("Session does not exist.")
 
             if session.status != Session.WAITING:
